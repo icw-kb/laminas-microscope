@@ -1,0 +1,38 @@
+{
+    "name": "icw-kb/laminas-microscope",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "IcwKb\\LaminasMicroscope\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ian Wilson",
+            "email": "ian.wilson@klipboard.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^8.1"
+
+    },
+    "require-dev": {
+        "laminas/laminas-developer-tools": "^1.3.1 || ^2.0.2",
+        "laminas/laminas-i18n": "^2.5",
+        "laminas/laminas-log": "^2.5",
+        "laminas/laminas-mvc-plugin-flashmessenger": "^1.0",
+        "laminas/laminas-router": "^3.0",
+        "laminas/laminas-serializer": "^2.5",
+        "laminas/laminas-test": "^4.10",
+        "phpspec/prophecy-phpunit": "^2.0",
+        "phpunit/phpunit": "^10.4",
+        "rector/rector": "dev-main"
+    },
+    "scripts": {
+        "test": [
+            "phpunit"
+        ]
+    }
+}
