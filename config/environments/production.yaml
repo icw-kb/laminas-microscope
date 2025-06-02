@@ -1,0 +1,20 @@
+laminas_microscope:
+  enabled: false  # Completely disabled by default in production
+  components:
+    whoops:
+      enabled: false
+      show_in_production: false
+    debug_bar:
+      enabled: false
+    microscope:
+      enabled: false
+  
+  # Production-specific settings (if ever enabled)
+  database:
+    log_queries: false
+    explain_queries: false
+    highlight_slow_queries: false
+  
+  # Strict IP restrictions if ever enabled in production
+  ip_whitelist:
+    - '127.0.0.1'  # Only localhost by default

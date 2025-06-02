@@ -1,0 +1,125 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-route"></i> Route Analysis
+        </h5>
+    </div>
+    <div class="card-body">
+        <?php if (empty($routes)): ?>
+            <div class="text-center py-4">
+                <i class="fas fa-route fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No route data available</h5>
+                <p class="text-muted">Navigate through your application to collect route performance data</p>
+            </div>
+        <?php else: ?>
+            <!-- Route Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-primary"><?= count($routes) ?></h3>
+                            <p class="mb-0">Total Routes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-warning"><?= count(array_filter($routes, fn($r) => ($r['avg_duration'] ?? 0) > 500)) ?></h3>
+                            <p class="mb-0">Slow Routes (>500ms)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-info"><?= array_sum(array_column($routes, 'hit_count')) ?></h3>
+                            <p class="mb-0">Total Requests</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Performance Table -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Route</th>
+                            <th>Controller</th>
+                            <th>Action</th>
+                            <th>Hits</th>
+                            <th>Avg Duration</th>
+                            <th>Min/Max</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($routes as $route): ?>
+                            <tr class="<?= ($route['avg_duration'] ?? 0) > 500 ? 'table-warning' : '' ?>">
+                                <td>
+                                    <code><?= $this->escapeHtml($route['name'] ?? 'unknown') ?></code>
+                                    <br><small class="text-muted"><?= $this->escapeHtml($route['pattern'] ?? '') ?></small>
+                                </td>
+                                <td><?= $this->escapeHtml($route['controller'] ?? 'N/A') ?></td>
+                                <td><?= $this->escapeHtml($route['action'] ?? 'N/A') ?></td>
+                                <td>
+                                    <span class="badge bg-info"><?= $route['hit_count'] ?? 0 ?></span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-<?= ($route['avg_duration'] ?? 0) > 500 ? 'warning' : 'success' ?>">
+                                        <?= number_format($route['avg_duration'] ?? 0, 2) ?>ms
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        <?= number_format($route['min_duration'] ?? 0, 2) ?>ms / 
+                                        <?= number_format($route['max_duration'] ?? 0, 2) ?>ms
+                                    </small>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $score = 100;
+                                    if (($route['avg_duration'] ?? 0) > 1000) $score -= 40;
+                                    elseif (($route['avg_duration'] ?? 0) > 500) $score -= 20;
+                                    if (($route['error_rate'] ?? 0) > 0.05) $score -= 30;
+                                    ?>
+                                    <div class="progress" style="width: 80px;">
+                                        <div class="progress-bar bg-<?= $score > 80 ? 'success' : ($score > 60 ? 'warning' : 'danger') ?>" 
+                                             style="width: <?= $score ?>%"></div>
+                                    </div>
+                                    <small><?= $score ?>%</small>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Route Usage Chart -->
+            <div class="mt-4">
+                <h6>Route Usage Distribution</h6>
+                <div class="row">
+                    <?php 
+                    $topRoutes = array_slice(
+                        array_sort($routes, fn($a, $b) => ($b['hit_count'] ?? 0) <=> ($a['hit_count'] ?? 0)), 
+                        0, 5
+                    );
+                    ?>
+                    <?php foreach ($topRoutes as $route): ?>
+                        <div class="col-md-12 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small><?= $this->escapeHtml($route['name'] ?? 'unknown') ?></small>
+                                <small><?= $route['hit_count'] ?? 0 ?> hits</small>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <?php $percentage = ($route['hit_count'] ?? 0) / max(array_column($topRoutes, 'hit_count')) * 100; ?>
+                                <div class="progress-bar" style="width: <?= $percentage ?>%"></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>

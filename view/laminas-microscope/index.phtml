@@ -1,0 +1,78 @@
+<?php
+/** Laminas Microscope dashboard */
+use LaminasMicroscope\Registry;
+$this->headTitle('Microscope');
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+$debugBar = Registry::getDebugBar();
+$collectorNames = $config->get('laminas_microscope.components.debug_bar.collectors', []);
+$data = $debugBar ? $debugBar->getData() : [];
+?>
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column nav-pills" id="collector-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-dashboard" data-bs-toggle="pill" data-bs-target="#pane-dashboard" type="button" role="tab">
+                            Dashboard
+                        </button>
+                    </li>
+                    <?php foreach ($collectorNames as $collector): ?>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-<?= $collector ?>" data-bs-toggle="pill" data-bs-target="#pane-<?= $collector ?>" type="button" role="tab">
+                                <?= ucfirst($collector) ?>
+                            </button>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </nav>
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+                <h1 class="h2">Microscope</h1>
+                <span class="badge bg-<?= $config->isEnabled() ? 'success' : 'danger' ?>">
+                    <?= $config->isEnabled() ? 'ENABLED' : 'DISABLED' ?>
+                </span>
+            </div>
+
+            <div class="tab-content" id="collectorTabContent">
+                <div class="tab-pane fade show active" id="pane-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr><td><strong>Environment:</strong></td><td><?= $config->get('laminas_microscope.environment', 'unknown') ?></td></tr>
+                                <tr><td><strong>PHP Version:</strong></td><td><?= PHP_VERSION ?></td></tr>
+                                <tr><td><strong>Memory Limit:</strong></td><td><?= ini_get('memory_limit') ?></td></tr>
+                                <tr><td><strong>Storage Path:</strong></td><td><?= $config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope') ?></td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <?php $storagePath = $config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'); ?>
+                            <table class="table table-sm">
+                                <tr><td><strong>Debug Mode:</strong></td><td><span class="badge bg-<?= $config->isEnabled() ? 'success' : 'danger' ?>"><?= $config->isEnabled() ? 'Enabled' : 'Disabled' ?></span></td></tr>
+                                <tr><td><strong>Storage Writable:</strong></td><td><span class="badge bg-<?= is_writable(dirname($storagePath)) ? 'success' : 'danger' ?>"><?= is_writable(dirname($storagePath)) ? 'Yes' : 'No' ?></span></td></tr>
+                                <tr><td><strong>Current Memory:</strong></td><td><?= round(memory_get_usage(true) / 1024 / 1024, 2) ?> MB</td></tr>
+                                <tr><td><strong>Request Time:</strong></td><td><?= date('Y-m-d H:i:s') ?></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <?php foreach ($collectorNames as $collector): ?>
+                    <div class="tab-pane fade" id="pane-<?= $collector ?>" role="tabpanel" aria-labelledby="tab-<?= $collector ?>">
+                        <pre class="bg-light p-3 border rounded"><?php
+                            echo htmlspecialchars(
+                                var_export($data[$collector] ?? [], true),
+                                ENT_QUOTES
+                            );
+                        ?></pre>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </main>
+    </div>
+</div>
+<script>
+function exportData(){window.open('<?= $this->url('laminas-microscope/api', ['action' => 'export']) ?>','_blank');}
+function clearReports(){if(confirm('Are you sure you want to clear all analysis reports?')){fetch('<?= $this->url('laminas-microscope/api', ['action' => 'clear-reports']) ?>',{method:'POST'}).then(response=>{if(response.ok){location.reload();}});}}
+</script>

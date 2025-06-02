@@ -1,0 +1,275 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Configuration Profiles</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>Available Profiles</h6>
+                <div class="list-group">
+                    <button class="list-group-item list-group-item-action" onclick="loadProfile('minimal')">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Minimal</h6>
+                            <small class="text-muted">Basic</small>
+                        </div>
+                        <p class="mb-1">Only Whoops error handling</p>
+                        <small>Ideal for production with minimal overhead</small>
+                    </button>
+                    
+                    <button class="list-group-item list-group-item-action" onclick="loadProfile('performance')">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Performance</h6>
+                            <small class="text-muted">Moderate</small>
+                        </div>
+                        <p class="mb-1">Debug Bar + Microscope analysis</p>
+                        <small>Focus on performance monitoring and optimization</small>
+                    </button>
+                    
+                    <button class="list-group-item list-group-item-action" onclick="loadProfile('debugging')">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Full Debugging</h6>
+                            <small class="text-muted">Complete</small>
+                        </div>
+                        <p class="mb-1">All components enabled</p>
+                        <small>Maximum debugging capabilities for development</small>
+                    </button>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm w-100" onclick="createCustomProfile()">
+                        <i class="fas fa-plus"></i> Create Custom Profile
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <h6>Profile Configuration</h6>
+                <div id="profilePreview" class="border rounded p-3" style="background-color: #f8f9fa; min-height: 300px;">
+                    <div class="text-center py-5">
+                        <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Select a profile to view its configuration</p>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-primary" onclick="applyProfile()" id="applyProfileBtn" disabled>
+                        <i class="fas fa-check"></i> Apply Profile
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="exportProfile()" id="exportProfileBtn" disabled>
+                        <i class="fas fa-download"></i> Export Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Profile Modal -->
+<div class="modal fade" id="customProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Custom Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customProfileForm">
+                    <div class="mb-3">
+                        <label for="profileName" class="form-label">Profile Name</label>
+                        <input type="text" class="form-control" id="profileName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="profileDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="profileDescription" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Components</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="customWhoops">
+                                <label class="form-check-label" for="customWhoops">Whoops</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="customDebugBar">
+                                <label class="form-check-label" for="customDebugBar">Debug Bar</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="customMicroscope">
+                                <label class="form-check-label" for="customMicroscope">Microscope</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <h6>Settings</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="customAutoAnalyze">
+                                <label class="form-check-label" for="customAutoAnalyze">Auto Analyze</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="customShowInProduction">
+                                <label class="form-check-label" for="customShowInProduction">Show Errors in Production</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCustomProfile()">Save Profile</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentProfile = null;
+
+const profiles = {
+    minimal: {
+        name: 'Minimal',
+        description: 'Only Whoops error handling for production use',
+        config: {
+            components: {
+                whoops: { enabled: true, show_in_production: false },
+                debug_bar: { enabled: false },
+                microscope: { enabled: false }
+            }
+        }
+    },
+    performance: {
+        name: 'Performance',
+        description: 'Debug Bar and Microscope for performance monitoring',
+        config: {
+            components: {
+                whoops: { enabled: false },
+                debug_bar: { enabled: true, collectors: ['time', 'memory', 'pdo'] },
+                microscope: { enabled: true, auto_analyze: true }
+            }
+        }
+    },
+    debugging: {
+        name: 'Full Debugging',
+        description: 'All components enabled for complete debugging',
+        config: {
+            components: {
+                whoops: { enabled: true, show_in_production: false },
+                debug_bar: { enabled: true, collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config'] },
+                microscope: { enabled: true, auto_analyze: true }
+            }
+        }
+    }
+};
+
+function loadProfile(profileName) {
+    const profile = profiles[profileName];
+    if (!profile) return;
+    
+    currentProfile = profileName;
+    
+    const preview = document.getElementById('profilePreview');
+    preview.innerHTML = `
+        <h6>${profile.name} Profile</h6>
+        <p class="text-muted">${profile.description}</p>
+        <hr>
+        <pre><code class="language-yaml">${formatConfigAsYaml(profile.config)}</code></pre>
+    `;
+    
+    document.getElementById('applyProfileBtn').disabled = false;
+    document.getElementById('exportProfileBtn').disabled = false;
+}
+
+function formatConfigAsYaml(config) {
+    let yaml = 'laminas_microscope:\n  components:\n';
+    
+    for (const [component, settings] of Object.entries(config.components)) {
+        yaml += `    ${component}:\n`;
+        for (const [key, value] of Object.entries(settings)) {
+            if (Array.isArray(value)) {
+                yaml += `      ${key}:\n`;
+                value.forEach(item => yaml += `        - ${item}\n`);
+            } else {
+                yaml += `      ${key}: ${value}\n`;
+            }
+        }
+    }
+    
+    return yaml;
+}
+
+function applyProfile() {
+    if (!currentProfile) return;
+    
+    const profile = profiles[currentProfile];
+    
+    fetch('<?= $this->url('laminas-microscope/api', ['action' => 'apply-profile']) ?>', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: currentProfile, config: profile.config })
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Profile applied successfully');
+            location.reload();
+        } else {
+            alert('Failed to apply profile: ' + data.message);
+        }
+    });
+}
+
+function exportProfile() {
+    if (!currentProfile) return;
+    
+    const profile = profiles[currentProfile];
+    const yaml = formatConfigAsYaml(profile.config);
+    
+    const blob = new Blob([yaml], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentProfile}-profile.yaml`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function createCustomProfile() {
+    const modal = new bootstrap.Modal(document.getElementById('customProfileModal'));
+    modal.show();
+}
+
+function saveCustomProfile() {
+    const form = document.getElementById('customProfileForm');
+    const formData = new FormData(form);
+    
+    const customProfile = {
+        name: document.getElementById('profileName').value,
+        description: document.getElementById('profileDescription').value,
+        config: {
+            components: {
+                whoops: { enabled: document.getElementById('customWhoops').checked },
+                debug_bar: { enabled: document.getElementById('customDebugBar').checked },
+                microscope: { 
+                    enabled: document.getElementById('customMicroscope').checked,
+                    auto_analyze: document.getElementById('customAutoAnalyze').checked
+                }
+            }
+        }
+    };
+    
+    fetch('<?= $this->url('laminas-microscope/api', ['action' => 'save-custom-profile']) ?>', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customProfile)
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Custom profile saved successfully');
+            bootstrap.Modal.getInstance(document.getElementById('customProfileModal')).hide();
+            location.reload();
+        } else {
+            alert('Failed to save profile: ' + data.message);
+        }
+    });
+}
+</script>

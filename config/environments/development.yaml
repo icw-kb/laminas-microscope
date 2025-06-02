@@ -1,0 +1,27 @@
+laminas_microscope:
+  enabled: true
+  components:
+    whoops:
+      enabled: true
+      show_in_production: false
+      display_call_arguments: true
+      display_call_arguments_max_depth: 3
+    debug_bar:
+      enabled: true
+      position: 'bottom'
+      storage:
+        enabled: true
+    microscope:
+      enabled: true
+      auto_analyze: true
+      reporting:
+        log_level: 'info'
+  
+  # Development-specific settings
+  database:
+    log_queries: true
+    explain_queries: true
+    highlight_slow_queries: true
+  
+  # No IP restrictions in development
+  ip_whitelist: []

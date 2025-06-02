@@ -1,0 +1,156 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-tachometer-alt"></i> Performance Analysis
+        </h5>
+    </div>
+    <div class="card-body">
+        <?php if (empty($performance)): ?>
+            <div class="text-center py-4">
+                <i class="fas fa-tachometer-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No performance data available</h5>
+                <p class="text-muted">Performance data will be collected as you use your application</p>
+            </div>
+        <?php else: ?>
+            <!-- Performance Overview -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Response Time</h5>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h3 class="text-primary"><?= number_format($performance['total_time'] ?? 0, 2) ?>ms</h3>
+                                    <small class="text-muted">Total Request Time</small>
+                                </div>
+                                <!-- Add other time metrics if available in $performance -->
+                                <?php if (isset($performance['event_timestamps'])): ?>
+                                    <div class="col-12 mt-2">
+                                        <small class="text-muted">Start: <?= date('H:i:s', (int)($performance['event_timestamps']['request_start'] ?? time())) ?>.<?= sprintf('%03d', (int)((($performance['event_timestamps']['request_start'] ?? microtime(true)) - floor($performance['event_timestamps']['request_start'] ?? microtime(true))) * 1000)) ?></small><br>
+                                        <small class="text-muted">End: <?= date('H:i:s', (int)($performance['event_timestamps']['request_end'] ?? time())) ?>.<?= sprintf('%03d', (int)((($performance['event_timestamps']['request_end'] ?? microtime(true)) - floor($performance['event_timestamps']['request_end'] ?? microtime(true))) * 1000)) ?></small>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Memory Usage</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="text-info"><?= $performance['memory_usage'] ?? 'N/A' ?></h3>
+                                    <small class="text-muted">Current</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-danger"><?= $performance['peak_memory'] ?? 'N/A' ?></h3>
+                                    <small class="text-muted">Peak</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Breakdown Chart -->
+            <?php if (!empty($performance['breakdown'])): ?>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Performance Breakdown (ms)</h6>
+                </div>
+                <div class="card-body">
+                    <div id="performanceChart" style="height: 300px;"></div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Bottlenecks (Placeholder) -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Performance Bottlenecks
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-3">
+                        <i class="fas fa-wrench fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Bottleneck analysis not yet implemented</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations (Placeholder) -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Performance Recommendations
+                    </h6>
+                </div>
+                <div class="card-body">
+                     <div class="text-center py-3">
+                        <i class="fas fa-lightbulb fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Performance recommendations not yet implemented</p>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+// Simple performance chart visualization
+// Use the 'breakdown' data provided by the controller
+if (document.getElementById('performanceChart') && <?= json_encode($performance['breakdown'] ?? []) ?>) {
+    const breakdown = <?= json_encode($performance['breakdown'] ?? []) ?>;
+    const chartContainer = document.getElementById('performanceChart');
+
+    // Convert breakdown object to array of objects for charting
+    const components = Object.keys(breakdown).map(key => ({
+        name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format name (e.g., 'request_start' -> 'Request Start')
+        time: breakdown[key] || 0,
+        color: getColorForComponent(key) // Helper function for colors
+    }));
+
+    // Sort components by time descending
+    components.sort((a, b) => b.time - a.time);
+
+    const maxTime = Math.max(...components.map(c => c.time));
+
+    let chartHtml = '<div class="row">';
+    components.forEach(component => {
+        // Calculate percentage relative to the sum of breakdown times, not max time
+        const totalBreakdownTime = components.reduce((sum, c) => sum + c.time, 0);
+        const percentage = totalBreakdownTime > 0 ? (component.time / totalBreakdownTime) * 100 : 0;
+
+        chartHtml += `
+            <div class="col-md-12 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span>${component.name}</span>
+                    <span class="badge" style="background-color: ${component.color}">${component.time.toFixed(2)}ms</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: ${percentage}%; background-color: ${component.color}"></div>
+                </div>
+            </div>
+        `;
+    });
+    chartHtml += '</div>';
+
+    chartContainer.innerHTML = chartHtml;
+}
+
+// Helper function to get consistent colors for components
+function getColorForComponent(name) {
+    switch (name) {
+        case 'bootstrap': return '#007bff'; // Primary (Blue)
+        case 'route': return '#28a745'; // Success (Green)
+        case 'dispatch': return '#ffc107'; // Warning (Yellow)
+        case 'render': return '#17a2b8'; // Info (Cyan)
+        case 'database': return '#dc3545'; // Danger (Red)
+        case 'request_start': return '#6f42c1'; // Purple
+        case 'request_end': return '#6c757d'; // Secondary (Gray)
+        default: return '#6c757d'; // Secondary (Gray)
+    }
+}
+</script>
