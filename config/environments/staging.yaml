@@ -1,0 +1,27 @@
+laminas_microscope:
+  enabled: true
+  components:
+    whoops:
+      enabled: false  # Disable pretty error pages in staging
+      show_in_production: false
+    debug_bar:
+      enabled: true
+      position: 'bottom'
+      storage:
+        enabled: true
+    microscope:
+      enabled: true
+      auto_analyze: true
+      reporting:
+        log_level: 'warning'
+  
+  # Staging-specific settings
+  database:
+    log_queries: true
+    explain_queries: false  # Don't explain queries in staging
+    highlight_slow_queries: true
+  
+  # Restrict access in staging
+  ip_whitelist:
+    - '127.0.0.1'
+    - '::1'

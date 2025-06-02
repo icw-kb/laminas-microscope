@@ -1,0 +1,364 @@
+<?php
+$this->headTitle('Configuration - Laminas Microscope');
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+?>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">
+                        <i class="fas fa-cog"></i> Configuration Management
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="<?= $this->url('laminas-microscope') ?>">Debug Suite</a></li>
+                            <li class="breadcrumb-item active">Configuration</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <button class="btn btn-success" onclick="saveConfiguration()">
+                        <i class="fas fa-save"></i> Save Configuration
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportConfiguration()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        <i class="fas fa-cogs"></i> General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="components-tab" data-bs-toggle="tab" data-bs-target="#components" type="button" role="tab">
+                        <i class="fas fa-puzzle-piece"></i> Components
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="profiles-tab" data-bs-toggle="tab" data-bs-target="#profiles" type="button" role="tab">
+                        <i class="fas fa-layer-group"></i> Profiles
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="environments-tab" data-bs-toggle="tab" data-bs-target="#environments" type="button" role="tab">
+                        <i class="fas fa-globe"></i> Environments
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content mt-3" id="configTabContent">
+                <!-- General Configuration Tab -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">General Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="generalConfigForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="enabled" class="form-label">Enable Debug Suite</label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="enabled" 
+                                                       <?= $config->get('laminas_microscope.enabled', false) ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="enabled">
+                                                    Debug suite is <?= $config->get('laminas_microscope.enabled', false) ? 'enabled' : 'disabled' ?>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="environment" class="form-label">Environment</label>
+                                            <select class="form-select" id="environment">
+                                                <option value="development" <?= $config->get('laminas_microscope.environment') === 'development' ? 'selected' : '' ?>>Development</option>
+                                                <option value="staging" <?= $config->get('laminas_microscope.environment') === 'staging' ? 'selected' : '' ?>>Staging</option>
+                                                <option value="production" <?= $config->get('laminas_microscope.environment') === 'production' ? 'selected' : '' ?>>Production</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="storagePath" class="form-label">Storage Path</label>
+                                            <input type="text" class="form-control" id="storagePath" 
+                                                   value="<?= $this->escapeHtmlAttr($config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope')) ?>">
+                                            <div class="form-text">Directory where analysis reports will be stored</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="ipWhitelist" class="form-label">IP Whitelist</label>
+                                            <textarea class="form-control" id="ipWhitelist" rows="3" 
+                                                      placeholder="192.168.1.0/24&#10;127.0.0.1&#10;::1"><?= implode("\n", $config->get('laminas_microscope.ip_whitelist', [])) ?></textarea>
+                                            <div class="form-text">One IP address or CIDR block per line. Leave empty to allow all IPs.</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="retentionDays" class="form-label">Report Retention (Days)</label>
+                                            <input type="number" class="form-control" id="retentionDays" min="1" max="365"
+                                                   value="<?= $config->get('laminas_microscope.storage.retention_days', 30) ?>">
+                                            <div class="form-text">Automatically delete reports older than this many days</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Components Configuration Tab -->
+                <div class="tab-pane fade" id="components" role="tabpanel">
+                    <div class="row">
+                        <!-- Whoops Component -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-exclamation-triangle"></i> Whoops Error Handler
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="whoopsConfigForm">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="whoopsEnabled"
+                                                   <?= $config->get('laminas_microscope.components.whoops.enabled', false) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="whoopsEnabled">Enable Whoops</label>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="whoopsEditor" class="form-label">Editor</label>
+                                            <select class="form-select" id="whoopsEditor">
+                                                <option value="vscode" <?= $config->get('laminas_microscope.components.whoops.editor') === 'vscode' ? 'selected' : '' ?>>VS Code</option>
+                                                <option value="phpstorm" <?= $config->get('laminas_microscope.components.whoops.editor') === 'phpstorm' ? 'selected' : '' ?>>PhpStorm</option>
+                                                <option value="sublime" <?= $config->get('laminas_microscope.components.whoops.editor') === 'sublime' ? 'selected' : '' ?>>Sublime Text</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="whoopsShowInProduction"
+                                                   <?= $config->get('laminas_microscope.components.whoops.show_in_production', false) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="whoopsShowInProduction">Show in Production</label>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Debug Bar Component -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-chart-bar"></i> Debug Bar
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="debugBarConfigForm">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="debugBarEnabled"
+                                                   <?= $config->get('laminas_microscope.components.debug_bar.enabled', false) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="debugBarEnabled">Enable Debug Bar</label>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="debugBarPosition" class="form-label">Position</label>
+                                            <select class="form-select" id="debugBarPosition">
+                                                <option value="bottom" <?= $config->get('laminas_microscope.components.debug_bar.position') === 'bottom' ? 'selected' : '' ?>>Bottom</option>
+                                                <option value="top" <?= $config->get('laminas_microscope.components.debug_bar.position') === 'top' ? 'selected' : '' ?>>Top</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Collectors</label>
+                                            <?php $collectors = ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']; ?>
+                                            <?php $enabledCollectors = $config->get('laminas_microscope.components.debug_bar.collectors', $collectors); ?>
+                                            <?php foreach ($collectors as $collector): ?>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="collector_<?= $collector ?>"
+                                                           value="<?= $collector ?>" name="collectors[]"
+                                                           <?= in_array($collector, $enabledCollectors) ? 'checked' : '' ?>>
+                                                    <label class="form-check-label" for="collector_<?= $collector ?>">
+                                                        <?= ucfirst($collector) ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Microscope Component -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-microscope"></i> Microscope Analysis
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="microscopeConfigForm">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="microscopeEnabled"
+                                                   <?= $config->get('laminas_microscope.components.microscope.enabled', false) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="microscopeEnabled">Enable Microscope</label>
+                                        </div>
+
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="microscopeAutoAnalyze"
+                                                   <?= $config->get('laminas_microscope.components.microscope.auto_analyze', false) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="microscopeAutoAnalyze">Auto Analyze</label>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="queryThreshold" class="form-label">Slow Query Threshold (ms)</label>
+                                            <input type="number" class="form-control" id="queryThreshold" min="1"
+                                                   value="<?= $config->get('laminas_microscope.components.microscope.thresholds.query_time', 100) ?>">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Analysis Checks</label>
+                                            <?php $checks = ['n_plus_one', 'slow_queries', 'duplicate_queries']; ?>
+                                            <?php foreach ($checks as $check): ?>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="check_<?= $check ?>"
+                                                           <?= $config->get("laminas_microscope.components.microscope.checks.{$check}", true) ? 'checked' : '' ?>>
+                                                    <label class="form-check-label" for="check_<?= $check ?>">
+                                                        <?= ucwords(str_replace('_', ' ', $check)) ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profiles Tab -->
+                <div class="tab-pane fade" id="profiles" role="tabpanel">
+                    <?= $this->render('laminas-microscope/config/profiles', ['profiles' => $profiles ?? []]) ?>
+                </div>
+
+                <!-- Environments Tab -->
+                <div class="tab-pane fade" id="environments" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Environment Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Switch Environment</h6>
+                                    <div class="list-group">
+                                        <button class="list-group-item list-group-item-action <?= $config->get('laminas_microscope.environment') === 'development' ? 'active' : '' ?>"
+                                                onclick="switchEnvironment('development')">
+                                            <i class="fas fa-code"></i> Development
+                                        </button>
+                                        <button class="list-group-item list-group-item-action <?= $config->get('laminas_microscope.environment') === 'staging' ? 'active' : '' ?>"
+                                                onclick="switchEnvironment('staging')">
+                                            <i class="fas fa-vial"></i> Staging
+                                        </button>
+                                        <button class="list-group-item list-group-item-action <?= $config->get('laminas_microscope.environment') === 'production' ? 'active' : '' ?>"
+                                                onclick="switchEnvironment('production')">
+                                            <i class="fas fa-server"></i> Production
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <h6>Current Environment: <span class="badge bg-primary"><?= $config->get('laminas_microscope.environment', 'unknown') ?></span></h6>
+                                    <div id="environmentConfig">
+                                        <!-- Environment-specific configuration will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveConfiguration() {
+    const configData = {
+        general: {
+            enabled: document.getElementById('enabled').checked,
+            environment: document.getElementById('environment').value,
+            storage_path: document.getElementById('storagePath').value,
+            ip_whitelist: document.getElementById('ipWhitelist').value.split('\n').filter(ip => ip.trim()),
+            retention_days: parseInt(document.getElementById('retentionDays').value)
+        },
+        components: {
+            whoops: {
+                enabled: document.getElementById('whoopsEnabled').checked,
+                editor: document.getElementById('whoopsEditor').value,
+                show_in_production: document.getElementById('whoopsShowInProduction').checked
+            },
+            debug_bar: {
+                enabled: document.getElementById('debugBarEnabled').checked,
+                position: document.getElementById('debugBarPosition').value,
+                collectors: Array.from(document.querySelectorAll('input[name="collectors[]"]:checked')).map(cb => cb.value)
+            },
+            microscope: {
+                enabled: document.getElementById('microscopeEnabled').checked,
+                auto_analyze: document.getElementById('microscopeAutoAnalyze').checked,
+                thresholds: {
+                    query_time: parseInt(document.getElementById('queryThreshold').value)
+                },
+                checks: {
+                    n_plus_one: document.getElementById('check_n_plus_one').checked,
+                    slow_queries: document.getElementById('check_slow_queries').checked,
+                    duplicate_queries: document.getElementById('check_duplicate_queries').checked
+                }
+            }
+        }
+    };
+
+    fetch('<?= $this->url('laminas-microscope/api', ['action' => 'save-config']) ?>', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configData)
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Configuration saved successfully');
+        } else {
+            alert('Failed to save configuration: ' + data.message);
+        }
+    });
+}
+
+function exportConfiguration() {
+    window.open('<?= $this->url('laminas-microscope/api', ['action' => 'export-config']) ?>', '_blank');
+}
+
+function switchEnvironment(environment) {
+    fetch('<?= $this->url('laminas-microscope/api', ['action' => 'switch-environment']) ?>', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ environment: environment })
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to switch environment: ' + data.message);
+        }
+    });
+}
+</script>

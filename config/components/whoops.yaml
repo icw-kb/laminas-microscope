@@ -1,0 +1,9 @@
+enabled: true
+show_in_production: false
+editor: 'vscode'
+page_title: 'Application Error'
+handlers:
+  - 'PrettyPageHandler'
+  - 'JsonResponseHandler'
+display_call_arguments: true
+display_call_arguments_max_depth: 3

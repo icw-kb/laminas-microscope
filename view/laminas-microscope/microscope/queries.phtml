@@ -1,0 +1,147 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-database"></i> Database Query Analysis
+        </h5>
+    </div>
+    <div class="card-body">
+        <?php if (empty($queries)): ?>
+            <div class="text-center py-4">
+                <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No queries captured yet</h5>
+                <p class="text-muted">Make some database requests to see query analysis</p>
+            </div>
+        <?php else: ?>
+            <!-- Query Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-primary"><?= count($queries) ?></h3>
+                            <p class="mb-0">Total Queries</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-warning"><?= count(array_filter($queries, fn($q) => ($q['duration'] ?? 0) > 100)) ?></h3>
+                            <p class="mb-0">Slow Queries (>100ms)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-danger"><?= count(array_filter($queries, fn($q) => $q['is_duplicate'] ?? false)) ?></h3>
+                            <p class="mb-0">Duplicate Queries</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h3 class="text-info"><?= number_format(array_sum(array_column($queries, 'duration')) / count($queries), 2) ?>ms</h3>
+                            <p class="mb-0">Average Duration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Query List -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Query</th>
+                            <th>Duration</th>
+                            <th>Memory</th>
+                            <th>Status</th>
+                            <th>Issues</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($queries as $index => $query): ?>
+                            <tr class="<?= ($query['duration'] ?? 0) > 100 ? 'table-warning' : '' ?>">
+                                <td><?= $index + 1 ?></td>
+                                <td>
+                                    <div class="query-preview">
+                                        <code class="language-sql" style="font-size: 0.8em;">
+                                            <?= $this->escapeHtml(substr($query['sql'] ?? 'Unknown query', 0, 100)) ?>
+                                            <?php if (strlen($query['sql'] ?? '') > 100): ?>...<?php endif; ?>
+                                        </code>
+                                        <?php if (!empty($query['params'])): ?>
+                                            <br><small class="text-muted">
+                                                Params: <?= $this->escapeHtml(json_encode($query['params'])) ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-<?= ($query['duration'] ?? 0) > 100 ? 'warning' : 'success' ?>">
+                                        <?= number_format($query['duration'] ?? 0, 2) ?>ms
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted"><?= $this->formatBytes($query['memory'] ?? 0) ?></small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-<?= ($query['is_success'] ?? true) ? 'success' : 'danger' ?>">
+                                        <?= ($query['is_success'] ?? true) ? 'Success' : 'Failed' ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if (($query['duration'] ?? 0) > 100): ?>
+                                        <span class="badge bg-warning me-1" title="Slow query">Slow</span>
+                                    <?php endif; ?>
+                                    <?php if ($query['is_duplicate'] ?? false): ?>
+                                        <span class="badge bg-danger me-1" title="Duplicate query">Duplicate</span>
+                                    <?php endif; ?>
+                                    <?php if (!($query['is_success'] ?? true)): ?>
+                                        <span class="badge bg-danger me-1" title="Failed query">Error</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Query Performance Chart -->
+            <div class="mt-4">
+                <h6>Query Performance Timeline</h6>
+                <div id="queryChart" style="height: 200px;"></div>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+// Simple chart visualization for query performance
+if (document.getElementById('queryChart') && <?= json_encode($queries) ?>.length > 0) {
+    const queries = <?= json_encode($queries) ?>;
+    const chartData = queries.map((query, index) => ({
+        x: index + 1,
+        y: query.duration || 0,
+        slow: (query.duration || 0) > 100
+    }));
+    
+    // Simple canvas-based chart (you could replace with Chart.js for production)
+    const canvas = document.createElement('canvas');
+    canvas.width = document.getElementById('queryChart').offsetWidth;
+    canvas.height = 200;
+    document.getElementById('queryChart').appendChild(canvas);
+    
+    const ctx = canvas.getContext('2d');
+    const maxDuration = Math.max(...chartData.map(d => d.y));
+    
+    chartData.forEach((point, index) => {
+        const x = (index / chartData.length) * canvas.width;
+        const y = canvas.height - ((point.y / maxDuration) * (canvas.height - 20));
+        
+        ctx.fillStyle = point.slow ? '#dc3545' : '#28a745';
+        ctx.fillRect(x - 2, y, 4, canvas.height - y);
+    });
+}
+</script>

@@ -1,0 +1,210 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-tachometer-alt"></i> Performance Analysis
+        </h5>
+    </div>
+    <div class="card-body">
+        <?php if (empty($performance)): ?>
+            <div class="text-center py-4">
+                <i class="fas fa-tachometer-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No performance data available</h5>
+                <p class="text-muted">Performance data will be collected as you use your application</p>
+            </div>
+        <?php else: ?>
+            <!-- Performance Overview -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Response Time</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="text-primary"><?= number_format($performance['avg_response_time'] ?? 0, 2) ?>ms</h3>
+                                    <small class="text-muted">Average</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-warning"><?= number_format($performance['p95_response_time'] ?? 0, 2) ?>ms</h3>
+                                    <small class="text-muted">95th Percentile</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Memory Usage</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="text-info"><?= $this->formatBytes($performance['avg_memory'] ?? 0) ?></h3>
+                                    <small class="text-muted">Average</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-danger"><?= $this->formatBytes($performance['peak_memory'] ?? 0) ?></h3>
+                                    <small class="text-muted">Peak</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-clock fa-2x text-primary mb-2"></i>
+                            <h4><?= number_format($performance['bootstrap_time'] ?? 0, 2) ?>ms</h4>
+                            <p class="card-text">Bootstrap Time</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-route fa-2x text-success mb-2"></i>
+                            <h4><?= number_format($performance['routing_time'] ?? 0, 2) ?>ms</h4>
+                            <p class="card-text">Routing Time</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-cog fa-2x text-warning mb-2"></i>
+                            <h4><?= number_format($performance['controller_time'] ?? 0, 2) ?>ms</h4>
+                            <p class="card-text">Controller Time</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-eye fa-2x text-info mb-2"></i>
+                            <h4><?= number_format($performance['view_time'] ?? 0, 2) ?>ms</h4>
+                            <p class="card-text">View Rendering</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Breakdown Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Performance Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <div id="performanceChart" style="height: 300px;"></div>
+                </div>
+            </div>
+
+            <!-- Bottlenecks -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Performance Bottlenecks
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($performance['bottlenecks'])): ?>
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="text-success mb-0">No significant bottlenecks detected</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($performance['bottlenecks'] as $bottleneck): ?>
+                            <div class="alert alert-<?= $bottleneck['severity'] ?>" role="alert">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="alert-heading"><?= $this->escapeHtml($bottleneck['component']) ?></h6>
+                                        <p class="mb-1"><?= $this->escapeHtml($bottleneck['description']) ?></p>
+                                        <small><strong>Impact:</strong> <?= $this->escapeHtml($bottleneck['impact']) ?></small>
+                                    </div>
+                                    <div class="text-end">
+                                        <h5 class="mb-0"><?= number_format($bottleneck['time'], 2) ?>ms</h5>
+                                        <small><?= number_format($bottleneck['percentage'], 1) ?>% of total</small>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Performance Recommendations
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($performance['recommendations'])): ?>
+                        <div class="text-center py-3">
+                            <i class="fas fa-thumbs-up fa-2x text-success mb-2"></i>
+                            <p class="text-success mb-0">Your application is performing well!</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="list-group list-group-flush">
+                            <?php foreach ($performance['recommendations'] as $recommendation): ?>
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-<?= $recommendation['icon'] ?> text-<?= $recommendation['priority'] ?>"></i>
+                                            <?= $this->escapeHtml($recommendation['title']) ?>
+                                        </h6>
+                                        <small class="text-uppercase"><?= $recommendation['priority'] ?> priority</small>
+                                    </div>
+                                    <p class="mb-1"><?= $this->escapeHtml($recommendation['description']) ?></p>
+                                    <?php if (!empty($recommendation['action'])): ?>
+                                        <small><strong>Action:</strong> <?= $this->escapeHtml($recommendation['action']) ?></small>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+// Simple performance chart visualization
+if (document.getElementById('performanceChart') && <?= json_encode($performance) ?>) {
+    const performance = <?= json_encode($performance) ?>;
+    const chartContainer = document.getElementById('performanceChart');
+    
+    // Create a simple bar chart for performance breakdown
+    const components = [
+        { name: 'Bootstrap', time: performance.bootstrap_time || 0, color: '#007bff' },
+        { name: 'Routing', time: performance.routing_time || 0, color: '#28a745' },
+        { name: 'Controller', time: performance.controller_time || 0, color: '#ffc107' },
+        { name: 'View', time: performance.view_time || 0, color: '#17a2b8' },
+        { name: 'Database', time: performance.database_time || 0, color: '#dc3545' }
+    ];
+    
+    const maxTime = Math.max(...components.map(c => c.time));
+    
+    let chartHtml = '<div class="row">';
+    components.forEach(component => {
+        const percentage = maxTime > 0 ? (component.time / maxTime) * 100 : 0;
+        chartHtml += `
+            <div class="col-md-12 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span>${component.name}</span>
+                    <span class="badge" style="background-color: ${component.color}">${component.time.toFixed(2)}ms</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: ${percentage}%; background-color: ${component.color}"></div>
+                </div>
+            </div>
+        `;
+    });
+    chartHtml += '</div>';
+    
+    chartContainer.innerHTML = chartHtml;
+}
+</script>
