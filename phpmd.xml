@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<ruleset name="Laminas Microscope PHPMD Rules"
+         xmlns="http://pmd.sf.net/ruleset/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+         xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+    
+    <description>PHPMD Rules for Laminas Microscope</description>
+
+    <!-- Clean Code Rules -->
+    <rule ref="rulesets/cleancode.xml">
+        <exclude name="StaticAccess" />
+        <exclude name="ElseExpression" />
+    </rule>
+
+    <!-- Code Size Rules -->
+    <rule ref="rulesets/codesize.xml">
+        <exclude name="TooManyPublicMethods" />
+    </rule>
+
+    <!-- Controversial Rules -->
+    <rule ref="rulesets/controversial.xml">
+        <exclude name="Superglobals" />
+        <exclude name="CamelCaseClassName" />
+        <exclude name="CamelCasePropertyName" />
+        <exclude name="CamelCaseMethodName" />
+        <exclude name="CamelCaseParameterName" />
+        <exclude name="CamelCaseVariableName" />
+    </rule>
+
+    <!-- Design Rules -->
+    <rule ref="rulesets/design.xml">
+        <exclude name="CouplingBetweenObjects" />
+    </rule>
+
+    <!-- Naming Rules -->
+    <rule ref="rulesets/naming.xml">
+        <exclude name="ShortVariable" />
+        <exclude name="LongVariable" />
+        <exclude name="ShortMethodName" />
+    </rule>
+
+    <!-- Unused Code Rules -->
+    <rule ref="rulesets/unusedcode.xml" />
+
+    <!-- Custom Rules -->
+    <rule name="TooManyPublicMethods"
+          since="0.1"
+          message="The {0} {1} has {2} public methods. Consider refactoring {1} to keep number of public methods under {3}."
+          class="PHPMD\Rule\Design\TooManyPublicMethods"
+          externalInfoUrl="https://phpmd.org/rules/design.html#toomanypublicmethods">
+        <priority>3</priority>
+        <properties>
+            <property name="maxmethods" description="The method count reporting threshold" value="15"/>
+        </properties>
+    </rule>
+</ruleset>

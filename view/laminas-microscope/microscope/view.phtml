@@ -1,0 +1,247 @@
+<?php
+$this->headTitle('Analysis Report - Laminas Microscope');
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+?>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">
+                        <i class="fas fa-microscope"></i> Analysis Report
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="<?= $this->url('laminas-microscope') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?= $this->url('laminas-microscope/microscope') ?>">Microscope</a></li>
+                            <li class="breadcrumb-item active">Report #<?= $this->escapeHtml($report['id'] ?? 'unknown') ?></li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="<?= $this->url('laminas-microscope/microscope') ?>" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Analysis
+                    </a>
+                    <button class="btn btn-primary" onclick="exportReport()">
+                        <i class="fas fa-download"></i> Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Report Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6>Report ID</h6>
+                            <p><code><?= $this->escapeHtml($report['id'] ?? 'unknown') ?></code></p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Generated</h6>
+                            <p><?= $this->escapeHtml($report['created_at'] ?? date('Y-m-d H:i:s')) ?></p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Performance Score</h6>
+                            <div class="progress">
+                                <?php $score = $report['performance_score'] ?? 100; ?>
+                                <div class="progress-bar bg-<?= $score > 80 ? 'success' : ($score > 60 ? 'warning' : 'danger') ?>" 
+                                     style="width: <?= $score ?>%">
+                                    <?= $score ?>%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Issues Found</h6>
+                            <span class="badge bg-<?= count($report['issues'] ?? []) > 0 ? 'warning' : 'success' ?> fs-6">
+                                <?= count($report['issues'] ?? []) ?> issues
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Details -->
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Issues Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Detected Issues
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($report['issues'])): ?>
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="text-success">No issues detected!</h5>
+                            <p class="text-muted">This analysis found no performance or code issues</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($report['issues'] as $issue): ?>
+                            <div class="alert alert-<?= $issue['severity'] === 'high' ? 'danger' : ($issue['severity'] === 'medium' ? 'warning' : 'info') ?>" role="alert">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="alert-heading">
+                                            <i class="fas fa-<?= $issue['icon'] ?? 'exclamation-circle' ?>"></i> 
+                                            <?= $this->escapeHtml($issue['title'] ?? 'Unknown Issue') ?>
+                                        </h6>
+                                        <p class="mb-1"><?= $this->escapeHtml($issue['description'] ?? '') ?></p>
+                                        <?php if (!empty($issue['file'])): ?>
+                                            <small><strong>File:</strong> <?= $this->escapeHtml($issue['file']) ?></small>
+                                        <?php endif; ?>
+                                        <?php if (!empty($issue['line'])): ?>
+                                            <small><strong>Line:</strong> <?= $this->escapeHtml($issue['line']) ?></small>
+                                        <?php endif; ?>
+                                        <?php if (!empty($issue['suggestion'])): ?>
+                                            <hr>
+                                            <small><strong>Suggestion:</strong> <?= $this->escapeHtml($issue['suggestion']) ?></small>
+                                        <?php endif; ?>
+                                    </div>
+                                    <small class="text-uppercase fw-bold"><?= $issue['severity'] ?? 'medium' ?></small>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Query Analysis -->
+            <?php if (!empty($report['queries'])): ?>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-database"></i> Query Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Query</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (array_slice($report['queries'], 0, 10) as $query): ?>
+                                    <tr class="<?= ($query['duration'] ?? 0) > 100 ? 'table-warning' : '' ?>">
+                                        <td>
+                                            <code style="font-size: 0.8em;">
+                                                <?= $this->escapeHtml(substr($query['sql'] ?? 'Unknown', 0, 80)) ?>
+                                                <?php if (strlen($query['sql'] ?? '') > 80): ?>...<?php endif; ?>
+                                            </code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-<?= ($query['duration'] ?? 0) > 100 ? 'warning' : 'success' ?>">
+                                                <?= number_format($query['duration'] ?? 0, 2) ?>ms
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if (($query['duration'] ?? 0) > 100): ?>
+                                                <span class="badge bg-warning">Slow</span>
+                                            <?php endif; ?>
+                                            <?php if ($query['is_duplicate'] ?? false): ?>
+                                                <span class="badge bg-danger">Duplicate</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <?php if (count($report['queries']) > 10): ?>
+                        <div class="text-center mt-3">
+                            <small class="text-muted">Showing first 10 of <?= count($report['queries']) ?> queries</small>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Performance Metrics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tachometer-alt"></i> Performance Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <h6>Response Time</h6>
+                            <h3 class="text-primary"><?= number_format($report['metrics']['response_time'] ?? 0, 2) ?>ms</h3>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <h6>Memory Usage</h6>
+                            <h3 class="text-info"><?= $this->formatBytes($report['metrics']['memory_usage'] ?? 0) ?></h3>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <h6>Query Count</h6>
+                            <h3 class="text-warning"><?= count($report['queries'] ?? []) ?></h3>
+                        </div>
+                        <div class="col-12">
+                            <h6>Slow Queries</h6>
+                            <h3 class="text-danger"><?= count(array_filter($report['queries'] ?? [], fn($q) => ($q['duration'] ?? 0) > 100)) ?></h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <?php if (!empty($report['recommendations'])): ?>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($report['recommendations'] as $recommendation): ?>
+                            <div class="list-group-item px-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-<?= $recommendation['icon'] ?? 'arrow-right' ?> text-<?= $recommendation['priority'] ?? 'info' ?>"></i>
+                                        <?= $this->escapeHtml($recommendation['title'] ?? 'Recommendation') ?>
+                                    </h6>
+                                    <small class="text-uppercase"><?= $recommendation['priority'] ?? 'medium' ?></small>
+                                </div>
+                                <p class="mb-1"><?= $this->escapeHtml($recommendation['description'] ?? '') ?></p>
+                                <?php if (!empty($recommendation['action'])): ?>
+                                    <small><strong>Action:</strong> <?= $this->escapeHtml($recommendation['action']) ?></small>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport() {
+    const reportId = '<?= $this->escapeJs($report['id'] ?? '') ?>';
+    window.open('<?= $this->url('laminas-microscope/microscope-api', ['action' => 'export']) ?>?report_id=' + reportId, '_blank');
+}
+</script>

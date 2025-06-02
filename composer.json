@@ -1,38 +1,181 @@
 {
-    "name": "icw-kb/laminas-microscope",
-    "type": "library",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "IcwKb\\LaminasMicroscope\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "Ian Wilson",
-            "email": "ian.wilson@klipboard.com"
-        }
-    ],
-    "minimum-stability": "dev",
-    "require": {
-        "php": "^8.1"
-
-    },
-    "require-dev": {
-        "laminas/laminas-developer-tools": "^1.3.1 || ^2.0.2",
-        "laminas/laminas-i18n": "^2.5",
-        "laminas/laminas-log": "^2.5",
-        "laminas/laminas-mvc-plugin-flashmessenger": "^1.0",
-        "laminas/laminas-router": "^3.0",
-        "laminas/laminas-serializer": "^2.5",
-        "laminas/laminas-test": "^4.10",
-        "phpspec/prophecy-phpunit": "^2.0",
-        "phpunit/phpunit": "^10.4",
-        "rector/rector": "dev-main"
-    },
-    "scripts": {
-        "test": [
-            "phpunit"
-        ]
+  "name": "icw-kb/laminas-microscope",
+  "description": "A comprehensive debugging and profiling suite for Laminas applications",
+  "type": "library",
+  "keywords": ["laminas", "debug", "profiling", "development", "microscope", "whoops", "debugbar"],
+  "homepage": "https://github.com/icw-kb/laminas-microscope",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "ICW Knowledge Base",
+      "email": "info@icw-kb.com"
     }
+  ],
+  "require": {
+    "php": "^8.1",
+    "laminas/laminas-mvc": "^3.0",
+    "laminas/laminas-servicemanager": "^3.0",
+    "laminas/laminas-db": "^2.0",
+    "laminas/laminas-view": "^2.0",
+    "laminas/laminas-router": "^3.0",
+    "laminas/laminas-http": "^2.0",
+    "laminas/laminas-stdlib": "^3.0",
+    "laminas/laminas-config": "^3.0",
+    "laminas/laminas-json": "^3.0",
+    "maximebf/debugbar": "^1.18",
+    "filp/whoops": "^2.15",
+    "symfony/yaml": "^6.0|^7.0",
+    "symfony/var-dumper": "^6.0|^7.0",
+    "symfony/console": "^6.0|^7.0",
+    "monolog/monolog": "^2.0",
+    "doctrine/dbal": "^3.0",
+    "twig/twig": "^3.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.4",
+    "laminas/laminas-test": "^4.0",
+    "squizlabs/php_codesniffer": "^3.7",
+    "phpstan/phpstan": "^1.10",
+    "vimeo/psalm": "^5.0",
+    "infection/infection": "^0.27",
+    "phpmd/phpmd": "^2.13",
+    "roave/security-advisories": "dev-latest",
+    "laminas/laminas-development-mode": "^3.0",
+    "laminas/laminas-coding-standard": "^2.0",
+    "rector/rector": "^0.18"
+  },
+  "suggest": {
+    "ext-xdebug": "For better debugging and profiling capabilities",
+    "ext-opcache": "For production performance optimization",
+    "ext-apcu": "For caching configuration and analysis data",
+    "laminas/laminas-cache": "For caching analysis results",
+    "laminas/laminas-log": "For advanced logging capabilities",
+    "elasticsearch/elasticsearch": "For storing and searching analysis data",
+    "redis": "For caching and session storage",
+    "doctrine/orm": "For ORM-specific query analysis"
+  },
+  "autoload": {
+    "psr-4": {
+      "LaminasMicroscope\\": "src/"
+    },
+    "files": [
+      "src/functions.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "LaminasMicroscopeTest\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "test-unit": "phpunit tests/Unit",
+    "test-integration": "phpunit tests/Integration", 
+    "test-functional": "phpunit tests/Functional",
+    "test-coverage": "phpunit --coverage-html tests/coverage/html --coverage-clover tests/coverage/clover.xml",
+    "cs-check": "phpcs",
+    "cs-fix": "phpcbf",
+    "analyze": "phpstan analyse src --level=7",
+    "psalm": "psalm",
+    "infection": "infection --threads=4",
+    "phpmd": "phpmd src text phpmd.xml",
+    "rector": "rector process --dry-run",
+    "rector-fix": "rector process",
+    "security-check": "composer audit",
+    "quality": [
+      "@cs-check",
+      "@analyze", 
+      "@psalm",
+      "@phpmd",
+      "@test"
+    ],
+    "quality-fix": [
+      "@cs-fix",
+      "@rector-fix"
+    ],
+    "ci": [
+      "@quality",
+      "@test-coverage",
+      "@infection",
+      "@security-check"
+    ],
+    "post-install-cmd": [
+      "LaminasMicroscope\\Installer\\ComposerInstaller::postInstall"
+    ],
+    "post-update-cmd": [
+      "LaminasMicroscope\\Installer\\ComposerInstaller::postUpdate"
+    ],
+    "pre-commit": [
+      "@cs-fix",
+      "@test-unit"
+    ]
+  },
+  "scripts-descriptions": {
+    "test": "Run all PHPUnit tests",
+    "test-unit": "Run only unit tests",
+    "test-integration": "Run only integration tests",
+    "test-functional": "Run only functional tests", 
+    "test-coverage": "Run tests with coverage report",
+    "cs-check": "Check coding standards compliance",
+    "cs-fix": "Fix coding standards violations",
+    "analyze": "Run PHPStan static analysis",
+    "psalm": "Run Psalm static analysis",
+    "infection": "Run mutation testing",
+    "phpmd": "Run PHP Mess Detector",
+    "rector": "Check for code modernization opportunities",
+    "rector-fix": "Apply code modernization fixes",
+    "security-check": "Check for security vulnerabilities",
+    "quality": "Run all quality checks",
+    "quality-fix": "Apply automatic quality fixes",
+    "ci": "Run complete CI pipeline",
+    "pre-commit": "Pre-commit quality checks"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "infection/extension-installer": true,
+      "captainhook/plugin-composer": true,
+      "laminas/laminas-component-installer": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "optimize-autoloader": true,
+    "classmap-authoritative": false,
+    "prepend-autoloader": false
+  },
+  "extra": {
+    "laminas": {
+      "module": "LaminasMicroscope",
+      "config-provider": "LaminasMicroscope\\ConfigProvider"
+    },
+    "branch-alias": {
+      "dev-main": "1.0.x-dev"
+    }
+  },
+  "archive": {
+    "exclude": [
+      "/tests",
+      "/docs",
+      "/.github",
+      "/examples",
+      "phpunit.xml*",
+      "phpcs.xml*", 
+      "phpstan.neon*",
+      "psalm.xml*",
+      "infection.json*",
+      "rector.php*",
+      "Makefile"
+    ]
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/icw-kb"
+    },
+    {
+      "type": "patreon",
+      "url": "https://patreon.com/icw-kb"
+    }
+  ],
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }

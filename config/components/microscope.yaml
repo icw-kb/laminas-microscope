@@ -1,0 +1,20 @@
+enabled: true
+auto_analyze: true
+checks:
+  n_plus_one: true
+  unused_routes: true
+  unused_views: true
+  slow_queries: true
+  large_responses: true
+  duplicate_queries: true
+thresholds:
+  query_time: 100  # milliseconds
+  response_size: 1048576  # bytes (1MB)
+  duplicate_query_threshold: 3
+reporting:
+  log_level: 'warning'
+  email_alerts: false
+  webhook_url: null
+analysis:
+  store_reports: true
+  retention_days: 30
