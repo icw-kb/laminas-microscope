@@ -6,12 +6,12 @@ namespace LaminasMicroscope\Microscope;
 
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\Microscope\Storage\ReportStorage; // Corrected namespace
-use Laminas\Mvc\MvcEvent; // Corrected namespace
-use Psr\Container\ContainerInterface; // Corrected namespace
-use Exception; // Corrected namespace
-use RuntimeException; // Corrected namespace
-use Laminas\Router\RouteMatch; // Added use statement
+use LaminasMicroscope\Microscope\Storage\ReportStorage;
+use Laminas\Mvc\MvcEvent;
+use Psr\Container\ContainerInterface;
+use Exception;
+use RuntimeException;
+use Laminas\Router\RouteMatch;
 
 /**
  * MicroscopeHandler - Advanced profiling and analysis for Laminas applications
@@ -23,8 +23,9 @@ class MicroscopeHandler
     private ContainerInterface $container;
     private ReportStorage $storage;
     private array $profileData = [];
-    private float $startTime;
-    private int $startMemory;
+    private float $requestStartTime; // Overall request start time
+    private int $startMemory; // Memory at request start
+    private array $eventTimestamps = []; // Timestamps for specific events
 
     public function __construct(
         ComponentManager $componentManager,
@@ -81,15 +82,17 @@ class MicroscopeHandler
             'analysis' => [],
         ];
 
-        // Set start time and memory
-        $this->startTime = microtime(true);
+        // Set start time and memory for the overall request
+        $this->requestStartTime = microtime(true);
         $this->startMemory = memory_get_usage(true);
+        $this->eventTimestamps = []; // Reset timestamps
+        $this->eventTimestamps['request_start'] = $this->requestStartTime; // Record overall request start
     }
 
     /**
-     * Start profiling for an MVC event
+     * Start profiling for an MVC event (records route details and route_start timestamp)
      */
-    public static function startProfiling(MvcEvent $event): void // Corrected namespace and made static for listener
+    public static function startProfiling(MvcEvent $event): void
     {
         // Get the MicroscopeHandler instance from the ServiceManager
         $serviceManager = $event->getApplication()->getServiceManager();
@@ -100,12 +103,13 @@ class MicroscopeHandler
         }
 
         // Ensure initialization
-        if (!isset($handler->startTime)) {
+        if (!isset($handler->requestStartTime)) {
             $handler->initialize();
         }
 
+        // Record route details
         $routeMatch = $event->getRouteMatch();
-        if ($routeMatch instanceof RouteMatch) { // Added type check
+        if ($routeMatch instanceof RouteMatch) {
             $handler->profileData['routes'][] = [
                 'route_name' => $routeMatch->getMatchedRouteName(),
                 'controller' => $routeMatch->getParam('controller'),
@@ -114,12 +118,15 @@ class MicroscopeHandler
                 'timestamp' => microtime(true),
             ];
         }
+
+        // Record route start timestamp
+        $handler->eventTimestamps['route_start'] = microtime(true);
     }
 
     /**
-     * Profile dispatch completion
+     * Profile dispatch completion (records dispatch_end timestamp)
      */
-    public static function profileDispatch(MvcEvent $event): void // Corrected namespace and made static for listener
+    public static function profileDispatch(MvcEvent $event): void
     {
         // Get the MicroscopeHandler instance from the ServiceManager
         $serviceManager = $event->getApplication()->getServiceManager();
@@ -130,25 +137,51 @@ class MicroscopeHandler
         }
 
         // Ensure we have start time
-        if (!isset($handler->startTime)) {
+        if (!isset($handler->requestStartTime)) {
             $handler->initialize();
         }
 
-        // Get memory usage safely
-        $currentMemory = memory_get_usage(true);
-        $peakMemory = memory_get_peak_usage(true);
+        // Record dispatch end timestamp
+        $handler->eventTimestamps['dispatch_end'] = microtime(true);
 
-        // Calculate memory usage difference (ensure positive values)
-        $memoryUsed = max(0, $currentMemory - $handler->startMemory);
+        // Note: Final performance metrics and analysis are now calculated in finalizeProfiling
+    }
 
-        // Record performance metrics
-        $handler->profileData['performance'] = [
-            'total_time' => (microtime(true) - $handler->startTime) * 1000, // Convert to milliseconds
-            'memory_usage' => $handler->formatBytes($memoryUsed),
-            'peak_memory' => $handler->formatBytes($peakMemory),
-            'memory_usage_bytes' => $memoryUsed,
-            'peak_memory_bytes' => $peakMemory,
-        ];
+    /**
+     * Record render start timestamp
+     */
+    public static function startRender(MvcEvent $event): void
+    {
+        $serviceManager = $event->getApplication()->getServiceManager();
+        $handler = $serviceManager->get(self::class);
+        if (!$handler->isEnabled()) { return; }
+        $handler->eventTimestamps['render_start'] = microtime(true);
+    }
+
+    /**
+     * Record render end timestamp
+     */
+    public static function stopRender(MvcEvent $event): void
+    {
+        $serviceManager = $event->getApplication()->getServiceManager();
+        $handler = $serviceManager->get(self::class);
+        if (!$handler->isEnabled()) { return; }
+        $handler->eventTimestamps['render_end'] = microtime(true);
+    }
+
+    /**
+     * Record request end timestamp and finalize performance data
+     */
+    public static function finalizeProfiling(MvcEvent $event): void
+    {
+        $serviceManager = $event->getApplication()->getServiceManager();
+        $handler = $serviceManager->get(self::class);
+        if (!$handler->isEnabled()) { return; }
+
+        $handler->eventTimestamps['request_end'] = microtime(true);
+
+        // Now, calculate final performance metrics and breakdown
+        $handler->calculateFinalPerformanceMetrics();
 
         // Run analysis if auto-analyze is enabled
         $config = $handler->getConfig();
@@ -156,6 +189,7 @@ class MicroscopeHandler
             $handler->performAnalysis();
         }
     }
+
 
     /**
      * Get current profile data
@@ -173,6 +207,12 @@ class MicroscopeHandler
         if (!$this->isEnabled()) {
             return [];
         }
+
+        // Ensure performance metrics are calculated before running analysis
+        if (!isset($this->profileData['performance']['breakdown'])) {
+             $this->calculateFinalPerformanceMetrics();
+        }
+
 
         $analysis = [
             'id' => uniqid('analysis_', true),
@@ -374,5 +414,82 @@ class MicroscopeHandler
              $this->initialize();
         }
         $this->storage->clearReports();
+    }
+
+    /**
+     * Calculate final performance metrics including breakdown.
+     * This should be called at the end of the request lifecycle.
+     */
+    private function calculateFinalPerformanceMetrics(): void
+    {
+        $timestamps = $this->eventTimestamps;
+
+        // Ensure request_end is set
+        if (!isset($timestamps['request_end'])) {
+             $timestamps['request_end'] = microtime(true);
+        }
+
+        $start = $timestamps['request_start'] ?? microtime(true);
+        $end = $timestamps['request_end'];
+        $totalTime = ($end - $start) * 1000; // Total request time in ms
+
+        $memoryUsed = max(0, memory_get_usage(true) - $this->startMemory); // Memory used during request
+
+        $breakdown = $this->calculateEventBreakdownFromTimestamps($timestamps);
+
+        $this->profileData['performance'] = [
+            'total_time' => $totalTime,
+            'memory_usage' => $this->formatBytes($memoryUsed),
+            'peak_memory' => $this->formatBytes(memory_get_peak_usage(true)),
+            'memory_usage_bytes' => $memoryUsed,
+            'peak_memory_bytes' => memory_get_peak_usage(true),
+            'event_timestamps' => $timestamps, // Store raw timestamps
+            'breakdown' => $breakdown, // Calculated breakdown
+        ];
+    }
+
+    /**
+     * Calculate duration for each phase from timestamps.
+     * Assumes a general MVC event flow: Request -> Bootstrap -> Route -> Dispatch -> Render -> Finish
+     */
+    private function calculateEventBreakdownFromTimestamps(array $timestamps): array
+    {
+        $breakdown = [];
+
+        $requestStart = $timestamps['request_start'] ?? microtime(true);
+        $routeStart = $timestamps['route_start'] ?? $requestStart;
+        $dispatchEnd = $timestamps['dispatch_end'] ?? $routeStart; // Dispatch end is often after route
+        $renderStart = $timestamps['render_start'] ?? $dispatchEnd; // Render starts after dispatch
+        $renderEnd = $timestamps['render_end'] ?? $renderStart; // Render ends before finish
+        $requestEnd = $timestamps['request_end'] ?? $renderEnd; // Request ends at finish
+
+        // Calculate durations based on sequence
+        $breakdown['bootstrap'] = max(0, ($routeStart - $requestStart) * 1000);
+        $breakdown['route'] = max(0, ($dispatchEnd - $routeStart) * 1000); // Duration from route start to dispatch end
+        $breakdown['dispatch'] = max(0, ($renderStart - $dispatchEnd) * 1000); // Duration from dispatch end to render start
+        $breakdown['render'] = max(0, ($requestEnd - $renderStart) * 1000); // Duration from render start to request end
+
+        // Adjust render time if total calculated exceeds total request time (due to overlaps or missing events)
+        $totalCalculated = array_sum($breakdown);
+        $totalRequestTime = ($requestEnd - $requestStart) * 1000;
+
+        if ($totalCalculated > $totalRequestTime + 1) { // Allow for minor floating point inaccuracies
+             $excess = $totalCalculated - $totalRequestTime;
+             $breakdown['render'] = max(0, $breakdown['render'] - $excess);
+        }
+
+        return $breakdown;
+    }
+
+    /**
+     * Get the performance breakdown data.
+     */
+    public function getPerformanceBreakdown(): array
+    {
+        // Ensure performance data is calculated
+        if (!isset($this->profileData['performance']['breakdown'])) {
+             $this->calculateFinalPerformanceMetrics();
+        }
+        return $this->profileData['performance']['breakdown'] ?? [];
     }
 }

@@ -19,14 +19,17 @@
                         <div class="card-body">
                             <h5 class="card-title">Response Time</h5>
                             <div class="row">
-                                <div class="col-6">
-                                    <h3 class="text-primary"><?= number_format($performance['avg_response_time'] ?? 0, 2) ?>ms</h3>
-                                    <small class="text-muted">Average</small>
+                                <div class="col-12">
+                                    <h3 class="text-primary"><?= number_format($performance['total_time'] ?? 0, 2) ?>ms</h3>
+                                    <small class="text-muted">Total Request Time</small>
                                 </div>
-                                <div class="col-6">
-                                    <h3 class="text-warning"><?= number_format($performance['p95_response_time'] ?? 0, 2) ?>ms</h3>
-                                    <small class="text-muted">95th Percentile</small>
-                                </div>
+                                <!-- Add other time metrics if available in $performance -->
+                                <?php if (isset($performance['event_timestamps'])): ?>
+                                    <div class="col-12 mt-2">
+                                        <small class="text-muted">Start: <?= date('H:i:s', (int)($performance['event_timestamps']['request_start'] ?? time())) ?>.<?= sprintf('%03d', (int)((($performance['event_timestamps']['request_start'] ?? microtime(true)) - floor($performance['event_timestamps']['request_start'] ?? microtime(true))) * 1000)) ?></small><br>
+                                        <small class="text-muted">End: <?= date('H:i:s', (int)($performance['event_timestamps']['request_end'] ?? time())) ?>.<?= sprintf('%03d', (int)((($performance['event_timestamps']['request_end'] ?? microtime(true)) - floor($performance['event_timestamps']['request_end'] ?? microtime(true))) * 1000)) ?></small>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -37,11 +40,11 @@
                             <h5 class="card-title">Memory Usage</h5>
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="text-info"><?= $this->formatBytes($performance['avg_memory'] ?? 0) ?></h3>
-                                    <small class="text-muted">Average</small>
+                                    <h3 class="text-info"><?= $performance['memory_usage'] ?? 'N/A' ?></h3>
+                                    <small class="text-muted">Current</small>
                                 </div>
                                 <div class="col-6">
-                                    <h3 class="text-danger"><?= $this->formatBytes($performance['peak_memory'] ?? 0) ?></h3>
+                                    <h3 class="text-danger"><?= $performance['peak_memory'] ?? 'N/A' ?></h3>
                                     <small class="text-muted">Peak</small>
                                 </div>
                             </div>
@@ -50,57 +53,19 @@
                 </div>
             </div>
 
-            <!-- Performance Metrics -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <i class="fas fa-clock fa-2x text-primary mb-2"></i>
-                            <h4><?= number_format($performance['bootstrap_time'] ?? 0, 2) ?>ms</h4>
-                            <p class="card-text">Bootstrap Time</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <i class="fas fa-route fa-2x text-success mb-2"></i>
-                            <h4><?= number_format($performance['routing_time'] ?? 0, 2) ?>ms</h4>
-                            <p class="card-text">Routing Time</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <i class="fas fa-cog fa-2x text-warning mb-2"></i>
-                            <h4><?= number_format($performance['controller_time'] ?? 0, 2) ?>ms</h4>
-                            <p class="card-text">Controller Time</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <i class="fas fa-eye fa-2x text-info mb-2"></i>
-                            <h4><?= number_format($performance['view_time'] ?? 0, 2) ?>ms</h4>
-                            <p class="card-text">View Rendering</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Performance Breakdown Chart -->
+            <?php if (!empty($performance['breakdown'])): ?>
             <div class="card mb-4">
                 <div class="card-header">
-                    <h6 class="card-title mb-0">Performance Breakdown</h6>
+                    <h6 class="card-title mb-0">Performance Breakdown (ms)</h6>
                 </div>
                 <div class="card-body">
                     <div id="performanceChart" style="height: 300px;"></div>
                 </div>
             </div>
+            <?php endif; ?>
 
-            <!-- Bottlenecks -->
+            <!-- Bottlenecks (Placeholder) -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h6 class="card-title mb-0">
@@ -108,32 +73,14 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($performance['bottlenecks'])): ?>
-                        <div class="text-center py-3">
-                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                            <p class="text-success mb-0">No significant bottlenecks detected</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($performance['bottlenecks'] as $bottleneck): ?>
-                            <div class="alert alert-<?= $bottleneck['severity'] ?>" role="alert">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h6 class="alert-heading"><?= $this->escapeHtml($bottleneck['component']) ?></h6>
-                                        <p class="mb-1"><?= $this->escapeHtml($bottleneck['description']) ?></p>
-                                        <small><strong>Impact:</strong> <?= $this->escapeHtml($bottleneck['impact']) ?></small>
-                                    </div>
-                                    <div class="text-end">
-                                        <h5 class="mb-0"><?= number_format($bottleneck['time'], 2) ?>ms</h5>
-                                        <small><?= number_format($bottleneck['percentage'], 1) ?>% of total</small>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <div class="text-center py-3">
+                        <i class="fas fa-wrench fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Bottleneck analysis not yet implemented</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Recommendations -->
+            <!-- Recommendations (Placeholder) -->
             <div class="card">
                 <div class="card-header">
                     <h6 class="card-title mb-0">
@@ -141,30 +88,10 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($performance['recommendations'])): ?>
-                        <div class="text-center py-3">
-                            <i class="fas fa-thumbs-up fa-2x text-success mb-2"></i>
-                            <p class="text-success mb-0">Your application is performing well!</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="list-group list-group-flush">
-                            <?php foreach ($performance['recommendations'] as $recommendation): ?>
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">
-                                            <i class="fas fa-<?= $recommendation['icon'] ?> text-<?= $recommendation['priority'] ?>"></i>
-                                            <?= $this->escapeHtml($recommendation['title']) ?>
-                                        </h6>
-                                        <small class="text-uppercase"><?= $recommendation['priority'] ?> priority</small>
-                                    </div>
-                                    <p class="mb-1"><?= $this->escapeHtml($recommendation['description']) ?></p>
-                                    <?php if (!empty($recommendation['action'])): ?>
-                                        <small><strong>Action:</strong> <?= $this->escapeHtml($recommendation['action']) ?></small>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
+                     <div class="text-center py-3">
+                        <i class="fas fa-lightbulb fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Performance recommendations not yet implemented</p>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>
@@ -173,24 +100,29 @@
 
 <script>
 // Simple performance chart visualization
-if (document.getElementById('performanceChart') && <?= json_encode($performance) ?>) {
-    const performance = <?= json_encode($performance) ?>;
+// Use the 'breakdown' data provided by the controller
+if (document.getElementById('performanceChart') && <?= json_encode($performance['breakdown'] ?? []) ?>) {
+    const breakdown = <?= json_encode($performance['breakdown'] ?? []) ?>;
     const chartContainer = document.getElementById('performanceChart');
-    
-    // Create a simple bar chart for performance breakdown
-    const components = [
-        { name: 'Bootstrap', time: performance.bootstrap_time || 0, color: '#007bff' },
-        { name: 'Routing', time: performance.routing_time || 0, color: '#28a745' },
-        { name: 'Controller', time: performance.controller_time || 0, color: '#ffc107' },
-        { name: 'View', time: performance.view_time || 0, color: '#17a2b8' },
-        { name: 'Database', time: performance.database_time || 0, color: '#dc3545' }
-    ];
-    
+
+    // Convert breakdown object to array of objects for charting
+    const components = Object.keys(breakdown).map(key => ({
+        name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format name (e.g., 'request_start' -> 'Request Start')
+        time: breakdown[key] || 0,
+        color: getColorForComponent(key) // Helper function for colors
+    }));
+
+    // Sort components by time descending
+    components.sort((a, b) => b.time - a.time);
+
     const maxTime = Math.max(...components.map(c => c.time));
-    
+
     let chartHtml = '<div class="row">';
     components.forEach(component => {
-        const percentage = maxTime > 0 ? (component.time / maxTime) * 100 : 0;
+        // Calculate percentage relative to the sum of breakdown times, not max time
+        const totalBreakdownTime = components.reduce((sum, c) => sum + c.time, 0);
+        const percentage = totalBreakdownTime > 0 ? (component.time / totalBreakdownTime) * 100 : 0;
+
         chartHtml += `
             <div class="col-md-12 mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -204,7 +136,21 @@ if (document.getElementById('performanceChart') && <?= json_encode($performance)
         `;
     });
     chartHtml += '</div>';
-    
+
     chartContainer.innerHTML = chartHtml;
+}
+
+// Helper function to get consistent colors for components
+function getColorForComponent(name) {
+    switch (name) {
+        case 'bootstrap': return '#007bff'; // Primary (Blue)
+        case 'route': return '#28a745'; // Success (Green)
+        case 'dispatch': return '#ffc107'; // Warning (Yellow)
+        case 'render': return '#17a2b8'; // Info (Cyan)
+        case 'database': return '#dc3545'; // Danger (Red)
+        case 'request_start': return '#6f42c1'; // Purple
+        case 'request_end': return '#6c757d'; // Secondary (Gray)
+        default: return '#6c757d'; // Secondary (Gray)
+    }
 }
 </script>

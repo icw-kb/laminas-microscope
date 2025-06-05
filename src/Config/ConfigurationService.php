@@ -13,6 +13,11 @@ class ConfigurationService
 
     public function __construct(array $config = [])
     {
+        // --- NEW DEBUG LOGGING ---
+        // Log the configuration array received by the constructor
+        error_log("LaminasMicroscope: DEBUG: ConfigurationService received config: " . json_encode($config) . ".\n");
+        // --- END NEW DEBUG LOGGING ---
+
         $this->config = $config;
     }
 
@@ -123,7 +128,11 @@ class ConfigurationService
      */
     public function getComponentConfig(string $component): array
     {
+        // --- DEBUG LOGGING ---
         $config = $this->get("laminas_microscope.components.{$component}", []);
+        error_log("LaminasMicroscope: DEBUG: ConfigurationService::getComponentConfig('{$component}') returning: " . json_encode($config) . ".\n");
+        // --- END DEBUG LOGGING ---
+
         return is_array($config) ? $config : [];
     }
 

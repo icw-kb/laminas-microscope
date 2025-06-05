@@ -17,6 +17,7 @@ use LaminasMicroscope\Controller\DashboardController;
 use LaminasMicroscope\Controller\ConfigurationController;
 use LaminasMicroscope\Service\AnalysisService; // Ensure AnalysisService is imported
 use Laminas\ServiceManager\ServiceManager; // Added this use statement
+use LaminasMicroscope\Factory\ConfigurationServiceFactory; // Import the new factory
 
 return [
     'router' => [
@@ -110,11 +111,13 @@ return [
             // Factory for MicroscopeController
             // Changed type hint from ContainerInterface to ServiceManager
             MicroscopeController::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                // Get ConfigurationService and AnalysisService from the container
+                // Get ConfigurationService, AnalysisService, ComponentManager, and MicroscopeHandler from the container
                 $config = $container->get(ConfigurationService::class);
                 $analysisService = $container->get(AnalysisService::class); // Requesting AnalysisService
+                $componentManager = $container->get(ComponentManager::class); // Requesting ComponentManager
+                $microscopeHandler = $container->get(MicroscopeHandler::class); // Requesting MicroscopeHandler
                 // Instantiate MicroscopeController with the correct dependencies
-                return new MicroscopeController($config, $analysisService); // This line passes what was retrieved
+                return new MicroscopeController($config, $analysisService, $componentManager, $microscopeHandler); // Pass all dependencies
             },
             // Factory for DashboardController
             // Changed type hint from ContainerInterface to ServiceManager
@@ -137,20 +140,9 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            // Factory for ConfigurationService
-            // Changed type hint from ContainerInterface to ServiceManager
-            ConfigurationService::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                // Get the main application configuration array
-                $config = $container->get('Config');
+            // Use the dedicated factory class for ConfigurationService
+            ConfigurationService::class => ConfigurationServiceFactory::class,
 
-                // REMOVED: Debug dump
-                // echo "--- Config received by ConfigurationServiceFactory ---\n";
-                // var_dump($config['laminas_microscope'] ?? 'laminas_microscope key not found');
-                // echo "-----------------------------------------------------\n";
-
-                // Pass the *entire* configuration array to the ConfigurationService constructor
-                return new ConfigurationService($config);
-            },
             // Factory for ComponentManager
             // Changed type hint from ContainerInterface to ServiceManager
             ComponentManager::class => function (Laminas\ServiceManager\ServiceManager $container) {
@@ -171,8 +163,9 @@ return [
             // Changed type hint from ContainerInterface to ServiceManager
             AnalysisService::class => function (Laminas\ServiceManager\ServiceManager $container) {
                  $config = $container->get(ConfigurationService::class);
-                 // Instantiate AnalysisService with ConfigurationService
-                 return new AnalysisService($config);
+                 $microscopeHandler = $container->get(MicroscopeHandler::class); // Get MicroscopeHandler
+                 // Instantiate AnalysisService with ConfigurationService and MicroscopeHandler
+                 return new AnalysisService($config, $microscopeHandler); // Pass all dependencies
             },
             // Factory for WhoopsHandler
             // Changed type hint from ContainerInterface to ServiceManager
