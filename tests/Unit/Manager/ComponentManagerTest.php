@@ -13,6 +13,7 @@ class ComponentManagerTest extends TestCase
 {
     private ComponentManager $manager;
     private ConfigurationService $configService;
+    private \LaminasMicroscope\Collector\CollectorRegistry $registry;
 
     protected function setUp(): void
     {
@@ -43,7 +44,8 @@ class ComponentManagerTest extends TestCase
         ]);
         
         $this->configService = new ConfigurationService($config);
-        $this->manager = new ComponentManager($this->configService);
+        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $this->manager = new ComponentManager($this->configService, null, $this->registry);
     }
 
     public function testGetComponentConfigReturnsConfiguration(): void
@@ -224,7 +226,8 @@ class ComponentManagerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $manager = new ComponentManager($configService);
+        $registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $manager = new ComponentManager($configService, null, $registry);
         
         $this->assertFalse($manager->hasEnabledComponents());
     }

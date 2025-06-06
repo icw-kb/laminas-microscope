@@ -148,9 +148,9 @@ return [
             // Changed type hint from ContainerInterface to ServiceManager
             ComponentManager::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 $config = $container->get(ConfigurationService::class);
-                // Pass the container to ComponentManager if its constructor requires it
-                // Based on ComponentManager.php, it takes ConfigurationService and optional ContainerInterface
-                return new ComponentManager($config, $container);
+                $registry = $container->get(CollectorRegistry::class);
+                // Pass the container and collector registry to ComponentManager
+                return new ComponentManager($config, $container, $registry);
             },
             // Factory for ConfigurationManager
             // Changed type hint from ContainerInterface to ServiceManager

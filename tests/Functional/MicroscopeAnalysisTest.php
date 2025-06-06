@@ -10,6 +10,7 @@ use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
 use Psr\Container\ContainerInterface;
 use Laminas\Mvc\MvcEvent;
+use Laminas\Mvc\Application;
 
 class MicroscopeAnalysisTest extends TestCase
 {
@@ -17,6 +18,7 @@ class MicroscopeAnalysisTest extends TestCase
     private ComponentManager $componentManager;
     private ConfigurationService $configService;
     private ContainerInterface $container;
+    private \LaminasMicroscope\Collector\CollectorRegistry $registry;
     private string $tempDir;
 
     protected function setUp(): void
@@ -58,9 +60,9 @@ class MicroscopeAnalysisTest extends TestCase
         
         // Create dependencies in correct order
         $this->configService = new ConfigurationService($config);
-        $this->componentManager = new ComponentManager($this->configService);
-        $this->container = $this->createMock(ContainerInterface::class);
         $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $this->componentManager = new ComponentManager($this->configService, null, $this->registry);
+        $this->container = $this->createMock(ContainerInterface::class);
         
         // Create MicroscopeHandler with correct constructor signature
         $this->microscope = new MicroscopeHandler(
@@ -572,6 +574,12 @@ class MicroscopeAnalysisTest extends TestCase
         string $action = 'index'
     ): MvcEvent {
         $event = $this->createMock(MvcEvent::class);
+
+        $serviceManager = \TestHelper::createMockServiceManager();
+        $serviceManager->set(MicroscopeHandler::class, $this->microscope);
+        $application = $this->createMock(\Laminas\Mvc\Application::class);
+        $application->method('getServiceManager')->willReturn($serviceManager);
+        $event->method('getApplication')->willReturn($application);
         
         // Mock RouteMatch
         $routeMatch = $this->createMock(\Laminas\Router\RouteMatch::class);

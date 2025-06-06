@@ -9,8 +9,9 @@ use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\Whoops\WhoopsHandler;
 use LaminasMicroscope\Service\AnalysisService;
 use Psr\Container\ContainerInterface;
-use LaminasMicroscope\Container\MockContainer; 
+use LaminasMicroscope\Container\MockContainer;
 use LaminasMicroscope\Microscope\MicroscopeHandler; // Added use statement
+use LaminasMicroscope\Collector\CollectorRegistry;
 use Exception; // Added use statement
 
 /**
@@ -20,11 +21,14 @@ class ComponentManager
 {
     private array $components = [];
     private array $initialized = [];
+    private CollectorRegistry $registry;
 
     public function __construct(
         private ConfigurationService $configService,
-        private ?ContainerInterface $container = null
+        private ?ContainerInterface $container = null,
+        CollectorRegistry $registry
     ) {
+        $this->registry = $registry;
         $this->registerComponents();
     }
 
@@ -369,12 +373,17 @@ class ComponentManager
                     return new $className(
                         $this,
                         $this->configService,
-                        $this->container ?? new MockContainer() 
+                        $this->container ?? new MockContainer(),
+                        $this->registry
                     );
 
                 case 'debug_bar':
                     // DebugBarHandler constructor signature now includes Container
-                    return new $className($this->configService, $this->container ?? new MockContainer()); // Pass container
+                    return new $className(
+                        $this->configService,
+                        $this->container ?? new MockContainer(),
+                        $this->registry
+                    ); // Pass container and registry
 
                 case 'whoops':
                     // WhoopsHandler constructor signature
@@ -382,7 +391,10 @@ class ComponentManager
 
                 case 'analysis':
                     // AnalysisService constructor signature
-                    return new $className($this->configService);
+                    return new $className(
+                        $this->configService,
+                        $this->getComponent('microscope')
+                    );
 
                 default:
                     // Try with ConfigurationService first
