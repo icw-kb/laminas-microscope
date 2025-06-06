@@ -69,26 +69,45 @@ class TestHelper
         ], $config);
     }
 
-    public static function createMockServiceManager(): object
+    public static function createMockServiceManager(): \Psr\Container\ContainerInterface
     {
-        return new class {
+        return new class implements \Psr\Container\ContainerInterface {
             private array $services = [];
             
-            public function get(string $name): mixed
+            public function get(string $id)
             {
-                return $this->services[$name] ?? null;
+                return $this->services[$id] ?? null;
             }
-            
+
             public function set(string $name, mixed $service): void
             {
                 $this->services[$name] = $service;
             }
             
-            public function has(string $name): bool
+            public function has(string $id): bool
             {
-                return isset($this->services[$name]);
+                return isset($this->services[$id]);
             }
         };
+    }
+
+    /**
+     * Helper to create a ComponentManager with a CollectorRegistry
+     */
+    public static function createComponentManager(
+        array $config = [],
+        ?object $container = null
+    ): array {
+        $configService = new \LaminasMicroscope\Config\ConfigurationService(self::createMockConfig($config));
+        $registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+
+        if ($container === null) {
+            $container = self::createMockServiceManager();
+        }
+
+        $manager = new \LaminasMicroscope\Manager\ComponentManager($configService, $container, $registry);
+
+        return [$manager, $configService, $registry];
     }
 
     public static function assertArrayStructure(array $expected, array $actual, string $message = ''): void

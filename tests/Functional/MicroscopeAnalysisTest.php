@@ -59,10 +59,8 @@ class MicroscopeAnalysisTest extends TestCase
         ]);
         
         // Create dependencies in correct order
-        $this->configService = new ConfigurationService($config);
-        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
-        $this->componentManager = new ComponentManager($this->configService, null, $this->registry);
         $this->container = $this->createMock(ContainerInterface::class);
+        [$this->componentManager, $this->configService, $this->registry] = \TestHelper::createComponentManager($config, $this->container);
         
         // Create MicroscopeHandler with correct constructor signature
         $this->microscope = new MicroscopeHandler(
