@@ -201,10 +201,8 @@ class MicroscopeHandlerTest extends TestCase
 
     public function testProfileDispatchRecordsPerformanceDataWhenEnabled(): void
     {
-        // Configure the mocks to return enabled=true
-        // Called 2 times: once in initialize(), once in profileDispatch()
         $this->componentManager
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(3))
             ->method('isEnabled')
             ->with('microscope')
             ->willReturn(true);
@@ -229,6 +227,8 @@ class MicroscopeHandlerTest extends TestCase
 
         // Now call profileDispatch - $startTime should be initialized
         $this->handler->profileDispatch($event);
+
+        MicroscopeHandler::finalizeProfiling($event);
 
         $profileData = $this->handler->getProfileData();
         $this->assertArrayHasKey('performance', $profileData);

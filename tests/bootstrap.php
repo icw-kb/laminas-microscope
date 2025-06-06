@@ -105,7 +105,7 @@ class TestHelper
             $container = self::createMockServiceManager();
         }
 
-        $manager = new \LaminasMicroscope\Manager\ComponentManager($configService, $container, $registry);
+        $manager = new \LaminasMicroscope\Manager\ComponentManager($configService, $registry, $container);
 
         return [$manager, $configService, $registry];
     }

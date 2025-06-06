@@ -25,8 +25,8 @@ class ComponentManager
 
     public function __construct(
         private ConfigurationService $configService,
-        private ?ContainerInterface $container = null,
-        CollectorRegistry $registry
+        CollectorRegistry $registry,
+        private ?ContainerInterface $container = null
     ) {
         $this->registry = $registry;
         $this->registerComponents();
