@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
+use LaminasMicroscope\Collector\CollectorInterface;
+
 use DebugBar\DataCollector\DataCollector; // Corrected namespace
 use DebugBar\DataCollector\Renderable; // Corrected namespace
 use Laminas\ServiceManager\ServiceManager; // Corrected namespace
 use Exception; // Corrected namespace
 use ReflectionClass; // Corrected namespace
 
-class LaminasConfigCollector extends DataCollector implements Renderable
+class LaminasConfigCollector extends DataCollector implements Renderable, CollectorInterface
 {
     private ServiceManager $serviceManager;
 

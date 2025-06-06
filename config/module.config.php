@@ -12,6 +12,7 @@ use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
 use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
 use LaminasMicroscope\DebugBar\EventListener\QueryLogger;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
+use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Controller\MicroscopeController;
 use LaminasMicroscope\Controller\DashboardController;
 use LaminasMicroscope\Controller\ConfigurationController;
@@ -167,6 +168,9 @@ return [
                  // Instantiate AnalysisService with ConfigurationService and MicroscopeHandler
                  return new AnalysisService($config, $microscopeHandler); // Pass all dependencies
             },
+            CollectorRegistry::class => function () {
+                return new \LaminasMicroscope\Collector\CollectorRegistry();
+            },
             // Factory for WhoopsHandler
             // Changed type hint from ContainerInterface to ServiceManager
             WhoopsHandler::class => function (Laminas\ServiceManager\ServiceManager $container) {
@@ -178,16 +182,16 @@ return [
             // Changed type hint from ContainerInterface to ServiceManager
             DebugBarHandler::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 $config = $container->get(ConfigurationService::class);
-                // DebugBarHandler constructor now takes ConfigurationService and Container
-                return new DebugBarHandler($config, $container); // Pass the container
+                $registry = $container->get(CollectorRegistry::class);
+                return new DebugBarHandler($config, $container, $registry);
             },
             // Factory for MicroscopeHandler
             // Changed type hint from ContainerInterface to ServiceManager
             MicroscopeHandler::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                // MicroscopeHandler constructor takes ComponentManager, ConfigurationService, and ContainerInterface
                 $componentManager = $container->get(ComponentManager::class);
                 $config = $container->get(ConfigurationService::class);
-                return new MicroscopeHandler($componentManager, $config, $container);
+                $registry = $container->get(CollectorRegistry::class);
+                return new MicroscopeHandler($componentManager, $config, $container, $registry);
             },
             // Debug Bar Collectors
             PDOCollector::class => function (Laminas\ServiceManager\ServiceManager $container) {

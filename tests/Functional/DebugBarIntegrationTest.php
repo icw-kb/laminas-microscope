@@ -12,6 +12,8 @@ class DebugBarIntegrationTest extends TestCase
 {
     private DebugBarHandler $debugBar;
     private ConfigurationService $configService;
+    private object $container;
+    private \LaminasMicroscope\Collector\CollectorRegistry $registry;
 
     protected function setUp(): void
     {
@@ -30,7 +32,9 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $this->configService = new ConfigurationService($config);
-        $this->debugBar = new DebugBarHandler($this->configService);
+        $this->container = \TestHelper::createMockServiceManager();
+        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $this->debugBar = new DebugBarHandler($this->configService, $this->container, $this->registry);
     }
 
     protected function tearDown(): void
@@ -164,7 +168,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $disabledConfigService = new ConfigurationService($disabledConfig);
-        $disabledDebugBar = new DebugBarHandler($disabledConfigService);
+        $disabledDebugBar = new DebugBarHandler($disabledConfigService, $this->container, $this->registry);
         
         $this->assertFalse($disabledDebugBar->isEnabled());
         
@@ -268,7 +272,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $prodConfigService = new ConfigurationService($prodConfig);
-        $prodDebugBar = new DebugBarHandler($prodConfigService);
+        $prodDebugBar = new DebugBarHandler($prodConfigService, $this->container, $this->registry);
         
         $this->assertFalse($prodDebugBar->shouldDisplay());
         
@@ -287,7 +291,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $prodEnabledConfigService = new ConfigurationService($prodEnabledConfig);
-        $prodEnabledDebugBar = new DebugBarHandler($prodEnabledConfigService);
+        $prodEnabledDebugBar = new DebugBarHandler($prodEnabledConfigService, $this->container, $this->registry);
         
         $this->assertTrue($prodEnabledDebugBar->shouldDisplay());
     }
@@ -340,7 +344,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $debugBar = new DebugBarHandler($configService);
+        $debugBar = new DebugBarHandler($configService, $this->container, $this->registry);
         
         if (!$debugBar->isEnabled()) {
             $this->markTestSkipped('Debug bar is not enabled');
@@ -393,7 +397,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $debugBar = new DebugBarHandler($configService);
+        $debugBar = new DebugBarHandler($configService, $this->container, $this->registry);
         
         if (!$debugBar->isEnabled()) {
             $this->markTestSkipped('Debug bar is not enabled');

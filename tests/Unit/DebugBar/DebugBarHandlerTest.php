@@ -12,6 +12,8 @@ class DebugBarHandlerTest extends TestCase
 {
     private DebugBarHandler $handler;
     private ConfigurationService $configService;
+    private object $container;
+    private \LaminasMicroscope\Collector\CollectorRegistry $registry;
 
     protected function setUp(): void
     {
@@ -29,7 +31,9 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $this->configService = new ConfigurationService($config);
-        $this->handler = new DebugBarHandler($this->configService);
+        $this->container = \TestHelper::createMockServiceManager();
+        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $this->handler = new DebugBarHandler($this->configService, $this->container, $this->registry);
     }
 
     public function testIsEnabledReturnsTrueWhenDebugBarEnabled(): void
@@ -51,7 +55,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $this->assertFalse($handler->isEnabled());
     }
@@ -70,7 +74,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $this->assertFalse($handler->isEnabled());
     }
@@ -97,7 +101,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $handler->initialize();
         
@@ -127,7 +131,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $this->assertNull($handler->getRenderer());
     }
@@ -200,7 +204,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $html = $handler->renderHtml();
         $this->assertEquals('', $html);
@@ -220,7 +224,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $assets = $handler->getAssets();
         $this->assertEquals(['css' => [], 'js' => []], $assets);
@@ -241,7 +245,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $this->assertTrue($handler->shouldDisplay());
     }
@@ -262,7 +266,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $this->assertFalse($handler->shouldDisplay());
     }
@@ -283,7 +287,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $this->assertTrue($handler->shouldDisplay());
     }
@@ -591,7 +595,7 @@ class DebugBarHandlerTest extends TestCase
             ]);
             
             $configService = new ConfigurationService($config);
-            $handler = new DebugBarHandler($configService);
+            $handler = new DebugBarHandler($configService, $this->container, $this->registry);
             
             $handler->initialize();
             $collectors = $handler->getCollectors();
@@ -642,7 +646,7 @@ class DebugBarHandlerTest extends TestCase
         ]);
         
         $configService = new ConfigurationService($config);
-        $handler = new DebugBarHandler($configService);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
         
         $collectors = $handler->getCollectors();
         $this->assertIsArray($collectors);

@@ -60,12 +60,14 @@ class MicroscopeAnalysisTest extends TestCase
         $this->configService = new ConfigurationService($config);
         $this->componentManager = new ComponentManager($this->configService);
         $this->container = $this->createMock(ContainerInterface::class);
+        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
         
         // Create MicroscopeHandler with correct constructor signature
         $this->microscope = new MicroscopeHandler(
             $this->componentManager,
             $this->configService,
-            $this->container
+            $this->container,
+            $this->registry
         );
         
         $this->tempDir = \TestHelper::createTempDir();

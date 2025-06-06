@@ -23,6 +23,7 @@ use Laminas\ServiceManager\ServiceManager;
 use Psr\Container\ContainerInterface;
 use Laminas\View\Renderer\RendererInterface;
 use DebugBar\JavascriptRenderer;
+use LaminasMicroscope\Collector\CollectorRegistry;
 
 /**
  * Handler for DebugBar integration
@@ -32,13 +33,16 @@ class DebugBarHandler
     private ?StandardDebugBar $debugBar = null;
     private bool $initialized = false;
     private ContainerInterface $container;
+    private CollectorRegistry $collectorRegistry;
     private ?JavascriptRenderer $renderer = null;
 
     public function __construct(
         private ConfigurationService $configService,
-        ContainerInterface $container
+        ContainerInterface $container,
+        CollectorRegistry $collectorRegistry
     ) {
         $this->container = $container;
+        $this->collectorRegistry = $collectorRegistry;
         // --- NEW DEBUG LOGGING ---
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::__construct() called. Instance hash: " . spl_object_hash($this) . ".\n");
         // --- END NEW DEBUG LOGGING ---
@@ -449,12 +453,19 @@ class DebugBarHandler
             // --- END DEBUG LOGGING ---
             return;
         }
+        $existing = $this->collectorRegistry->get($name);
+        if ($existing && !$this->debugBar->hasCollector($existing->getName())) {
+            $this->debugBar->addCollector($existing);
+            return;
+        }
 
         switch ($name) {
             case 'time':
                 if (!$this->debugBar->hasCollector('time')) {
                     try {
-                        $this->debugBar->addCollector(new TimeDataCollector());
+                        $collector = new TimeDataCollector();
+                        $this->debugBar->addCollector($collector);
+                        $this->collectorRegistry->register($collector);
                          // --- DEBUG LOGGING ---
                         error_log("LaminasMicroscope: DEBUG: TimeDataCollector added.\n");
                         // --- END DEBUG LOGGING ---
@@ -474,7 +485,9 @@ class DebugBarHandler
             case 'memory':
                 if (!$this->debugBar->hasCollector('memory')) {
                     try {
-                        $this->debugBar->addCollector(new MemoryCollector());
+                        $collector = new MemoryCollector();
+                        $this->debugBar->addCollector($collector);
+                        $this->collectorRegistry->register($collector);
                          // --- DEBUG LOGGING ---
                         error_log("LaminasMicroscope: DEBUG: MemoryCollector added.\n");
                         // --- END DEBUG LOGGING ---
@@ -494,7 +507,9 @@ class DebugBarHandler
             case 'messages':
                 if (!$this->debugBar->hasCollector('messages')) {
                     try {
-                        $this->debugBar->addCollector(new MessagesCollector());
+                        $collector = new MessagesCollector();
+                        $this->debugBar->addCollector($collector);
+                        $this->collectorRegistry->register($collector);
                          // --- DEBUG LOGGING ---
                         error_log("LaminasMicroscope: DEBUG: MessagesCollector added.\n");
                         // --- END DEBUG LOGGING ---
@@ -516,7 +531,9 @@ class DebugBarHandler
                 $customKey = 'microscope_php';
                 if (!$this->debugBar->hasCollector($customKey)) {
                     try {
-                        $this->debugBar->addCollector(new PhpInfoCollector(), $customKey);
+                        $collector = new PhpInfoCollector();
+                        $this->debugBar->addCollector($collector, $customKey);
+                        $this->collectorRegistry->register($collector);
                          // --- DEBUG LOGGING ---
                         error_log("LaminasMicroscope: DEBUG: PhpInfoCollector added with key \"{$customKey}\".\n");
                         // --- END DEBUG LOGGING ---

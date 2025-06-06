@@ -19,6 +19,7 @@ class MicroscopeHandlerTest extends TestCase
     private ComponentManager $componentManager;
     private ConfigurationService $configService;
     private ContainerInterface $container;
+    private \LaminasMicroscope\Collector\CollectorRegistry $registry;
 
     protected function setUp(): void
     {
@@ -26,12 +27,14 @@ class MicroscopeHandlerTest extends TestCase
         $this->componentManager = $this->createMock(ComponentManager::class);
         $this->configService = $this->createMock(ConfigurationService::class);
         $this->container = $this->createMock(ContainerInterface::class);
+        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
         
         // Create the real handler with mocked dependencies
         $this->handler = new MicroscopeHandler(
             $this->componentManager,
             $this->configService,
-            $this->container
+            $this->container,
+            $this->registry
         );
     }
 

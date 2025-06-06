@@ -8,6 +8,7 @@ use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Microscope\Storage\ReportStorage;
 use Laminas\Mvc\MvcEvent;
+use LaminasMicroscope\Collector\CollectorRegistry;
 use Psr\Container\ContainerInterface;
 use Exception;
 use RuntimeException;
@@ -21,6 +22,7 @@ class MicroscopeHandler
     private ComponentManager $componentManager;
     private ConfigurationService $configService;
     private ContainerInterface $container;
+    private CollectorRegistry $collectorRegistry;
     private ReportStorage $storage;
     private array $profileData = [];
     private float $requestStartTime; // Overall request start time
@@ -30,11 +32,13 @@ class MicroscopeHandler
     public function __construct(
         ComponentManager $componentManager,
         ConfigurationService $configService,
-        ContainerInterface $container
+        ContainerInterface $container,
+        CollectorRegistry $collectorRegistry
     ) {
         $this->componentManager = $componentManager;
         $this->configService = $configService;
         $this->container = $container;
+        $this->collectorRegistry = $collectorRegistry;
     }
 
     /**
@@ -200,6 +204,19 @@ class MicroscopeHandler
     }
 
     /**
+     * Retrieve query log from shared collectors
+     */
+    private function getQueries(): array
+    {
+        $pdo = $this->collectorRegistry->get('pdo');
+        if ($pdo && method_exists($pdo, 'collect')) {
+            $data = $pdo->collect();
+            return $data['statements'] ?? [];
+        }
+        return $this->profileData['queries'] ?? [];
+    }
+
+    /**
      * Run comprehensive analysis
      */
     public function runAnalysis(): array
@@ -217,7 +234,7 @@ class MicroscopeHandler
         $analysis = [
             'id' => uniqid('analysis_', true),
             'created_at' => date('Y-m-d H:i:s'),
-            'queries' => $this->profileData['queries'] ?? [],
+            'queries' => $this->getQueries(),
             'performance' => $this->profileData['performance'] ?? [],
             'issues' => [],
             'performance_score' => 100,
@@ -279,9 +296,14 @@ class MicroscopeHandler
             return;
         }
 
-        $this->profileData['queries'][] = array_merge($queryData, [
-            'timestamp' => microtime(true),
-        ]);
+        $queryData['timestamp'] = microtime(true);
+        $pdo = $this->collectorRegistry->get('pdo');
+        if ($pdo && method_exists($pdo, 'addQuery')) {
+            $pdo->addQuery($queryData);
+            return;
+        }
+
+        $this->profileData['queries'][] = $queryData;
     }
 
     /**
@@ -321,7 +343,7 @@ class MicroscopeHandler
      */
     private function findDuplicateQueries(): array
     {
-        $queries = $this->profileData['queries'] ?? [];
+        $queries = $this->getQueries();
         $queryMap = [];
         $duplicates = [];
 
@@ -357,7 +379,7 @@ class MicroscopeHandler
      */
     private function findSlowQueries(): array
     {
-        $queries = $this->profileData['queries'] ?? [];
+        $queries = $this->getQueries();
         $slowQueries = [];
         $threshold = $this->configService->get('laminas_microscope.components.microscope.thresholds.query_time', 100);
 
