@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace LaminasMicroscope\Microscope\Storage;
 
 use LaminasMicroscope\Config\ConfigurationService;
-use RecursiveIteratorIterator; // Corrected namespace
-use RecursiveDirectoryIterator; // Corrected namespace
-use Exception; // Corrected namespace
+use RecursiveIteratorIterator; 
+use RecursiveDirectoryIterator; 
+use Exception; 
 
 /**
  * Storage handler for microscope reports and analysis data
@@ -36,7 +36,7 @@ class ReportStorage
         try {
             $data = json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             return file_put_contents($filepath, $data) !== false;
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             error_log("Failed to store microscope report: " . $e->getMessage());
             return false;
         }
@@ -403,9 +403,9 @@ class ReportStorage
             return;
         }
 
-        $files = new RecursiveIteratorIterator( // Corrected namespace
-            new RecursiveDirectoryIterator($this->storagePath, RecursiveDirectoryIterator::SKIP_DOTS), // Corrected namespace
-            RecursiveIteratorIterator::CHILD_FIRST // Corrected namespace
+        $files = new RecursiveIteratorIterator( 
+            new RecursiveDirectoryIterator($this->storagePath, RecursiveDirectoryIterator::SKIP_DOTS), 
+            RecursiveIteratorIterator::CHILD_FIRST 
         );
 
         foreach ($files as $fileinfo) {

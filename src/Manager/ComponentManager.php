@@ -9,7 +9,7 @@ use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\Whoops\WhoopsHandler;
 use LaminasMicroscope\Service\AnalysisService;
 use Psr\Container\ContainerInterface;
-use LaminasMicroscope\Container\MockContainer; // Corrected namespace
+use LaminasMicroscope\Container\MockContainer; 
 use LaminasMicroscope\Microscope\MicroscopeHandler; // Added use statement
 use Exception; // Added use statement
 
@@ -347,7 +347,7 @@ class ComponentManager
         $this->registerComponent('debug_bar', DebugBarHandler::class);
         $this->registerComponent('whoops', WhoopsHandler::class);
         $this->registerComponent('analysis', AnalysisService::class);
-        $this->registerComponent('microscope', MicroscopeHandler::class); // Corrected namespace
+        $this->registerComponent('microscope', MicroscopeHandler::class); 
     }
 
     /**
@@ -369,7 +369,7 @@ class ComponentManager
                     return new $className(
                         $this,
                         $this->configService,
-                        $this->container ?? new MockContainer() // Corrected namespace
+                        $this->container ?? new MockContainer() 
                     );
 
                 case 'debug_bar':
@@ -388,12 +388,12 @@ class ComponentManager
                     // Try with ConfigurationService first
                     try {
                         return new $className($this->configService);
-                    } catch (Exception $e) { // Corrected namespace
+                    } catch (Exception $e) { 
                         // If that fails, try without parameters
                         return new $className();
                     }
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             // Return null if component creation fails
             error_log("Failed to create component '{$name}': " . $e->getMessage());
             return null;

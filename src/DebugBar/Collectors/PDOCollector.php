@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
-use LaminasMicroscope\Collector\CollectorInterface;
-
-use DebugBar\DataCollector\DataCollector; // Corrected namespace
-use DebugBar\DataCollector\Renderable; // Corrected namespace
-use Laminas\ServiceManager\ServiceManager; // Corrected namespace
-use Exception; // Corrected namespace
+use DebugBar\DataCollector\DataCollector; 
+use DebugBar\DataCollector\Renderable; 
+use Laminas\ServiceManager\ServiceManager; 
+use Exception; 
 use Laminas\Db\Adapter\Adapter; // Added use statement
 
 class PDOCollector extends DataCollector implements Renderable, CollectorInterface
@@ -63,7 +61,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
         // Hook into Laminas DB adapters
         try {
             $this->hookIntoDbAdapters();
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             // Silently fail if no DB adapters are configured
         }
     }
@@ -72,7 +70,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
     {
         try {
             // Try to get common DB adapter service names
-            $adapterNames = [Adapter::class, 'db', 'dbAdapter']; // Corrected namespace
+            $adapterNames = [Adapter::class, 'db', 'dbAdapter']; 
 
             foreach ($adapterNames as $adapterName) {
                 if ($this->serviceManager->has($adapterName)) {
@@ -80,7 +78,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     $this->hookIntoAdapter($adapter);
                 }
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             // Continue silently if no adapters found
         }
     }
@@ -104,7 +102,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     $this->collectFromProfiler($profiler);
                 }
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             // Continue silently
         }
     }
@@ -124,7 +122,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     }
                 }
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             // Continue silently
         }
 
@@ -146,7 +144,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     'error_message' => null,
                 ]);
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             // Continue silently
         }
     }

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
-use LaminasMicroscope\Collector\CollectorInterface;
-
-use DebugBar\DataCollector\DataCollector; // Corrected namespace
-use DebugBar\DataCollector\Renderable; // Corrected namespace
-use Laminas\ServiceManager\ServiceManager; // Corrected namespace
-use Exception; // Corrected namespace
-use ReflectionClass; // Corrected namespace
+use DebugBar\DataCollector\DataCollector; 
+use DebugBar\DataCollector\Renderable; 
+use Laminas\ServiceManager\ServiceManager; 
+use Exception; 
+use ReflectionClass; 
 
 class LaminasConfigCollector extends DataCollector implements Renderable, CollectorInterface
 {
@@ -63,7 +61,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         try {
             $config = $this->serviceManager->get('config');
             return $this->sanitizeConfig($config);
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             return ['error' => $e->getMessage()];
         }
     }
@@ -83,7 +81,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
             }
 
             return $modules;
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             return ['error' => $e->getMessage()];
         }
     }
@@ -98,7 +96,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
                 'invokables' => array_keys($config['service_manager']['invokables'] ?? []),
                 'aliases' => $config['service_manager']['aliases'] ?? [],
             ];
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             return ['error' => $e->getMessage()];
         }
     }
@@ -132,9 +130,9 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     private function getModulePath($module): string
     {
         try {
-            $reflection = new ReflectionClass($module); // Corrected namespace
+            $reflection = new ReflectionClass($module); 
             return dirname($reflection->getFileName());
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             return 'unknown';
         }
     }

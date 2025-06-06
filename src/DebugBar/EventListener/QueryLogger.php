@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\EventListener;
 
-use Laminas\EventManager\AbstractListenerAggregate; // Corrected namespace
-use Laminas\EventManager\EventManagerInterface; // Corrected namespace
-use Laminas\EventManager\Event; // Corrected namespace
+use Laminas\EventManager\AbstractListenerAggregate; 
+use Laminas\EventManager\EventManagerInterface; 
+use Laminas\EventManager\Event; 
 use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
 
 class QueryLogger extends AbstractListenerAggregate
@@ -18,7 +18,7 @@ class QueryLogger extends AbstractListenerAggregate
         $this->collector = $collector;
     }
 
-    public function attach(EventManagerInterface $events, $priority = 1): void // Corrected namespace
+    public function attach(EventManagerInterface $events, $priority = 1): void 
     {
         // Listen for database query events
         $this->listeners[] = $events->attach('db.query.start', [$this, 'onQueryStart'], $priority);
@@ -26,7 +26,7 @@ class QueryLogger extends AbstractListenerAggregate
         $this->listeners[] = $events->attach('db.query.error', [$this, 'onQueryError'], $priority);
     }
 
-    public function onQueryStart(Event $e): void // Corrected namespace
+    public function onQueryStart(Event $e): void 
     {
         $params = $e->getParams();
         $queryId = $params['queryId'] ?? uniqid();
@@ -36,7 +36,7 @@ class QueryLogger extends AbstractListenerAggregate
         $e->setParam('queryId', $queryId);
     }
 
-    public function onQueryEnd(Event $e): void // Corrected namespace
+    public function onQueryEnd(Event $e): void 
     {
         $params = $e->getParams();
         $startTime = $params['startTime'] ?? microtime(true);
@@ -54,7 +54,7 @@ class QueryLogger extends AbstractListenerAggregate
         ]);
     }
 
-    public function onQueryError(Event $e): void // Corrected namespace
+    public function onQueryError(Event $e): void 
     {
         $params = $e->getParams();
         $startTime = $params['startTime'] ?? microtime(true);

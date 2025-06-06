@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace LaminasMicroscope\Controller; // Corrected namespace
+namespace LaminasMicroscope\Controller; 
 
-use Laminas\Mvc\Controller\AbstractActionController; // Corrected namespace
-use Laminas\View\Model\ViewModel; // Corrected namespace
+use Laminas\Mvc\Controller\AbstractActionController; 
+use Laminas\View\Model\ViewModel; 
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
-use Laminas\Http\Response; // Corrected namespace
+use Laminas\Http\Response; 
 use RuntimeException;
 use Exception;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
-use DebugBar\JavascriptRenderer; // Corrected namespace
+use DebugBar\JavascriptRenderer; 
 
 class DashboardController extends AbstractActionController
 {
@@ -133,7 +133,6 @@ class DashboardController extends AbstractActionController
         // Construct the full path to the asset file within the vendor directory
         // This assumes the standard composer vendor path and the module is 5 levels deep
         // from the application root (vendor/icw-kb/laminas-microscope/src/Controller)
-        // CORRECTED: Use 'maximebf/debugbar' instead of 'maximebf/php-debugbar'
         $assetPath = dirname(__DIR__, 5) . '/vendor/maximebf/debugbar/src/DebugBar/Resources/' . $file;
 
         // --- TEMPORARY DEBUG LOGS ---
@@ -151,7 +150,6 @@ class DashboardController extends AbstractActionController
             return $response;
         }
 
-        // Determine content type based on file extension
         $extension = pathinfo($assetPath, PATHINFO_EXTENSION);
         $contentType = match ($extension) {
             'css' => 'text/css',
@@ -163,7 +161,6 @@ class DashboardController extends AbstractActionController
             default => 'application/octet-stream', // Fallback
         };
 
-        // Read the file content
         $content = file_get_contents($assetPath);
 
         if ($content === false) {
@@ -174,7 +171,6 @@ class DashboardController extends AbstractActionController
             return $response;
         }
 
-        // Set headers and content
         $response->getHeaders()->addHeaderLine('Content-Type', $contentType);
         $response->setContent($content);
 
@@ -191,18 +187,9 @@ class DashboardController extends AbstractActionController
     private function getRecentReports(): array
     {
         try {
-            // Use the injected config service to get storage path for ReportStorage
             $storagePath = $this->config->getStoragePath();
-            // Note: ReportStorage constructor now expects ConfigurationService, not just path
-            // We need to get ReportStorage from the container if it's a service,\
-            // or instantiate it here if it's not a service but needs config.\
-            // Looking at module.config.php, ReportStorage is NOT a service.\
-            // It's instantiated inside MicroscopeHandler.\
-            // The DashboardController doesn't directly use ReportStorage.\
-            // It gets data via MicroscopeHandler or AnalysisService.\
-            // Based on the snapshot, MicroscopeHandler has getRecentReports.\
             $microscope = $this->getServiceLocator()->get(MicroscopeHandler::class);
-            return $microscope->getRecentReports(5); // Get last 5 reports
+            return $microscope->getRecentReports(5); 
         } catch (Exception $e) {
             return [];
         }

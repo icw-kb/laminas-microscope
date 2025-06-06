@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
-use LaminasMicroscope\Collector\CollectorInterface;
-
-use DebugBar\DataCollector\DataCollector; // Corrected namespace
-use DebugBar\DataCollector\Renderable; // Corrected namespace
-use Laminas\ServiceManager\ServiceManager; // Corrected namespace
-use Exception; // Corrected namespace
+use DebugBar\DataCollector\DataCollector; 
+use DebugBar\DataCollector\Renderable; 
+use Laminas\ServiceManager\ServiceManager; 
+use Exception; 
 
 class LaminasRequestCollector extends DataCollector implements Renderable, CollectorInterface
 {
@@ -137,7 +135,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                     }
                 }
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             return ['error' => 'Could not retrieve route data: ' . $e->getMessage()];
         }
 
@@ -168,7 +166,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                     }
                 }
             }
-        } catch (Exception $e) { // Corrected namespace
+        } catch (Exception $e) { 
             return ['error' => 'Could not retrieve response data: ' . $e->getMessage()];
         }
 
