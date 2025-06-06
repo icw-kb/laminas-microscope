@@ -12,6 +12,7 @@ use Laminas\Mvc\MvcEvent;
 use Laminas\Router\RouteMatch;
 use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\TestCase;
+use Laminas\Mvc\Application;
 
 class MicroscopeHandlerTest extends TestCase
 {
@@ -20,6 +21,7 @@ class MicroscopeHandlerTest extends TestCase
     private ConfigurationService $configService;
     private ContainerInterface $container;
     private \LaminasMicroscope\Collector\CollectorRegistry $registry;
+    private Application $application;
 
     protected function setUp(): void
     {
@@ -28,7 +30,8 @@ class MicroscopeHandlerTest extends TestCase
         $this->configService = $this->createMock(ConfigurationService::class);
         $this->container = $this->createMock(ContainerInterface::class);
         $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
-        
+        $this->application = $this->createMock(Application::class);
+
         // Create the real handler with mocked dependencies
         $this->handler = new MicroscopeHandler(
             $this->componentManager,
@@ -36,6 +39,16 @@ class MicroscopeHandlerTest extends TestCase
             $this->container,
             $this->registry
         );
+    }
+
+    private function createEvent(): MvcEvent
+    {
+        $event = $this->createMock(MvcEvent::class);
+        $serviceManager = \TestHelper::createMockServiceManager();
+        $serviceManager->set(MicroscopeHandler::class, $this->handler);
+        $this->application->method('getServiceManager')->willReturn($serviceManager);
+        $event->method('getApplication')->willReturn($this->application);
+        return $event;
     }
 
     public function testIsEnabledReturnsTrueWhenMicroscopeEnabled(): void
@@ -129,7 +142,7 @@ class MicroscopeHandlerTest extends TestCase
             ->with('microscope')
             ->willReturn(false);
 
-        $event = $this->createMock(MvcEvent::class);
+        $event = $this->createEvent();
         $event->expects($this->never())->method('getRouteMatch');
 
         // When disabled, start profiling should complete without errors
@@ -156,7 +169,7 @@ class MicroscopeHandlerTest extends TestCase
         ]);
         $routeMatch->method('getParams')->willReturn(['controller' => 'IndexController', 'action' => 'index']);
 
-        $event = $this->createMock(MvcEvent::class);
+        $event = $this->createEvent();
         $event->method('getRouteMatch')->willReturn($routeMatch);
 
         $this->handler->startProfiling($event);
@@ -176,7 +189,7 @@ class MicroscopeHandlerTest extends TestCase
             ->with('microscope')
             ->willReturn(false);
 
-        $event = $this->createMock(MvcEvent::class);
+        $event = $this->createEvent();
 
         // When disabled, profile dispatch should complete without errors
         $this->handler->profileDispatch($event);
@@ -212,7 +225,7 @@ class MicroscopeHandlerTest extends TestCase
         // IMPORTANT: Initialize the handler first to set up $startTime
         $this->handler->initialize();
 
-        $event = $this->createMock(MvcEvent::class);
+        $event = $this->createEvent();
 
         // Now call profileDispatch - $startTime should be initialized
         $this->handler->profileDispatch($event);
@@ -284,7 +297,7 @@ class MicroscopeHandlerTest extends TestCase
         // Test the basic workflow
         $this->handler->initialize();
         
-        $event = $this->createMock(MvcEvent::class);
+        $event = $this->createEvent();
         $this->handler->startProfiling($event);
         $this->handler->profileDispatch($event);
 
@@ -348,7 +361,7 @@ class MicroscopeHandlerTest extends TestCase
 
         $this->handler->initialize();
         
-        $event = $this->createMock(MvcEvent::class);
+        $event = $this->createEvent();
         $this->handler->profileDispatch($event);
 
         $profileData = $this->handler->getProfileData();

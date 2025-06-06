@@ -14,6 +14,7 @@ class WhoopsIntegrationTest extends TestCase
     private WhoopsHandler $whoops;
     private ComponentManager $componentManager;
     private ConfigurationService $configService;
+    private \LaminasMicroscope\Collector\CollectorRegistry $registry;
     private string $tempDir;
 
     protected function setUp(): void
@@ -44,7 +45,8 @@ class WhoopsIntegrationTest extends TestCase
         
         // Create dependencies in correct order
         $this->configService = new ConfigurationService($config);
-        $this->componentManager = new ComponentManager($this->configService);
+        $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $this->componentManager = new ComponentManager($this->configService, null, $this->registry);
         
         // Create WhoopsHandler with correct constructor signature (only ConfigurationService)
         $this->whoops = new WhoopsHandler($this->configService);
