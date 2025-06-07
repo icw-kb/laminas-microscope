@@ -1,214 +1,59 @@
 <?php
-$this->headTitle('Laminas Microscope - Debug Suite');
+/** Telescope-inspired dashboard */
+use LaminasMicroscope\Registry;
+$this->headTitle('Telescope');
 $this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
 $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+$debugBar = Registry::getDebugBar();
+$collectorNames = $config->get('laminas_microscope.components.debug_bar.collectors', []);
+$data = $debugBar ? $debugBar->getData() : [];
 ?>
-
-<div class="container-fluid mt-4">
+<div class="container-fluid pt-5">
     <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="display-4">
-                    <i class="fas fa-microscope"></i> Laminas Microscope
-                </h1>
-                <div class="badge bg-<?= $config->isEnabled() ? 'success' : 'danger' ?> fs-6">
-                    <?= $config->isEnabled() ? 'ENABLED' : 'DISABLED' ?>
-                </div>
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar position-fixed pt-4" style="height:calc(100vh - 56px);overflow-y:auto;">
+            <div class="sidebar-heading px-3 py-2"><strong>Telescope</strong></div>
+            <div class="nav flex-column nav-pills" id="sidebarTabs" role="tablist">
+                <a class="nav-link active" data-bs-toggle="pill" href="#dashboard" role="tab">Dashboard</a>
+                <?php foreach ($collectorNames as $name): ?>
+                <a class="nav-link" data-bs-toggle="pill" href="#<?= $this->escapeHtmlAttr($name) ?>" role="tab">
+                    <?= ucfirst($name) ?>
+                </a>
+                <?php endforeach; ?>
             </div>
-        </div>
-    </div>
-
-    <!-- Component Status Cards -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-<?= $componentManager->isEnabled('whoops') ? 'success' : 'secondary' ?>">
-                <div class="card-header bg-<?= $componentManager->isEnabled('whoops') ? 'success' : 'secondary' ?> text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-exclamation-triangle"></i> Whoops Error Handler
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Beautiful error pages with detailed stack traces and debugging information.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-<?= $componentManager->isEnabled('whoops') ? 'success' : 'secondary' ?>">
-                            <?= $componentManager->isEnabled('whoops') ? 'Active' : 'Inactive' ?>
-                        </span>
-                        <small class="text-muted">Error Handling</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-<?= $componentManager->isEnabled('debug_bar') ? 'success' : 'secondary' ?>">
-                <div class="card-header bg-<?= $componentManager->isEnabled('debug_bar') ? 'success' : 'secondary' ?> text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-chart-bar"></i> Debug Bar
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Request profiling, query logging, memory usage tracking and performance metrics.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-<?= $componentManager->isEnabled('debug_bar') ? 'success' : 'secondary' ?>">
-                            <?= $componentManager->isEnabled('debug_bar') ? 'Active' : 'Inactive' ?>
-                        </span>
-                        <small class="text-muted">Performance</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-<?= $componentManager->isEnabled('microscope') ? 'success' : 'secondary' ?>">
-                <div class="card-header bg-<?= $componentManager->isEnabled('microscope') ? 'success' : 'secondary' ?> text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-search"></i> Microscope Analysis
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">Code analysis, N+1 query detection, performance profiling and optimization insights.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-<?= $componentManager->isEnabled('microscope') ? 'success' : 'secondary' ?>">
-                            <?= $componentManager->isEnabled('microscope') ? 'Active' : 'Inactive' ?>
-                        </span>
-                        <small class="text-muted">Analysis</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-bolt"></i> Quick Actions
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <a href="<?= $this->url('laminas-microscope/microscope') ?>" class="btn btn-primary btn-lg w-100 mb-2">
-                                <i class="fas fa-microscope"></i><br>
-                                View Analysis
-                            </a>
+        </nav>
+        <main class="col-md-9 ms-sm-auto col-lg-10 offset-md-2 pt-4">
+            <div class="tab-content pt-3" id="sidebarTabContent">
+                <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr><td><strong>Environment:</strong></td><td><?= $config->get('laminas_microscope.environment', 'unknown') ?></td></tr>
+                                <tr><td><strong>PHP Version:</strong></td><td><?= PHP_VERSION ?></td></tr>
+                                <tr><td><strong>Memory Limit:</strong></td><td><?= ini_get('memory_limit') ?></td></tr>
+                                <tr><td><strong>Storage Path:</strong></td><td><?= $config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope') ?></td></tr>
+                            </table>
                         </div>
-                        <div class="col-md-3">
-                            <a href="<?= $this->url('laminas-microscope/config') ?>" class="btn btn-info btn-lg w-100 mb-2">
-                                <i class="fas fa-cog"></i><br>
-                                Configuration
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-warning btn-lg w-100 mb-2" onclick="clearReports()">
-                                <i class="fas fa-trash"></i><br>
-                                Clear Reports
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-success btn-lg w-100 mb-2" onclick="exportData()">
-                                <i class="fas fa-download"></i><br>
-                                Export Data
-                            </button>
+                        <div class="col-md-6">
+                            <?php $storagePath = $config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'); ?>
+                            <table class="table table-sm">
+                                <tr><td><strong>Debug Mode:</strong></td><td><span class="badge bg-<?= $config->isEnabled() ? 'success' : 'danger' ?>"><?= $config->isEnabled() ? 'Enabled' : 'Disabled' ?></span></td></tr>
+                                <tr><td><strong>Storage Writable:</strong></td><td><span class="badge bg-<?= is_writable(dirname($storagePath)) ? 'success' : 'danger' ?>"><?= is_writable(dirname($storagePath)) ? 'Yes' : 'No' ?></span></td></tr>
+                                <tr><td><strong>Current Memory:</strong></td><td><?= round(memory_get_usage(true) / 1024 / 1024, 2) ?> MB</td></tr>
+                                <tr><td><strong>Request Time:</strong></td><td><?= date('Y-m-d H:i:s') ?></td></tr>
+                            </table>
                         </div>
                     </div>
                 </div>
+                <?php foreach ($collectorNames as $name): ?>
+                <div class="tab-pane fade" id="<?= $this->escapeHtmlAttr($name) ?>" role="tabpanel">
+                    <pre><?= $this->escapeHtml(print_r($data[$name] ?? [], true)) ?></pre>
+                </div>
+                <?php endforeach; ?>
             </div>
-        </div>
-    </div>
-
-    <!-- Environment Information -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-server"></i> Environment Information
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Environment:</strong></td>
-                            <td><?= $config->get('laminas_microscope.environment', 'unknown') ?></td>
-                        </tr>
-                        <tr>
-                            <td><strong>PHP Version:</strong></td>
-                            <td><?= PHP_VERSION ?></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Memory Limit:</strong></td>
-                            <td><?= ini_get('memory_limit') ?></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Storage Path:</strong></td>
-                            <td><?= $config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope') ?></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-info-circle"></i> System Status
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Debug Mode:</strong></td>
-                            <td>
-                                <span class="badge bg-<?= $config->isEnabled() ? 'success' : 'danger' ?>">
-                                    <?= $config->isEnabled() ? 'Enabled' : 'Disabled' ?>
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Storage Writable:</strong></td>
-                            <td>
-                                <?php $storagePath = $config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'); ?>
-                                <span class="badge bg-<?= is_writable(dirname($storagePath)) ? 'success' : 'danger' ?>">
-                                    <?= is_writable(dirname($storagePath)) ? 'Yes' : 'No' ?>
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Current Memory:</strong></td>
-                            <td><?= round(memory_get_usage(true) / 1024 / 1024, 2) ?> MB</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Request Time:</strong></td>
-                            <td><?= date('Y-m-d H:i:s') ?></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 </div>
-
 <script>
-function clearReports() {
-    if (confirm('Are you sure you want to clear all analysis reports?')) {
-        fetch('<?= $this->url('laminas-microscope/api', ['action' => 'clear-reports']) ?>', {
-            method: 'POST'
-        }).then(response => {
-            if (response.ok) {
-                alert('Reports cleared successfully');
-                location.reload();
-            } else {
-                alert('Failed to clear reports');
-            }
-        });
-    }
-}
-
-function exportData() {
-    window.open('<?= $this->url('laminas-microscope/api', ['action' => 'export']) ?>', '_blank');
-}
+function exportData(){window.open('<?= $this->url('laminas-microscope/api', ['action' => 'export']) ?>','_blank');}
+function clearReports(){if(confirm('Are you sure you want to clear all analysis reports?')){fetch('<?= $this->url('laminas-microscope/api', ['action' => 'clear-reports']) ?>',{method:'POST'}).then(response=>{if(response.ok){location.reload();}});}}
 </script>
