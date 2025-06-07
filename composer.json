@@ -68,10 +68,10 @@
     }
   },
   "scripts": {
-    "test": "phpunit",
-    "test-unit": "phpunit tests/Unit",
-    "test-integration": "phpunit tests/Integration", 
-    "test-functional": "phpunit tests/Functional",
+    "test": "phpunit --no-coverage",
+    "test-unit": "phpunit --no-coverage tests/Unit",
+    "test-integration": "phpunit --no-coverage tests/Integration",
+    "test-functional": "phpunit --no-coverage tests/Functional",
     "test-coverage": "phpunit --coverage-html tests/coverage/html --coverage-clover tests/coverage/clover.xml",
     "cs-check": "phpcs",
     "cs-fix": "phpcbf",

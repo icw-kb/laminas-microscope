@@ -69,7 +69,7 @@ return [
 
 #### Main Configuration
 ```bash
-cp vendor/icw-kb/laminas-microscope/config/laminas-microscope.yaml config/autoload/
+cp vendor/icw-kb/laminas-microscope/config/laminas-microscope.local.php config/autoload/
 ```
 
 #### Environment-Specific Configuration (Optional)
@@ -81,7 +81,7 @@ cp vendor/icw-kb/laminas-microscope/config/profiles/* config/autoload/debug-suit
 
 ### 5. Configure for Your Environment
 
-Edit `config/autoload/laminas-microscope.yaml`:
+Edit `config/autoload/laminas-microscope.local.php`:
 
 #### Development Environment
 ```yaml
@@ -336,7 +336,7 @@ composer require icw-kb/laminas-microscope --dev
 **Debug bar not appearing:**
 ```bash
 # Check configuration
-php -r "print_r(include 'config/autoload/laminas-microscope.yaml');"
+php -r "print_r(include 'config/autoload/laminas-microscope.local.php');"
 
 # Verify HTML output has closing </body> tag
 curl -s http://your-app.com | grep -i "</body>"
@@ -402,7 +402,7 @@ rm -rf data/config-cache.php
 composer update icw-kb/laminas-microscope
 
 # Check for configuration changes
-diff vendor/icw-kb/laminas-microscope/config/laminas-microscope.yaml config/autoload/laminas-microscope.yaml
+diff vendor/icw-kb/laminas-microscope/config/laminas-microscope.local.php config/autoload/laminas-microscope.local.php
 ```
 
 ## 🎯 Next Steps

@@ -94,7 +94,10 @@ class DebugBarHandler
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::initialize() called. Instance hash: " . spl_object_hash($this) . ", Initialized: " . ($this->initialized ? 'true' : 'false') . ", Enabled: " . ($this->isEnabled() ? 'true' : 'false') . ".\n");
         // --- END DEBUG LOGGING ---
 
-        if ($this->initialized || !$this->isEnabled()) {
+        $config = $this->configService->getComponentConfig('debug_bar');
+        $collectorsOnly = (bool) ($config['collectors_only'] ?? false);
+
+        if ($this->initialized || (!$this->isEnabled() && !$collectorsOnly)) {
             // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: DebugBarHandler::initialize() skipping initialization.\n");
             // --- END DEBUG LOGGING ---
@@ -109,20 +112,18 @@ class DebugBarHandler
         // --- END NEW DEBUG LOGGING ---
 
 
-        $this->renderer = $this->debugBar->getJavascriptRenderer();
-        $config = $this->configService->getComponentConfig('debug_bar');
-        $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources'; // Default to the asset route
-
-        // REMOVED: echo "LaminasMicroscope: DebugBarHandler::initialize - Configured base_url: " . $baseUrl . "\n";
-
-        if ($this->renderer && method_exists($this->renderer, 'setBaseUrl')) {
-            $this->renderer->setBaseUrl($baseUrl);
-            // REMOVED: Debug logs for renderer base_url after set
-        } else {
-            // REMOVED: Debug logs for renderer being null or missing method
+        if (!$collectorsOnly) {
+            $this->renderer = $this->debugBar->getJavascriptRenderer();
+            $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources';
+            if ($this->renderer && method_exists($this->renderer, 'setBaseUrl')) {
+                $this->renderer->setBaseUrl($baseUrl);
+            }
         }
 
         $this->initialized = true;
+        if (class_exists(\LaminasMicroscope\Registry::class)) {
+            \LaminasMicroscope\Registry::setDebugBar($this);
+        }
         // --- DEBUG LOGGING ---
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::initialize() finished. Initialized: true.\n");
         // --- END DEBUG LOGGING ---
@@ -209,12 +210,19 @@ class DebugBarHandler
         // --- END DEBUG LOGGING ---
         $debugBar = $this->getDebugBar();
         if ($debugBar && $debugBar->hasCollector('time')) {
-            $debugBar->getCollector('time')->stopMeasure($name);
-             // --- DEBUG LOGGING ---
-            error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
-            // --- END DEBUG LOGGING ---
+            $collector = $debugBar->getCollector('time');
+            if (method_exists($collector, 'hasStartedMeasure') && $collector->hasStartedMeasure($name)) {
+                $collector->stopMeasure($name);
+                // --- DEBUG LOGGING ---
+                error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
+                // --- END DEBUG LOGGING ---
+            } else {
+                // --- DEBUG LOGGING ---
+                error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not started; stop skipped.\n");
+                // --- END DEBUG LOGGING ---
+            }
         } else {
-             // --- DEBUG LOGGING ---
+            // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not stopped. DebugBar or time collector not available.\n");
             // --- END DEBUG LOGGING ---
         }
@@ -385,6 +393,11 @@ class DebugBarHandler
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::shouldDisplay() called. Instance hash: " . spl_object_hash($this) . ".\n"); // Corrected newline
         // --- END DEBUG LOGGING ---
 
+        $config = $this->configService->getComponentConfig('debug_bar');
+        if (($config['collectors_only'] ?? false)) {
+            return false;
+        }
+
         if (!$this->isEnabled()) {
             // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: shouldDisplay() returning false because DebugBar is not enabled.\n"); // Corrected newline
@@ -392,7 +405,6 @@ class DebugBarHandler
             return false;
         }
 
-        $config = $this->configService->getComponentConfig('debug_bar');
         $environment = $this->configService->getEnvironment();
 
         if ($environment === 'production') {
@@ -479,6 +491,10 @@ class DebugBarHandler
                      // --- DEBUG LOGGING ---
                     error_log("LaminasMicroscope: DEBUG: TimeDataCollector already exists.\n");
                     // --- END DEBUG LOGGING ---
+                    $collector = $this->debugBar->getCollector('time');
+                    if ($collector) {
+                        $this->collectorRegistry->register($collector);
+                    }
                 }
                 break;
 
@@ -501,6 +517,10 @@ class DebugBarHandler
                      // --- DEBUG LOGGING ---
                     error_log("LaminasMicroscope: DEBUG: MemoryCollector already exists.\n");
                     // --- END DEBUG LOGGING ---
+                    $collector = $this->debugBar->getCollector('memory');
+                    if ($collector) {
+                        $this->collectorRegistry->register($collector);
+                    }
                 }
                 break;
 
@@ -523,6 +543,10 @@ class DebugBarHandler
                      // --- DEBUG LOGGING ---
                     error_log("LaminasMicroscope: DEBUG: MessagesCollector already exists.\n");
                     // --- END DEBUG LOGGING ---
+                    $collector = $this->debugBar->getCollector('messages');
+                    if ($collector) {
+                        $this->collectorRegistry->register($collector);
+                    }
                 }
                 break;
 
@@ -547,6 +571,10 @@ class DebugBarHandler
                      // --- DEBUG LOGGING ---
                     error_log("LaminasMicroscope: DEBUG: PhpInfoCollector with key \"{$customKey}\" already exists.\n");
                     // --- END DEBUG LOGGING ---
+                    $collector = $this->debugBar->getCollector($customKey);
+                    if ($collector) {
+                        $this->collectorRegistry->register($collector);
+                    }
                 }
                 break;
 

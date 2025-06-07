@@ -43,7 +43,7 @@ composer require icw-kb/laminas-microscope --dev
 
 1. **Copy main configuration:**
 ```bash
-cp vendor/icw-kb/laminas-microscope/config/laminas-microscope.yaml config/autoload/
+cp vendor/icw-kb/laminas-microscope/config/laminas-microscope.local.php config/autoload/
 ```
 
 2. **Add module to your application:**
@@ -58,18 +58,19 @@ return [
 ```
 
 3. **Configure for your environment:**
-```yaml
-# config/autoload/laminas-microscope.yaml
-laminas_microscope:
-  enabled: true
-  environment: 'development'
-  components:
-    whoops:
-      enabled: true
-    debug_bar:
-      enabled: true
-    microscope:
-      enabled: true
+```php
+# config/autoload/laminas-microscope.local.php
+return [
+    'laminas_microscope' => [
+        'enabled' => true,
+        'environment' => 'development',
+        'components' => [
+            'whoops' => ['enabled' => true],
+            'debug_bar' => ['enabled' => true],
+            'microscope' => ['enabled' => true],
+        ],
+    ],
+];
 ```
 
 ### Access the Debug Suite
@@ -116,6 +117,7 @@ laminas_microscope:
       enabled: false
     debug_bar:
       enabled: true
+      collectors_only: true
       collectors: ['time', 'memory', 'pdo']
     microscope:
       enabled: true
@@ -131,6 +133,7 @@ laminas_microscope:
       enabled: true
     debug_bar:
       enabled: true
+      collectors_only: true
       collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']
     microscope:
       enabled: true

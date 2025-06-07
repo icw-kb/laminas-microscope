@@ -108,8 +108,10 @@ class ComponentManager
         if (!isset($this->components[$name])) {
             return null;
         }
+        $config = $this->getComponentConfig($name);
+        $collectorsOnly = $name === 'debug_bar' && ($config['collectors_only'] ?? false);
 
-        if (!$this->isComponentEnabled($name)) {
+        if (!$this->isComponentEnabled($name) && !$collectorsOnly) {
             return null;
         }
 
@@ -123,6 +125,10 @@ class ComponentManager
         // Initialize component if it has initialize method
         if (method_exists($component, 'initialize')) {
             $component->initialize();
+        }
+
+        if ($name === 'debug_bar' && class_exists(\LaminasMicroscope\Registry::class)) {
+            \LaminasMicroscope\Registry::setDebugBar($component);
         }
 
         return $component;
