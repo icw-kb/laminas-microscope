@@ -147,3 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+<?php if ($debugBar): ?>
+    <?= $debugBar->renderHead() ?>
+    <?= $debugBar->renderContent() ?>
+<?php endif; ?>
