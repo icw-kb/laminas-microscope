@@ -6,7 +6,7 @@ This guide covers all configuration options available in Laminas Microscope.
 
 ```
 config/autoload/
-├── laminas-microscope.yaml           # Main configuration
+├── laminas-microscope.local.php      # Main configuration
 └── debug-suite/                      # Environment-specific configs
     ├── development.yaml              # Development environment
     ├── staging.yaml                  # Staging environment
@@ -458,10 +458,10 @@ laminas_microscope:
 
 ## 🔄 Configuration Loading Order
 
-1. **Main configuration**: `laminas-microscope.yaml`
+1. **Main configuration**: `laminas-microscope.local.php`
 2. **Environment config**: `debug-suite/{environment}.yaml`  
 3. **Profile config**: `debug-suite/{profile}.yaml`
-4. **Local overrides**: `laminas-microscope.local.yaml`
+4. **Local overrides**: `laminas-microscope.local.php`
 
 ## 🌍 Environment Variables
 
