@@ -19,6 +19,7 @@ laminas_microscope:
       enabled: true
       position: 'bottom'  # bottom, top
       max_queries: 100
+      collectors_only: false
       collectors:
         - 'time'
         - 'memory'
