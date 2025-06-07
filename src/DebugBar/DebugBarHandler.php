@@ -24,6 +24,7 @@ use Psr\Container\ContainerInterface;
 use Laminas\View\Renderer\RendererInterface;
 use DebugBar\JavascriptRenderer;
 use LaminasMicroscope\Collector\CollectorRegistry;
+use LaminasMicroscope\Registry;
 
 /**
  * Handler for DebugBar integration
@@ -123,6 +124,7 @@ class DebugBarHandler
         }
 
         $this->initialized = true;
+        Registry::setDebugBar($this);
         // --- DEBUG LOGGING ---
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::initialize() finished. Initialized: true.\n");
         // --- END DEBUG LOGGING ---

@@ -662,4 +662,13 @@ class DebugBarHandlerTest extends TestCase
             // Collector might be null for disabled handlers, which is acceptable
         }
     }
+
+    /**
+     * Ensure initialize sets Registry debug bar
+     */
+    public function testInitializeSetsRegistry(): void
+    {
+        $this->handler->initialize();
+        $this->assertSame($this->handler, \LaminasMicroscope\Registry::getDebugBar());
+    }
 }
