@@ -8,6 +8,7 @@
          stopOnError="false"
          stopOnIncomplete="false"
          stopOnSkipped="false"
+         failOnWarning="false"
          >
     
     <testsuites>
@@ -32,13 +33,6 @@
         </exclude>
     </source>
 
-    <coverage>
-        <report>
-            <html outputDirectory="tests/coverage/html"/>
-            <clover outputFile="tests/coverage/clover.xml"/>
-            <text outputFile="tests/coverage/coverage.txt"/>
-        </report>
-    </coverage>
 
     <logging>
         <junit outputFile="tests/logs/junit.xml"/>

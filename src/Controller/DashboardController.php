@@ -37,13 +37,17 @@ class DashboardController extends AbstractActionController
      */
     public function indexAction(): ViewModel
     {
+        $debugBar = Registry::getDebugBar();
+        $collectorData = $debugBar ? $debugBar->getData() : [];
+        $collectors = array_keys($this->registry->all());
+
         $viewModel = new ViewModel([
             'componentManager' => $this->componentManager,
             'config' => $this->config,
             'recentReports' => $this->getRecentReports(),
             'systemInfo' => $this->getSystemInfo(),
-            'collectors' => array_keys($this->registry->all()),
-            'collectorData' => Registry::getDebugBar() ? Registry::getDebugBar()->getData() : [],
+            'collectors' => $collectors,
+            'collectorData' => $collectorData,
         ]);
 
         $viewModel->setTemplate('laminas-microscope/index');
