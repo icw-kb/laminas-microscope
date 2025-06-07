@@ -24,6 +24,9 @@ use Psr\Container\ContainerInterface;
 use Laminas\View\Renderer\RendererInterface;
 use DebugBar\JavascriptRenderer;
 use LaminasMicroscope\Collector\CollectorRegistry;
+use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
+use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
 
 /**
  * Handler for DebugBar integration
@@ -530,6 +533,39 @@ class DebugBarHandler
                      // --- DEBUG LOGGING ---
                     error_log("LaminasMicroscope: DEBUG: MessagesCollector already exists.\n");
                     // --- END DEBUG LOGGING ---
+                }
+                break;
+
+            case 'pdo':
+                if (!$this->debugBar->hasCollector('pdo')) {
+                    try {
+                        $collector = $this->container->get(PDOCollector::class);
+                        $this->debugBar->addCollector($collector);
+                        $this->collectorRegistry->register($collector);
+                    } catch (Exception $e) {
+                    }
+                }
+                break;
+
+            case 'request':
+                if (!$this->debugBar->hasCollector('request')) {
+                    try {
+                        $collector = $this->container->get(LaminasRequestCollector::class);
+                        $this->debugBar->addCollector($collector);
+                        $this->collectorRegistry->register($collector);
+                    } catch (Exception $e) {
+                    }
+                }
+                break;
+
+            case 'config':
+                if (!$this->debugBar->hasCollector('config')) {
+                    try {
+                        $collector = $this->container->get(LaminasConfigCollector::class);
+                        $this->debugBar->addCollector($collector);
+                        $this->collectorRegistry->register($collector);
+                    } catch (Exception $e) {
+                    }
                 }
                 break;
 
