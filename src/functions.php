@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Global helper functions for Laminas Microscope
  */
+
+declare(strict_types=1);
 
 if (!function_exists('microscope_dump')) {
     /**
@@ -12,9 +12,9 @@ if (!function_exists('microscope_dump')) {
      */
     function microscope_dump(...$vars): void
     {
-        if (class_exists(\Symfony\Component\VarDumper\VarDumper::class)) { 
+        if (class_exists(\Symfony\Component\VarDumper\VarDumper::class)) {
             foreach ($vars as $var) {
-                \Symfony\Component\VarDumper\VarDumper::dump($var); 
+                \Symfony\Component\VarDumper\VarDumper::dump($var);
             }
         } else {
             foreach ($vars as $var) {
@@ -45,8 +45,8 @@ if (!function_exists('microscope_measure')) {
         $result = $callback();
         $end = microtime(true);
 
-        if (class_exists(\LaminasMicroscope\DebugBar\DebugBarHandler::class)) { 
-            $debugBar = \LaminasMicroscope\Registry::getDebugBar(); 
+        if (class_exists(\LaminasMicroscope\DebugBar\DebugBarHandler::class)) {
+            $debugBar = \LaminasMicroscope\Registry::getDebugBar();
             if ($debugBar && $debugBar->isEnabled()) {
                 $debugBar->addMessage(
                     sprintf('Measurement "%s": %.2fms', $name, ($end - $start) * 1000),
@@ -65,8 +65,8 @@ if (!function_exists('microscope_log')) {
      */
     function microscope_log(string $message, string $level = 'info', array $context = []): void
     {
-        if (class_exists(\LaminasMicroscope\DebugBar\DebugBarHandler::class)) { 
-            $debugBar = \LaminasMicroscope\Registry::getDebugBar(); 
+        if (class_exists(\LaminasMicroscope\DebugBar\DebugBarHandler::class)) {
+            $debugBar = \LaminasMicroscope\Registry::getDebugBar();
             if ($debugBar && $debugBar->isEnabled()) {
                 $debugBar->addMessage($message, $level);
             }

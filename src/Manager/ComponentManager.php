@@ -10,9 +10,9 @@ use LaminasMicroscope\Whoops\WhoopsHandler;
 use LaminasMicroscope\Service\AnalysisService;
 use Psr\Container\ContainerInterface;
 use LaminasMicroscope\Container\MockContainer;
-use LaminasMicroscope\Microscope\MicroscopeHandler; // Added use statement
+use LaminasMicroscope\Microscope\MicroscopeHandler;
 use LaminasMicroscope\Collector\CollectorRegistry;
-use Exception; // Added use statement
+use Exception;
 
 /**
  * Manager for all Laminas Microscope components
@@ -120,7 +120,7 @@ class ComponentManager
 
         $this->initialized[$name] = $component;
 
-        // Initialize component if it has initialize method
+
         if (method_exists($component, 'initialize')) {
             $component->initialize();
         }
@@ -135,17 +135,16 @@ class ComponentManager
     {
         $initialized = [];
 
-        // Get initialization order based on dependencies
+
         $order = $this->getInitializationOrder();
 
         foreach ($order as $componentName) {
-             // Check if component is still enabled after considering dependencies
-             if ($this->isComponentEnabled($componentName)) {
+            if ($this->isComponentEnabled($componentName)) {
                 $component = $this->initializeComponent($componentName);
                 if ($component) {
                     $initialized[$componentName] = $component;
                 }
-             }
+            }
         }
 
         return $initialized;
@@ -167,7 +166,7 @@ class ComponentManager
         if (isset($this->initialized[$name])) {
             $component = $this->initialized[$name];
 
-            // Call reset method if available
+
             if (method_exists($component, 'reset')) {
                 $component->reset();
             }
@@ -217,7 +216,7 @@ class ComponentManager
             if (($config['type'] ?? '') === $type) {
                 $components[$name] = $this->getComponent($name);
             }
-            }
+        }
         return $components;
     }
 
@@ -264,7 +263,7 @@ class ComponentManager
         $components = $this->getEnabledComponents();
         $ordered = [];
         $visited = [];
-        $visiting = []; // To detect circular dependencies
+        $visiting = [];
 
         foreach ($components as $component) {
             if (!in_array($component, $visited)) {
@@ -351,7 +350,7 @@ class ComponentManager
         $this->registerComponent('debug_bar', DebugBarHandler::class);
         $this->registerComponent('whoops', WhoopsHandler::class);
         $this->registerComponent('analysis', AnalysisService::class);
-        $this->registerComponent('microscope', MicroscopeHandler::class); 
+        $this->registerComponent('microscope', MicroscopeHandler::class);
     }
 
     /**
@@ -366,10 +365,8 @@ class ComponentManager
         $className = $this->components[$name];
 
         try {
-            // Handle specific component constructors
             switch ($name) {
                 case 'microscope':
-                    // MicroscopeHandler needs ComponentManager, ConfigurationService, and Container
                     return new $className(
                         $this,
                         $this->configService,
@@ -378,35 +375,29 @@ class ComponentManager
                     );
 
                 case 'debug_bar':
-                    // DebugBarHandler constructor signature now includes Container
                     return new $className(
                         $this->configService,
                         $this->container ?? new MockContainer(),
                         $this->registry
-                    ); // Pass container and registry
+                    );
 
                 case 'whoops':
-                    // WhoopsHandler constructor signature
                     return new $className($this->configService);
 
                 case 'analysis':
-                    // AnalysisService constructor signature
                     return new $className(
                         $this->configService,
                         $this->getComponent('microscope')
                     );
 
                 default:
-                    // Try with ConfigurationService first
                     try {
                         return new $className($this->configService);
-                    } catch (Exception $e) { 
-                        // If that fails, try without parameters
+                    } catch (Exception $e) {
                         return new $className();
                     }
             }
-        } catch (Exception $e) { 
-            // Return null if component creation fails
+        } catch (Exception $e) {
             error_log("Failed to create component '{$name}': " . $e->getMessage());
             return null;
         }
@@ -415,17 +406,20 @@ class ComponentManager
     /**
      * Sort components by dependencies (topological sort)
      */
-    private function sortComponentsByDependencies(string $component, array &$ordered, array &$visited, array &$visiting): void
-    {
+    private function sortComponentsByDependencies(
+        string $component,
+        array &$ordered,
+        array &$visited,
+        array &$visiting
+    ): void {
         $visiting[] = $component;
 
-        // First, add dependencies
+
         foreach ($this->getComponentDependencies($component) as $dependency) {
             if ($this->isComponentEnabled($dependency)) {
                 if (in_array($dependency, $visiting)) {
-                    // Circular dependency detected
                     error_log("Circular dependency detected involving component: {$dependency}");
-                    // Handle this error appropriately, maybe skip this dependency or throw exception
+
                     continue;
                 }
                 if (!in_array($dependency, $visited)) {
@@ -434,10 +428,10 @@ class ComponentManager
             }
         }
 
-        // Then add the component itself
+
         $ordered[] = $component;
         $visited[] = $component;
-        // Remove from visiting list
+
         $visiting = array_diff($visiting, [$component]);
     }
 }

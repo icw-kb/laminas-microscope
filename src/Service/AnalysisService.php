@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace LaminasMicroscope\Service;
 
 use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\Microscope\MicroscopeHandler; // Import MicroscopeHandler
+use LaminasMicroscope\Microscope\MicroscopeHandler;
+
+// Import MicroscopeHandler
 
 /**
  * Service for analyzing application performance and behavior
@@ -296,11 +298,14 @@ class AnalysisService
 
         switch ($last) {
             case 'g':
-                $val *= 1024;
+                $val *= 1024 * 1024 * 1024;
+                break;
             case 'm':
-                $val *= 1024;
+                $val *= 1024 * 1024;
+                break;
             case 'k':
                 $val *= 1024;
+                break;
         }
 
         return $val;
