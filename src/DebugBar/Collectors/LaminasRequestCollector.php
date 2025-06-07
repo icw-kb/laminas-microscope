@@ -6,8 +6,9 @@ namespace LaminasMicroscope\DebugBar\Collectors;
 
 use DebugBar\DataCollector\DataCollector; 
 use DebugBar\DataCollector\Renderable; 
-use Laminas\ServiceManager\ServiceManager; 
-use Exception; 
+use Laminas\ServiceManager\ServiceManager;
+use Exception;
+use LaminasMicroscope\Collector\CollectorInterface;
 
 class LaminasRequestCollector extends DataCollector implements Renderable, CollectorInterface
 {
