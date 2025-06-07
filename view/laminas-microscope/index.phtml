@@ -65,7 +65,7 @@ $data = $debugBar ? $debugBar->getData() : [];
                              role="tabpanel"
                              aria-labelledby="tab-<?= $this->escapeHtmlAttr($name) ?>-tab">
                             <h3><?= ucfirst($this->escapeHtml($name)) ?></h3>
-                            <pre><?= $this->escapeHtml(print_r($data[$name] ?? [], true)) ?></pre>
+                            <pre data-tree><?= json_encode($data[$name] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?></pre>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -142,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
             el.innerHTML = '';
             renderTree(data, el);
         } catch (e) {
-            // fallback to plain text if parsing fails
             el.textContent = raw;
         }
     });
