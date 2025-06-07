@@ -35,6 +35,7 @@ class DebugBarHandler
     private bool $initialized = false;
     private ContainerInterface $container;
     private CollectorRegistry $collectorRegistry;
+    private array $activeTimers = [];
     private ?JavascriptRenderer $renderer = null;
 
     public function __construct(
@@ -191,13 +192,10 @@ class DebugBarHandler
         $debugBar = $this->getDebugBar();
         if ($debugBar && $debugBar->hasCollector('time')) {
             $debugBar->getCollector('time')->startMeasure($name, $label);
-             // --- DEBUG LOGGING ---
+            $this->activeTimers[$name] = true;
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" started.\n");
-            // --- END DEBUG LOGGING ---
         } else {
-             // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not started. DebugBar or time collector not available.\n");
-            // --- END DEBUG LOGGING ---
         }
     }
 
@@ -210,15 +208,12 @@ class DebugBarHandler
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::stopTimer() called for timer: \"{$name}\". Instance hash: " . spl_object_hash($this) . ".\n");
         // --- END DEBUG LOGGING ---
         $debugBar = $this->getDebugBar();
-        if ($debugBar && $debugBar->hasCollector('time')) {
+        if ($debugBar && $debugBar->hasCollector('time') && isset($this->activeTimers[$name])) {
             $debugBar->getCollector('time')->stopMeasure($name);
-             // --- DEBUG LOGGING ---
+            unset($this->activeTimers[$name]);
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
-            // --- END DEBUG LOGGING ---
         } else {
-             // --- DEBUG LOGGING ---
-            error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not stopped. DebugBar or time collector not available.\n");
-            // --- END DEBUG LOGGING ---
+            error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not stopped. DebugBar or time collector not available, or timer not started.\n");
         }
     }
 
@@ -594,9 +589,8 @@ class DebugBarHandler
             $this->debugBar = null;
             $this->renderer = null;
             $this->initialized = false;
-             // --- DEBUG LOGGING ---
+            $this->activeTimers = [];
             error_log("LaminasMicroscope: DEBUG: DebugBarHandler reset finished.\n");
-            // --- END DEBUG LOGGING ---
         } else {
              // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: DebugBarHandler reset skipped, not initialized.\n");
