@@ -174,6 +174,7 @@ class MicroscopeAnalysisTest extends TestCase
         
         // End profiling
         $this->microscope->profileDispatch($event);
+        MicroscopeHandler::finalizeProfiling($event);
         
         // Verify performance data was recorded
         $profileData = $this->microscope->getProfileData();
@@ -248,6 +249,7 @@ class MicroscopeAnalysisTest extends TestCase
         
         // End profiling to capture memory metrics
         $this->microscope->profileDispatch($event);
+        MicroscopeHandler::finalizeProfiling($event);
         
         // Check that memory data was captured in performance metrics
         $profileData = $this->microscope->getProfileData();
@@ -343,6 +345,7 @@ class MicroscopeAnalysisTest extends TestCase
         
         // End profiling
         $this->microscope->profileDispatch($event);
+        MicroscopeHandler::finalizeProfiling($event);
         
         // Check performance data
         $profileData = $this->microscope->getProfileData();
