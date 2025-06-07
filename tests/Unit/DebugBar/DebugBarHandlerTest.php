@@ -149,6 +149,12 @@ class DebugBarHandlerTest extends TestCase
         $this->handler->stopTimer('test_timer');
     }
 
+    public function testStopTimerWithoutStartDoesNotThrow(): void
+    {
+        $this->expectNotToPerformAssertions();
+        $this->handler->stopTimer('no_start');
+    }
+
     public function testAddDataDoesNotThrowWhenNotInitialized(): void
     {
         $this->expectNotToPerformAssertions();

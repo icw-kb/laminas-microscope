@@ -191,9 +191,12 @@ class DebugBarHandler
         // --- END DEBUG LOGGING ---
         $debugBar = $this->getDebugBar();
         if ($debugBar && $debugBar->hasCollector('time')) {
-            $debugBar->getCollector('time')->startMeasure($name, $label);
-            $this->activeTimers[$name] = true;
-            error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" started.\n");
+            $collector = $debugBar->getCollector('time');
+            if (!method_exists($collector, 'hasStartedMeasure') || !$collector->hasStartedMeasure($name)) {
+                $collector->startMeasure($name, $label);
+                $this->activeTimers[$name] = true;
+                error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" started.\n");
+            }
         } else {
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not started. DebugBar or time collector not available.\n");
         }
@@ -209,9 +212,14 @@ class DebugBarHandler
         // --- END DEBUG LOGGING ---
         $debugBar = $this->getDebugBar();
         if ($debugBar && $debugBar->hasCollector('time') && isset($this->activeTimers[$name])) {
-            $debugBar->getCollector('time')->stopMeasure($name);
-            unset($this->activeTimers[$name]);
-            error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
+            $collector = $debugBar->getCollector('time');
+            if (!method_exists($collector, 'hasStartedMeasure') || $collector->hasStartedMeasure($name)) {
+                $collector->stopMeasure($name);
+                unset($this->activeTimers[$name]);
+                error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
+            } else {
+                unset($this->activeTimers[$name]);
+            }
         } else {
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not stopped. DebugBar or time collector not available, or timer not started.\n");
         }
