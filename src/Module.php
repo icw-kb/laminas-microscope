@@ -16,6 +16,7 @@ use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
 use LaminasMicroscope\Whoops\WhoopsHandler;
+use LaminasMicroscope\Registry;
 use Closure;
 
 class Module implements
@@ -52,6 +53,7 @@ class Module implements
         // Record the start time of the bootstrap phase
         if ($componentManager->isEnabled('debug_bar')) {
             $debugBarHandler = $serviceManager->get(DebugBarHandler::class);
+            Registry::setDebugBar($debugBarHandler);
             // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: Module::onBootstrap - Retrieved DebugBarHandler instance: " . spl_object_hash($debugBarHandler) . ".\n"); // Log instance hash
             // --- END DEBUG LOGGING ---
