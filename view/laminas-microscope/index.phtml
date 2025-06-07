@@ -91,3 +91,60 @@ function clearReports() {
     }
 }
 </script>
+<script>
+function renderTree(obj, container) {
+    for (const key in obj) {
+        if (!Object.hasOwn(obj, key)) continue;
+        const value = obj[key];
+        const item = document.createElement('div');
+        item.classList.add('mb-1');
+
+        const keyElement = document.createElement('span');
+        keyElement.style.cursor = 'pointer';
+        keyElement.style.fontWeight = 'bold';
+        keyElement.textContent = key;
+
+        if (typeof value === 'object' && value !== null) {
+            const toggle = document.createElement('span');
+            toggle.textContent = ' ▶';
+            toggle.style.color = '#888';
+
+            const nested = document.createElement('div');
+            nested.style.marginLeft = '1rem';
+            nested.style.display = 'none';
+
+            keyElement.prepend(toggle);
+            keyElement.onclick = () => {
+                const isOpen = nested.style.display === 'block';
+                nested.style.display = isOpen ? 'none' : 'block';
+                toggle.textContent = isOpen ? ' ▶' : ' ▼';
+            };
+
+            renderTree(value, nested);
+            item.appendChild(keyElement);
+            item.appendChild(nested);
+        } else {
+            const valElement = document.createElement('span');
+            valElement.textContent = `: ${value}`;
+            keyElement.appendChild(valElement);
+            item.appendChild(keyElement);
+        }
+
+        container.appendChild(item);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-tree]').forEach(el => {
+        const raw = el.textContent;
+        try {
+            const data = JSON.parse(raw);
+            el.innerHTML = '';
+            renderTree(data, el);
+        } catch (e) {
+            // fallback to plain text if parsing fails
+            el.textContent = raw;
+        }
+    });
+});
+</script>
