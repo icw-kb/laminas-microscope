@@ -210,12 +210,19 @@ class DebugBarHandler
         // --- END DEBUG LOGGING ---
         $debugBar = $this->getDebugBar();
         if ($debugBar && $debugBar->hasCollector('time')) {
-            $debugBar->getCollector('time')->stopMeasure($name);
-             // --- DEBUG LOGGING ---
-            error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
-            // --- END DEBUG LOGGING ---
+            $collector = $debugBar->getCollector('time');
+            if (method_exists($collector, 'hasStartedMeasure') && $collector->hasStartedMeasure($name)) {
+                $collector->stopMeasure($name);
+                // --- DEBUG LOGGING ---
+                error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" stopped.\n");
+                // --- END DEBUG LOGGING ---
+            } else {
+                // --- DEBUG LOGGING ---
+                error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not started; stop skipped.\n");
+                // --- END DEBUG LOGGING ---
+            }
         } else {
-             // --- DEBUG LOGGING ---
+            // --- DEBUG LOGGING ---
             error_log("LaminasMicroscope: DEBUG: Timer \"{$name}\" not stopped. DebugBar or time collector not available.\n");
             // --- END DEBUG LOGGING ---
         }
