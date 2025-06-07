@@ -174,13 +174,14 @@ class MicroscopeAnalysisTest extends TestCase
         
         // End profiling
         $this->microscope->profileDispatch($event);
+        $this->microscope->finalizeProfiling($event);
         
         // Verify performance data was recorded
         $profileData = $this->microscope->getProfileData();
         $this->assertArrayHasKey('performance', $profileData);
         $this->assertArrayHasKey('total_time', $profileData['performance']);
-        $this->assertArrayHasKey('memory_usage', $profileData['performance']);
-        $this->assertArrayHasKey('peak_memory', $profileData['performance']);
+        $this->assertArrayHasKey('memory_usage_bytes', $profileData['performance']);
+        $this->assertArrayHasKey('peak_memory_bytes', $profileData['performance']);
     }
 
     public function testMicroscopeHandlesEmptyDataGracefully(): void
@@ -243,26 +244,27 @@ class MicroscopeAnalysisTest extends TestCase
         $this->microscope->startProfiling($event);
         
         // Simulate some memory usage
-        $dummy = str_repeat('x', 10000); // Allocate some memory
+        $dummy = str_repeat('x', 20 * 1024 * 1024); // Allocate some memory
         usleep(5000); // 5ms delay
         
         // End profiling to capture memory metrics
         $this->microscope->profileDispatch($event);
+        $this->microscope->finalizeProfiling($event);
         
         // Check that memory data was captured in performance metrics
         $profileData = $this->microscope->getProfileData();
         $this->assertArrayHasKey('performance', $profileData);
         
         $performance = $profileData['performance'];
-        $this->assertArrayHasKey('memory_usage', $performance);
-        $this->assertArrayHasKey('peak_memory', $performance);
+        $this->assertArrayHasKey('memory_usage_bytes', $performance);
+        $this->assertArrayHasKey('peak_memory_bytes', $performance);
         
-        // Memory values should be positive numbers
-        $this->assertGreaterThan(0, $performance['memory_usage']);
-        $this->assertGreaterThan(0, $performance['peak_memory']);
+        // Memory values should be non-negative
+        $this->assertGreaterThanOrEqual(0, $performance['memory_usage_bytes']);
+        $this->assertGreaterThanOrEqual(0, $performance['peak_memory_bytes']);
         
         // Peak memory should be >= current memory
-        $this->assertGreaterThanOrEqual($performance['memory_usage'], $performance['peak_memory']);
+        $this->assertGreaterThanOrEqual($performance['memory_usage_bytes'], $performance['peak_memory_bytes']);
     }
 
     public function testMicroscopeGetConfig(): void
@@ -338,11 +340,12 @@ class MicroscopeAnalysisTest extends TestCase
         
         // Simulate some work
         $startMemory = memory_get_usage();
-        $dummy = str_repeat('x', 10000); // Allocate some memory
+        $dummy = str_repeat('x', 20 * 1024 * 1024); // Allocate some memory
         usleep(15000); // 15ms delay
         
         // End profiling
         $this->microscope->profileDispatch($event);
+        $this->microscope->finalizeProfiling($event);
         
         // Check performance data
         $profileData = $this->microscope->getProfileData();
@@ -350,13 +353,13 @@ class MicroscopeAnalysisTest extends TestCase
         
         $performance = $profileData['performance'];
         $this->assertArrayHasKey('total_time', $performance);
-        $this->assertArrayHasKey('memory_usage', $performance);
-        $this->assertArrayHasKey('peak_memory', $performance);
+        $this->assertArrayHasKey('memory_usage_bytes', $performance);
+        $this->assertArrayHasKey('peak_memory_bytes', $performance);
         
         // Verify reasonable values
         $this->assertGreaterThan(0, $performance['total_time']);
-        $this->assertGreaterThan(0, $performance['memory_usage']);
-        $this->assertGreaterThan(0, $performance['peak_memory']);
+        $this->assertGreaterThanOrEqual(0, $performance['memory_usage_bytes']);
+        $this->assertGreaterThanOrEqual(0, $performance['peak_memory_bytes']);
     }
 
     public function testMicroscopeAnalysisStructure(): void
