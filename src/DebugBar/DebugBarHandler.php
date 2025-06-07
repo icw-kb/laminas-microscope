@@ -114,7 +114,7 @@ class DebugBarHandler
 
         $this->renderer = $this->debugBar->getJavascriptRenderer();
         $config = $this->configService->getComponentConfig('debug_bar');
-        $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources'; // Default to the asset route
+        $baseUrl = $config['base_url'] ?? '/debugbar/resources';
 
         // REMOVED: echo "LaminasMicroscope: DebugBarHandler::initialize - Configured base_url: " . $baseUrl . "\n";
 
@@ -721,7 +721,7 @@ class DebugBarHandler
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources'; // Default to the asset route
+        $baseUrl = $config['base_url'] ?? '/debugbar/resources';
          // --- DEBUG LOGGING ---
         error_log("LaminasMicroscope: DEBUG: getBaseUrl() returning from config: \"{$baseUrl}\".\n");
         // --- END DEBUG LOGGING ---
