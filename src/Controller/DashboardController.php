@@ -12,19 +12,24 @@ use Laminas\Http\Response;
 use RuntimeException;
 use Exception;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
-use DebugBar\JavascriptRenderer; 
+use DebugBar\JavascriptRenderer;
+use LaminasMicroscope\Collector\CollectorRegistry;
+use LaminasMicroscope\Registry;
 
 class DashboardController extends AbstractActionController
 {
     private ComponentManager $componentManager;
     private ConfigurationService $config;
+    private CollectorRegistry $registry;
 
     public function __construct(
         ComponentManager $componentManager,
-        ConfigurationService $config
+        ConfigurationService $config,
+        CollectorRegistry $registry
     ) {
         $this->componentManager = $componentManager;
         $this->config = $config;
+        $this->registry = $registry;
     }
 
     /**
@@ -37,6 +42,8 @@ class DashboardController extends AbstractActionController
             'config' => $this->config,
             'recentReports' => $this->getRecentReports(),
             'systemInfo' => $this->getSystemInfo(),
+            'collectors' => array_keys($this->registry->all()),
+            'collectorData' => Registry::getDebugBar() ? Registry::getDebugBar()->getData() : [],
         ]);
 
         $viewModel->setTemplate('laminas-microscope/index');

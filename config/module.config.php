@@ -125,8 +125,8 @@ return [
             DashboardController::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 $componentManager = $container->get(ComponentManager::class);
                 $config = $container->get(ConfigurationService::class);
-                // Assuming DashboardController constructor takes ComponentManager and ConfigurationService
-                return new DashboardController($componentManager, $config);
+                $registry = $container->get(CollectorRegistry::class);
+                return new DashboardController($componentManager, $config, $registry);
             },
             // Factory for ConfigurationController
             // Changed type hint from ContainerInterface to ServiceManager
