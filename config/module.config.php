@@ -229,7 +229,7 @@ return [
             'debug_bar' => [
                 // Add the base_url configuration option
                 // This should match the route defined above
-                'base_url' => '/_debug/debugbar/resources', // Updated base_url to match new route
+                'base_url' => '/debugbar/resources',
             ],
         ],
     ],
