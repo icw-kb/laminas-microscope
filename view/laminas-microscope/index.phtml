@@ -5,7 +5,7 @@ $this->headTitle('Telescope');
 $this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
 $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
 $debugBar = Registry::getDebugBar();
-$collectorNames = $config->get('laminas_microscope.components.debug_bar.collectors', []);
+$collectorNames = $debugBar ? $debugBar->getCollectors() : [];
 $data = $debugBar ? $debugBar->getData() : [];
 ?>
 <div class="container-fluid mt-4">
@@ -13,10 +13,9 @@ $data = $debugBar ? $debugBar->getData() : [];
         <nav class="col-md-2 d-none d-md-block bg-light sidebar">
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
-                    <li class="nav-item"><a class="nav-link active" href="#">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= $this->url('laminas-microscope/microscope') ?>">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= $this->url('laminas-microscope/config') ?>">Config</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= $this->url('laminas-microscope/api', ['action' => 'export']) ?>">Export</a></li>
+                    <?php foreach ($collectorNames as $name): ?>
+                        <li class="nav-item"><a class="nav-link" href="#collector-<?= $this->escapeHtmlAttr($name) ?>"><?= ucfirst($this->escapeHtml($name)) ?></a></li>
+                    <?php endforeach; ?>
                 </ul>
             </div>
         </nav>
@@ -46,6 +45,12 @@ $data = $debugBar ? $debugBar->getData() : [];
                     </table>
                 </div>
             </div>
+            <?php foreach ($collectorNames as $name): ?>
+                <div id="collector-<?= $this->escapeHtmlAttr($name) ?>" class="mb-4">
+                    <h3><?= ucfirst($this->escapeHtml($name)) ?></h3>
+                    <pre><?= $this->escapeHtml(print_r($data[$name] ?? [], true)) ?></pre>
+                </div>
+            <?php endforeach; ?>
         </main>
     </div>
 </div>
