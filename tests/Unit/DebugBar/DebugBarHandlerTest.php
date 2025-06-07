@@ -662,4 +662,29 @@ class DebugBarHandlerTest extends TestCase
             // Collector might be null for disabled handlers, which is acceptable
         }
     }
+
+    public function testCollectorsOnlyInitializesCollectorsWithoutDisplay(): void
+    {
+        $config = \TestHelper::createMockConfig([
+            'laminas_microscope' => [
+                'components' => [
+                    'debug_bar' => [
+                        'enabled' => false,
+                        'collectors_only' => true,
+                        'collectors' => ['time'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $configService = new ConfigurationService($config);
+        $handler = new DebugBarHandler($configService, $this->container, $this->registry);
+
+        $handler->initialize();
+        $this->assertTrue($handler->isInitialized());
+        $this->assertFalse($handler->shouldDisplay());
+
+        $collectors = array_keys($this->registry->all());
+        $this->assertContains('time', $collectors);
+    }
 }
