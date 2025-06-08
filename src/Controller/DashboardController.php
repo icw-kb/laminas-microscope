@@ -131,9 +131,7 @@ class DashboardController extends AbstractActionController
         }
 
         // Construct the full path to the asset file within the vendor directory
-        // This assumes the standard composer vendor path and the module is 5 levels deep
-        // from the application root (vendor/icw-kb/laminas-microscope/src/Controller)
-        $assetPath = dirname(__DIR__, 5) . '/vendor/maximebf/debugbar/src/DebugBar/Resources/' . $file;
+        $assetPath = dirname(__DIR__, 2) . '/vendor/maximebf/debugbar/src/DebugBar/Resources/' . $file;
 
         // --- TEMPORARY DEBUG LOGS ---
         error_log("LaminasMicroscope: Assets Action constructed path: " . $assetPath . "\n");
