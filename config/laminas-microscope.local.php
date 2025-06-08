@@ -19,6 +19,8 @@ return [
                 'position' => 'bottom',
                 'max_queries' => 100,
                 'collectors_only' => false,
+                'collector_map' => [
+                ],
                 'collectors' => [
                     'time',
                     'memory',

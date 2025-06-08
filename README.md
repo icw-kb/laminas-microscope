@@ -119,6 +119,8 @@ laminas_microscope:
       enabled: true
       collectors_only: true
       collectors: ['time', 'memory', 'pdo']
+      collector_map:
+        custom: My\\Custom\\Collector
     microscope:
       enabled: true
       auto_analyze: true
@@ -135,6 +137,8 @@ laminas_microscope:
       enabled: true
       collectors_only: true
       collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']
+      collector_map:
+        custom: My\\Custom\\Collector
     microscope:
       enabled: true
       auto_analyze: true
