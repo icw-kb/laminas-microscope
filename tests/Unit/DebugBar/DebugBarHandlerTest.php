@@ -32,6 +32,10 @@ class DebugBarHandlerTest extends TestCase
         
         $this->configService = new ConfigurationService($config);
         $this->container = \TestHelper::createMockServiceManager();
+        $this->container->set(\DebugBar\DataCollector\TimeDataCollector::class, new \DebugBar\DataCollector\TimeDataCollector());
+        $this->container->set(\DebugBar\DataCollector\MemoryCollector::class, new \DebugBar\DataCollector\MemoryCollector());
+        $this->container->set(\DebugBar\DataCollector\MessagesCollector::class, new \DebugBar\DataCollector\MessagesCollector());
+        $this->container->set(\DebugBar\DataCollector\PhpInfoCollector::class, new \DebugBar\DataCollector\PhpInfoCollector());
         $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
         $this->handler = new DebugBarHandler($this->configService, $this->container, $this->registry);
     }
@@ -686,5 +690,30 @@ class DebugBarHandlerTest extends TestCase
 
         $collectors = array_keys($this->registry->all());
         $this->assertContains('time', $collectors);
+    }
+
+    public function testCustomCollectorMapAddsCollector(): void
+    {
+        $config = \TestHelper::createMockConfig([
+            'laminas_microscope' => [
+                'components' => [
+                    'debug_bar' => [
+                        'enabled' => true,
+                        'collectors' => ['custom'],
+                        'collector_map' => ['custom' => \DebugBar\DataCollector\MessagesCollector::class],
+                    ],
+                ],
+            ],
+        ]);
+
+        $container = \TestHelper::createMockServiceManager();
+        $container->set(\DebugBar\DataCollector\MessagesCollector::class, new \DebugBar\DataCollector\MessagesCollector());
+
+        $configService = new ConfigurationService($config);
+        $handler = new DebugBarHandler($configService, $container, $this->registry);
+
+        $handler->initialize();
+
+        $this->assertArrayHasKey('messages', $this->registry->all());
     }
 }

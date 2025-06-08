@@ -23,6 +23,9 @@ use Laminas\ServiceManager\ServiceManager;
 use Psr\Container\ContainerInterface;
 use Laminas\View\Renderer\RendererInterface;
 use DebugBar\JavascriptRenderer;
+use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
+use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
 use LaminasMicroscope\Collector\CollectorRegistry;
 
 /**
@@ -35,6 +38,15 @@ class DebugBarHandler
     private ContainerInterface $container;
     private CollectorRegistry $collectorRegistry;
     private ?JavascriptRenderer $renderer = null;
+    private array $collectorMap = [
+        'time' => TimeDataCollector::class,
+        'memory' => MemoryCollector::class,
+        'messages' => MessagesCollector::class,
+        'phpinfo' => PhpInfoCollector::class,
+        'pdo' => PDOCollector::class,
+        'request' => LaminasRequestCollector::class,
+        'config' => LaminasConfigCollector::class,
+    ];
 
     public function __construct(
         private ConfigurationService $configService,
@@ -43,6 +55,10 @@ class DebugBarHandler
     ) {
         $this->container = $container;
         $this->collectorRegistry = $collectorRegistry;
+        $config = $this->configService->getComponentConfig('debug_bar');
+        if (isset($config['collector_map']) && is_array($config['collector_map'])) {
+            $this->collectorMap = array_merge($this->collectorMap, $config['collector_map']);
+        }
         // --- NEW DEBUG LOGGING ---
         error_log("LaminasMicroscope: DEBUG: DebugBarHandler::__construct() called. Instance hash: " . spl_object_hash($this) . ".\n");
         // --- END NEW DEBUG LOGGING ---
@@ -471,118 +487,24 @@ class DebugBarHandler
             return;
         }
 
-        switch ($name) {
-            case 'time':
-                if (!$this->debugBar->hasCollector('time')) {
-                    try {
-                        $collector = new TimeDataCollector();
-                        $this->debugBar->addCollector($collector);
-                        $this->collectorRegistry->register($collector);
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: DEBUG: TimeDataCollector added.\n");
-                        // --- END DEBUG LOGGING ---
-                    } catch (Exception $e) {
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: ERROR: Failed to add TimeDataCollector: " . $e->getMessage() . ".\n");
-                        // --- END DEBUG LOGGING ---
-                        // Silently ignore if already exists
-                    }
-                } else {
-                     // --- DEBUG LOGGING ---
-                    error_log("LaminasMicroscope: DEBUG: TimeDataCollector already exists.\n");
-                    // --- END DEBUG LOGGING ---
-                    $collector = $this->debugBar->getCollector('time');
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
+        $mapping = $this->collectorMap[$name] ?? null;
+        if (!$mapping || !$this->container->has($mapping)) {
+            error_log("LaminasMicroscope: DEBUG: Unknown collector requested: \"{$name}\". Skipping.\n");
+            return;
+        }
 
-            case 'memory':
-                if (!$this->debugBar->hasCollector('memory')) {
-                    try {
-                        $collector = new MemoryCollector();
-                        $this->debugBar->addCollector($collector);
-                        $this->collectorRegistry->register($collector);
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: DEBUG: MemoryCollector added.\n");
-                        // --- END DEBUG LOGGING ---
-                    } catch (Exception $e) {
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: ERROR: Failed to add MemoryCollector: " . $e->getMessage() . ".\n");
-                        // --- END DEBUG LOGGING ---
-                        // Silently ignore if already exists
-                    }
-                } else {
-                     // --- DEBUG LOGGING ---
-                    error_log("LaminasMicroscope: DEBUG: MemoryCollector already exists.\n");
-                    // --- END DEBUG LOGGING ---
-                    $collector = $this->debugBar->getCollector('memory');
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
-
-            case 'messages':
-                if (!$this->debugBar->hasCollector('messages')) {
-                    try {
-                        $collector = new MessagesCollector();
-                        $this->debugBar->addCollector($collector);
-                        $this->collectorRegistry->register($collector);
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: DEBUG: MessagesCollector added.\n");
-                        // --- END DEBUG LOGGING ---
-                    } catch (Exception $e) {
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: ERROR: Failed to add MessagesCollector: " . $e->getMessage() . ".\n");
-                        // --- END DEBUG LOGGING ---
-                        // Silently ignore if already exists
-                    }
-                } else {
-                     // --- DEBUG LOGGING ---
-                    error_log("LaminasMicroscope: DEBUG: MessagesCollector already exists.\n");
-                    // --- END DEBUG LOGGING ---
-                    $collector = $this->debugBar->getCollector('messages');
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
-
-            case 'phpinfo':
-            case 'php':
-                $customKey = 'microscope_php';
-                if (!$this->debugBar->hasCollector($customKey)) {
-                    try {
-                        $collector = new PhpInfoCollector();
-                        $this->debugBar->addCollector($collector, $customKey);
-                        $this->collectorRegistry->register($collector);
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: DEBUG: PhpInfoCollector added with key \"{$customKey}\".\n");
-                        // --- END DEBUG LOGGING ---
-                    } catch (Exception $e) {
-                         // --- DEBUG LOGGING ---
-                        error_log("LaminasMicroscope: ERROR: Failed to add PhpInfoCollector with key \"{$customKey}\": " . $e->getMessage() . ".\n");
-                        // --- END DEBUG LOGGING ---
-                        // Silently ignore if there's still a conflict
-                    }
-                } else {
-                     // --- DEBUG LOGGING ---
-                    error_log("LaminasMicroscope: DEBUG: PhpInfoCollector with key \"{$customKey}\" already exists.\n");
-                    // --- END DEBUG LOGGING ---
-                    $collector = $this->debugBar->getCollector($customKey);
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
-
-            default:
-                 // --- DEBUG LOGGING ---
-                error_log("LaminasMicroscope: DEBUG: Unknown collector requested: \"{$name}\". Skipping.\n");
-                // --- END DEBUG LOGGING ---
-                break;
+        try {
+            $collector = $this->container->get($mapping);
+            $collectorName = method_exists($collector, 'getName') ? $collector->getName() : $name;
+            if (!$this->debugBar->hasCollector($collectorName)) {
+                $this->debugBar->addCollector($collector, $collectorName);
+            } else {
+                $collector = $this->debugBar->getCollector($collectorName);
+            }
+            if ($collector) {
+                $this->collectorRegistry->register($collector);
+            }
+        } catch (Exception $e) {
         }
     }
 
