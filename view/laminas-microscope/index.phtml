@@ -46,6 +46,35 @@ $data = $debugBar ? $debugBar->getData() : [];
                     </table>
                 </div>
             </div>
+
+            <?php if ($collectorNames): ?>
+                <ul class="nav nav-tabs" id="collectorTabs" role="tablist">
+                    <?php foreach ($collectorNames as $i => $collector): ?>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link<?= $i === 0 ? ' active' : '' ?>"
+                                    id="tab-<?= $collector ?>"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#pane-<?= $collector ?>"
+                                    type="button" role="tab">
+                                <?= ucfirst($collector) ?>
+                            </button>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <div class="tab-content mt-3" id="collectorTabContent">
+                    <?php foreach ($collectorNames as $i => $collector): ?>
+                        <div class="tab-pane fade<?= $i === 0 ? ' show active' : '' ?>"
+                             id="pane-<?= $collector ?>" role="tabpanel">
+                            <pre class="bg-light p-3 border rounded"><?php
+                                echo htmlspecialchars(
+                                    var_export($data[$collector] ?? [], true),
+                                    ENT_QUOTES
+                                );
+                            ?></pre>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </main>
     </div>
 </div>
