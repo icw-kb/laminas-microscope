@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Controller; 
 
-use Laminas\Mvc\Controller\AbstractActionController; 
-use Laminas\View\Model\ViewModel; 
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
-use Laminas\Http\Response; 
+use Laminas\Http\Response;
 use RuntimeException;
 use Exception;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
-use DebugBar\JavascriptRenderer; 
+use DebugBar\JavascriptRenderer;
+use Composer\InstalledVersions;
 
 class DashboardController extends AbstractActionController
 {
@@ -130,10 +131,15 @@ class DashboardController extends AbstractActionController
             return $response;
         }
 
-        // Construct the full path to the asset file within the vendor directory
-        // This assumes the standard composer vendor path and the module is 5 levels deep
-        // from the application root (vendor/icw-kb/laminas-microscope/src/Controller)
-        $assetPath = dirname(__DIR__, 5) . '/vendor/maximebf/debugbar/src/DebugBar/Resources/' . $file;
+        try {
+            $base = InstalledVersions::getInstallPath('maximebf/debugbar');
+        } catch (\Throwable $e) {
+            $base = null;
+        }
+        if (!$base) {
+            $base = dirname(__DIR__, 5) . '/vendor/maximebf/debugbar';
+        }
+        $assetPath = $base . '/src/DebugBar/Resources/' . $file;
 
         // --- TEMPORARY DEBUG LOGS ---
         error_log("LaminasMicroscope: Assets Action constructed path: " . $assetPath . "\n");
