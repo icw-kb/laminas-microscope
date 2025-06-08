@@ -742,4 +742,82 @@ class DebugBarHandlerTest extends TestCase
         $this->assertArrayHasKey('memory', $registry->all());
         $this->assertArrayHasKey('messages', $registry->all());
     }
+
+    /**
+     * Ensure debug bar markup is injected when HTML has head and body tags
+     */
+    public function testInjectDebugBarWithTags(): void
+    {
+        $configService = new ConfigurationService(\TestHelper::createMockConfig([
+            'laminas_microscope' => [
+                'enabled' => true,
+                'components' => [
+                    'debug_bar' => [
+                        'enabled' => true,
+                        'collectors' => ['time', 'memory', 'messages'],
+                    ],
+                ],
+            ],
+        ]));
+        $container = \TestHelper::createMockServiceManager();
+        $registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $handler = new DebugBarHandler($configService, $container, $registry);
+
+        $sm = new \Laminas\ServiceManager\ServiceManager();
+        $sm->setService('config', []);
+        $sm->setService('EventManager', new \Laminas\EventManager\EventManager());
+        $sm->setService('Request', new \Laminas\Http\PhpEnvironment\Request());
+        $sm->setService('Response', new \Laminas\Http\PhpEnvironment\Response());
+        $sm->setService(DebugBarHandler::class, $handler);
+        $app = new \Laminas\Mvc\Application($sm);
+
+        $event = new \Laminas\Mvc\MvcEvent();
+        $event->setApplication($app);
+        $response = new \Laminas\Http\PhpEnvironment\Response();
+        $response->setContent('<html><head><title>t</title></head><body>hi</body></html>');
+        $event->setResponse($response);
+
+        DebugBarHandler::injectDebugBar($event);
+
+        $this->assertStringContainsString('debugbar', strtolower($response->getContent()));
+    }
+
+    /**
+     * Ensure debug bar markup is injected when tags are missing
+     */
+    public function testInjectDebugBarWithoutTags(): void
+    {
+        $configService = new ConfigurationService(\TestHelper::createMockConfig([
+            'laminas_microscope' => [
+                'enabled' => true,
+                'components' => [
+                    'debug_bar' => [
+                        'enabled' => true,
+                        'collectors' => ['time', 'memory', 'messages'],
+                    ],
+                ],
+            ],
+        ]));
+        $container = \TestHelper::createMockServiceManager();
+        $registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $handler = new DebugBarHandler($configService, $container, $registry);
+
+        $sm = new \Laminas\ServiceManager\ServiceManager();
+        $sm->setService('config', []);
+        $sm->setService('EventManager', new \Laminas\EventManager\EventManager());
+        $sm->setService('Request', new \Laminas\Http\PhpEnvironment\Request());
+        $sm->setService('Response', new \Laminas\Http\PhpEnvironment\Response());
+        $sm->setService(DebugBarHandler::class, $handler);
+        $app = new \Laminas\Mvc\Application($sm);
+
+        $event = new \Laminas\Mvc\MvcEvent();
+        $event->setApplication($app);
+        $response = new \Laminas\Http\PhpEnvironment\Response();
+        $response->setContent('hello world');
+        $event->setResponse($response);
+
+        DebugBarHandler::injectDebugBar($event);
+
+        $this->assertStringContainsString('debugbar', strtolower($response->getContent()));
+    }
 }
