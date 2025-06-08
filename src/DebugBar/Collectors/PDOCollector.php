@@ -59,25 +59,23 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
 
     private function setupQueryLogging(): void
     {
-        // Hook into Laminas DB adapters
         try {
             $this->hookIntoDbAdapters();
-        } catch (Exception $e) { 
-            // Silently fail if no DB adapters are configured
+        } catch (Exception $e) {
         }
     }
 
     private function hookIntoDbAdapters(): void
     {
         try {
-            $adapterNames = [Adapter::class, 'db', 'dbAdapter'];
             $config = $this->serviceManager->get('config');
+            if (!isset($config['db'])) {
+                return;
+            }
+
+            $adapterNames = [Adapter::class, 'db', 'dbAdapter'];
 
             foreach ($adapterNames as $adapterName) {
-                if (in_array($adapterName, ['db', 'dbAdapter'], true) && !isset($config['db'])) {
-                    continue;
-                }
-
                 if ($this->serviceManager->has($adapterName)) {
                     try {
                         $adapter = $this->serviceManager->get($adapterName);
@@ -104,15 +102,13 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                 ];
             }
 
-            // Hook into profiler if available
             if (method_exists($adapter, 'getProfiler')) {
                 $profiler = $adapter->getProfiler();
                 if ($profiler && method_exists($profiler, 'getProfiles')) {
                     $this->collectFromProfiler($profiler);
                 }
             }
-        } catch (Exception $e) { 
-            // Continue silently
+        } catch (Exception $e) {
         }
     }
 
@@ -125,14 +121,12 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     $connection = $driver->getConnection();
                     if (method_exists($connection, 'getConnectionParameters')) {
                         $params = $connection->getConnectionParameters();
-                        // Remove sensitive info
                         unset($params['password'], $params['passwd']);
                         return $params;
                     }
                 }
             }
-        } catch (Exception $e) { 
-            // Continue silently
+        } catch (Exception $e) {
         }
 
         return [];
@@ -146,15 +140,14 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                 $this->addQuery([
                     'sql' => $profile->getSql(),
                     'params' => $profile->getParams() ?? [],
-                    'duration' => $profile->getElapsedTime() * 1000, // Convert to milliseconds
+                    'duration' => $profile->getElapsedTime() * 1000,
                     'memory' => 0,
                     'is_success' => true,
                     'error_code' => null,
                     'error_message' => null,
                 ]);
             }
-        } catch (Exception $e) { 
-            // Continue silently
+        } catch (Exception $e) {
         }
     }
 
@@ -163,11 +156,9 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
         $query['duration_str'] = $this->formatDuration($query['duration']);
         $query['memory_str'] = $this->formatBytes($query['memory']);
 
-        // Detect slow queries
-        $slowThreshold = 100; // 100ms
+        $slowThreshold = 100;
         $query['is_slow'] = $query['duration'] > $slowThreshold;
 
-        // Detect duplicate queries
         $query['is_duplicate'] = $this->isDuplicateQuery($query['sql']);
 
         $this->queries[] = $query;
@@ -189,7 +180,6 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
 
     private function normalizeSql(string $sql): string
     {
-        // Remove parameters and normalize whitespace for duplicate detection
         $sql = preg_replace('/\\\\\\\\?|\\\\\\\\$\\\\\\\\d+|:\\\\\\\\w+/', '?', $sql);
         $sql = preg_replace('/\\\\\\\\s+/', ' ', $sql);
         return trim(strtolower($sql));
@@ -201,7 +191,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
      * @param float $seconds Duration in seconds
      * @return string Formatted duration string
      */
-    public function formatDuration($seconds): string // Changed visibility to public
+    public function formatDuration($seconds): string
     {
         if ($seconds < 0.001) {
             return round($seconds * 1000000) . 'µs';
@@ -219,7 +209,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
      * @param int $precision Number of decimal places
      * @return string Formatted size string
      */
-    public function formatBytes($size, $precision = 2): string // Changed signature and visibility
+    public function formatBytes($size, $precision = 2): string
     {
         if ($size === 0) return '0 B';
 
