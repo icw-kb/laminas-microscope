@@ -87,19 +87,17 @@ return [
                             ],
                         ],
                     ],
-                    // Add route for serving DebugBar assets
                     'debugbar-assets' => [
                         'type' => 'Segment',
                         'options' => [
-                            // Match the default base_url and capture the file path
-                            'route' => '/debugbar/resources[/:file]',
+                            'route' => '/_debug/debugbar/resources[/:file]',
                             'defaults' => [
                                 'controller' => DashboardController::class,
-                                'action' => 'assets', // New action to serve assets
-                                'file' => null, // Allow empty file path for base URL
+                                'action' => 'assets',
+                                'file' => null,
                             ],
                             'constraints' => [
-                                'file' => '.*', // Allow any characters in the file path
+                                'file' => '.*',
                             ],
                         ],
                     ],
@@ -227,9 +225,7 @@ return [
     'laminas_microscope' => [
         'components' => [
             'debug_bar' => [
-                // Add the base_url configuration option
-                // This should match the route defined above
-                'base_url' => '/_debug/debugbar/resources', // Updated base_url to match new route
+                'base_url' => '/_debug/debugbar/resources',
             ],
         ],
     ],

@@ -116,35 +116,19 @@ class DashboardController extends AbstractActionController
         $response = $this->getResponse();
         $file = $this->params()->fromRoute('file');
 
-        // --- TEMPORARY DEBUG LOGS ---
-        error_log("LaminasMicroscope: DashboardController::assetsAction called.\n");
-        error_log("LaminasMicroscope: Assets Action requested file: " . ($file ?? 'null') . "\n");
-        // --- END TEMPORARY DEBUG LOGS ---
-
 
         if (!$file) {
             $response->setStatusCode(404);
-            // --- TEMPORARY DEBUG LOG ---
-            error_log("LaminasMicroscope: Assets Action - No file requested, returning 404.\n");
-            // --- END TEMPORARY DEBUG LOG ---
             return $response;
         }
 
         // Construct the full path to the asset file within the vendor directory
         $assetPath = dirname(__DIR__, 2) . '/vendor/maximebf/debugbar/src/DebugBar/Resources/' . $file;
 
-        // --- TEMPORARY DEBUG LOGS ---
-        error_log("LaminasMicroscope: Assets Action constructed path: " . $assetPath . "\n");
-        error_log("LaminasMicroscope: Assets Action file exists: " . (file_exists($assetPath) ? 'true' : 'false') . "\n");
-        // --- END TEMPORARY DEBUG LOGS ---
-
 
         // Basic security check: prevent directory traversal
         if (strpos($file, '..') !== false || !file_exists($assetPath)) {
             $response->setStatusCode(404);
-            // --- TEMPORARY DEBUG LOG ---
-            error_log("LaminasMicroscope: Assets Action - File not found or traversal attempt, returning 404.\n");
-            // --- END TEMPORARY DEBUG LOG ---
             return $response;
         }
 
@@ -163,18 +147,11 @@ class DashboardController extends AbstractActionController
 
         if ($content === false) {
             $response->setStatusCode(500);
-            // --- TEMPORARY DEBUG LOG ---
-            error_log("LaminasMicroscope: Assets Action - Failed to read file: " . $assetPath . "\n");
-            // --- END TEMPORARY DEBUG LOG ---
             return $response;
         }
 
         $response->getHeaders()->addHeaderLine('Content-Type', $contentType);
         $response->setContent($content);
-
-        // --- TEMPORARY DEBUG LOG ---
-        error_log("LaminasMicroscope: Assets Action - Successfully served file: " . $file . "\n");
-        // --- END TEMPORARY DEBUG LOG ---
 
         return $response;
     }
