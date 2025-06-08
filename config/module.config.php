@@ -90,7 +90,7 @@ return [
                     'debugbar-assets' => [
                         'type' => 'Segment',
                         'options' => [
-                            'route' => '/_debug/debugbar/resources[/:file]',
+                            'route' => '/debugbar/resources[/:file]',
                             'defaults' => [
                                 'controller' => DashboardController::class,
                                 'action' => 'assets',
