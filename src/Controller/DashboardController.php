@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Controller; 
 
-use Laminas\Mvc\Controller\AbstractActionController; 
-use Laminas\View\Model\ViewModel; 
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
-use Laminas\Http\Response; 
+use Laminas\Http\Response;
 use RuntimeException;
 use Exception;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
-use DebugBar\JavascriptRenderer; 
+use DebugBar\JavascriptRenderer;
+use Composer\InstalledVersions;
 
 class DashboardController extends AbstractActionController
 {
