@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace LaminasMicroscope\DebugBar\Collectors;
 
 use DebugBar\DataCollector\DataCollector; 
-use DebugBar\DataCollector\Renderable; 
-use Laminas\ServiceManager\ServiceManager; 
-use Exception; 
-use Laminas\Db\Adapter\Adapter; // Added use statement
+use DebugBar\DataCollector\Renderable;
+use Laminas\ServiceManager\ServiceManager;
+use Exception;
+use Laminas\Db\Adapter\Adapter;
+use LaminasMicroscope\Collector\CollectorInterface;
 
 class PDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
