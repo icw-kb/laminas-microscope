@@ -112,13 +112,13 @@ laminas_microscope:
 ```yaml
 laminas_microscope:
   enabled: true
+  collectors: ['time', 'memory', 'pdo']
   components:
     whoops:
       enabled: false
     debug_bar:
       enabled: true
       collectors_only: true
-      collectors: ['time', 'memory', 'pdo']
     microscope:
       enabled: true
       auto_analyze: true
@@ -128,13 +128,13 @@ laminas_microscope:
 ```yaml
 laminas_microscope:
   enabled: true
+  collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']
   components:
     whoops:
       enabled: true
     debug_bar:
       enabled: true
       collectors_only: true
-      collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']
     microscope:
       enabled: true
       auto_analyze: true

@@ -316,12 +316,13 @@ Access configuration at `/_debug/config`.
 #### Debug Bar Collectors
 ```yaml
 # Enable specific collectors
-collectors:
-  - 'time'       # ✅ Performance timing
-  - 'memory'     # ✅ Memory usage
-  - 'pdo'        # ✅ Database queries
-  - 'request'    # ❌ HTTP request data
-  - 'config'     # ❌ Configuration dump
+laminas_microscope:
+  collectors:
+    - 'time'       # ✅ Performance timing
+    - 'memory'     # ✅ Memory usage
+    - 'pdo'        # ✅ Database queries
+    - 'request'    # ❌ HTTP request data
+    - 'config'     # ❌ Configuration dump
 ```
 
 ### 📋 Configuration Profiles
@@ -508,12 +509,12 @@ ini_set('memory_limit', '256M');
 ```yaml
 # Reduce debug overhead
 laminas_microscope:
+  collectors:
+    - 'time'    # Keep essential only
+    - 'memory'
+    - 'pdo'
   components:
     debug_bar:
-      collectors:
-        - 'time'    # Keep essential only
-        - 'memory'
-        - 'pdo'
     microscope:
       auto_analyze: false  # Disable auto-analysis
       analysis_frequency: 10  # Analyze every 10th request

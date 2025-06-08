@@ -15,18 +15,18 @@ return [
                 'show_in_production' => false,
                 'editor' => 'vscode',
             ],
+            'collectors' => [
+                'time',
+                'memory',
+                'exceptions',
+                'pdo',
+                'request',
+                'config',
+                'messages',
+            ],
             'debug_bar' => [
                 'enabled' => true,
                 'position' => 'bottom',
-                'collectors' => [
-                    'time',
-                    'memory',
-                    'exceptions',
-                    'pdo',
-                    'request',
-                    'config',
-                    'messages',
-                ],
             ],
             'microscope' => [
                 'enabled' => true,

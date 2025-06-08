@@ -4,6 +4,14 @@ return [
     'laminas_microscope' => [
         'enabled' => true,
         'environment' => 'development',
+        'collectors' => [
+            'time',
+            'memory',
+            'exceptions',
+            'pdo',
+            'request',
+            'config',
+        ],
         'storage' => [
             'path' => '/tmp/laminas-microscope',
         ],
@@ -19,14 +27,6 @@ return [
                 'position' => 'bottom',
                 'max_queries' => 100,
                 'collectors_only' => false,
-                'collectors' => [
-                    'time',
-                    'memory',
-                    'exceptions',
-                    'pdo',
-                    'request',
-                    'config',
-                ],
             ],
             'microscope' => [
                 'enabled' => true,

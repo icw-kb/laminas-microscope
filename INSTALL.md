@@ -88,6 +88,14 @@ Edit `config/autoload/laminas-microscope.local.php`:
 laminas_microscope:
   enabled: true
   environment: 'development'
+  collectors:
+    - 'time'
+    - 'memory'
+    - 'exceptions'
+    - 'pdo'
+    - 'request'
+    - 'config'
+    - 'messages'
   components:
     whoops:
       enabled: true
@@ -96,14 +104,6 @@ laminas_microscope:
     debug_bar:
       enabled: true
       position: 'bottom'
-      collectors:
-        - 'time'
-        - 'memory'
-        - 'exceptions'
-        - 'pdo'
-        - 'request'
-        - 'config'
-        - 'messages'
     microscope:
       enabled: true
       auto_analyze: true
@@ -154,12 +154,12 @@ laminas_microscope:
 ```yaml
 laminas_microscope:
   enabled: true
+  collectors: ['time', 'memory', 'pdo']
   components:
     whoops:
       enabled: false
     debug_bar:
       enabled: true
-      collectors: ['time', 'memory', 'pdo']
     microscope:
       enabled: true
       auto_analyze: true
@@ -169,12 +169,12 @@ laminas_microscope:
 ```yaml
 laminas_microscope:
   enabled: true
+  collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']
   components:
     whoops:
       enabled: true
     debug_bar:
       enabled: true
-      collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']
     microscope:
       enabled: true
       auto_analyze: true

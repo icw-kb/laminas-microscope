@@ -20,11 +20,11 @@ class ComponentManagerTest extends TestCase
         $config = \TestHelper::createMockConfig([
             'laminas_microscope' => [
                 'enabled' => true,
+                'collectors' => ['time', 'memory'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
                         'type' => 'profiler',
-                        'collectors' => ['time', 'memory'],
                     ],
                     'whoops' => [
                         'enabled' => false,
