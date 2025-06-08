@@ -183,7 +183,10 @@ $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/di
                                         <div class="mb-3">
                                             <label class="form-label">Collectors</label>
                                             <?php $collectors = ['time', 'memory', 'exceptions', 'pdo', 'request', 'config', 'messages']; ?>
-                                            <?php $enabledCollectors = $config->get('laminas_microscope.collectors', $collectors); ?>
+                                            <?php $enabledCollectors = $config->get(
+                                                'laminas_microscope.collectors',
+                                                $config->get('laminas_microscope.components.debug_bar.collectors', $collectors)
+                                            ); ?>
                                             <?php foreach ($collectors as $collector): ?>
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="collector_<?= $collector ?>"
