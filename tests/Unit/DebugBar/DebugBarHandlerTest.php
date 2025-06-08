@@ -716,4 +716,30 @@ class DebugBarHandlerTest extends TestCase
 
         $this->assertArrayHasKey('messages', $this->registry->all());
     }
+
+    public function testDefaultCollectorsAddedWithoutContainerServices(): void
+    {
+        $config = \TestHelper::createMockConfig([
+            'laminas_microscope' => [
+                'components' => [
+                    'debug_bar' => [
+                        'enabled' => true,
+                        'collectors' => ['time', 'memory', 'messages'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $container = \TestHelper::createMockServiceManager();
+
+        $configService = new ConfigurationService($config);
+        $registry = new \LaminasMicroscope\Collector\CollectorRegistry();
+        $handler = new DebugBarHandler($configService, $container, $registry);
+
+        $handler->initialize();
+
+        $this->assertArrayHasKey('time', $registry->all());
+        $this->assertArrayHasKey('memory', $registry->all());
+        $this->assertArrayHasKey('messages', $registry->all());
+    }
 }

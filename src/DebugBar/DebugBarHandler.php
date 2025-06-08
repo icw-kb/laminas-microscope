@@ -488,22 +488,33 @@ class DebugBarHandler
         }
 
         $mapping = $this->collectorMap[$name] ?? null;
-        if (!$mapping || !$this->container->has($mapping)) {
+
+        if ($this->debugBar->hasCollector($name)) {
+            $collector = $this->debugBar->getCollector($name);
+            $this->collectorRegistry->register($collector);
+            return;
+        }
+
+        if (!$mapping) {
             error_log("LaminasMicroscope: DEBUG: Unknown collector requested: \"{$name}\". Skipping.\n");
             return;
         }
 
         try {
-            $collector = $this->container->get($mapping);
+            if ($this->container->has($mapping)) {
+                $collector = $this->container->get($mapping);
+            } elseif (class_exists($mapping)) {
+                $collector = new $mapping();
+            } else {
+                error_log("LaminasMicroscope: DEBUG: Unknown collector mapping: \"{$mapping}\". Skipping.\n");
+                return;
+            }
+
             $collectorName = method_exists($collector, 'getName') ? $collector->getName() : $name;
             if (!$this->debugBar->hasCollector($collectorName)) {
                 $this->debugBar->addCollector($collector, $collectorName);
-            } else {
-                $collector = $this->debugBar->getCollector($collectorName);
             }
-            if ($collector) {
-                $this->collectorRegistry->register($collector);
-            }
+            $this->collectorRegistry->register($collector);
         } catch (Exception $e) {
         }
     }
