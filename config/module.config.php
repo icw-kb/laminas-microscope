@@ -225,7 +225,7 @@ return [
     'laminas_microscope' => [
         'components' => [
             'debug_bar' => [
-                'base_url' => '/_debug/debugbar/resources',
+                'base_url' => '/debugbar/resources',
             ],
         ],
     ],

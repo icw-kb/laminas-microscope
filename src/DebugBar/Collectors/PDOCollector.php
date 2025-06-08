@@ -6,19 +6,19 @@ namespace LaminasMicroscope\DebugBar\Collectors;
 
 use DebugBar\DataCollector\DataCollector; 
 use DebugBar\DataCollector\Renderable;
-use Laminas\ServiceManager\ServiceManager;
+use Psr\Container\ContainerInterface;
 use Exception;
 use Laminas\Db\Adapter\Adapter;
 use LaminasMicroscope\Collector\CollectorInterface;
 
 class PDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
-    private ServiceManager $serviceManager;
+    private ContainerInterface $serviceManager;
     private array $queries = [];
     private array $connections = [];
     private float $totalTime = 0;
 
-    public function __construct(ServiceManager $serviceManager)
+    public function __construct(ContainerInterface $serviceManager)
     {
         $this->serviceManager = $serviceManager;
         $this->setupQueryLogging();

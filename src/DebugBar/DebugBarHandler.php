@@ -103,7 +103,7 @@ class DebugBarHandler
 
         if (!$collectorsOnly) {
             $this->renderer = $this->debugBar->getJavascriptRenderer();
-            $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources';
+            $baseUrl = $config['base_url'] ?? '/debugbar/resources';
             if ($this->renderer && method_exists($this->renderer, 'setBaseUrl')) {
                 $this->renderer->setBaseUrl($baseUrl);
             }
@@ -358,8 +358,13 @@ class DebugBarHandler
             if ($this->container->has($mapping)) {
                 $collector = $this->container->get($mapping);
             } elseif (class_exists($mapping)) {
-                $collector = new $mapping();
-            } else {                return;
+                if ($mapping === PDOCollector::class) {
+                    $collector = new $mapping($this->container);
+                } else {
+                    $collector = new $mapping();
+                }
+            } else {
+                return;
             }
 
             $collectorName = method_exists($collector, 'getName') ? $collector->getName() : $name;
@@ -458,7 +463,7 @@ class DebugBarHandler
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources'; // Default to the asset route
+        $baseUrl = $config['base_url'] ?? '/debugbar/resources';
         return $baseUrl;
     }
 
