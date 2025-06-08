@@ -13,6 +13,8 @@ collectors:
   - 'request'
   - 'config'
   - 'messages'
+collector_map:
+  custom: 'My\\Custom\\Collector'
 exclude_paths:
   - '/health'
   - '/metrics'

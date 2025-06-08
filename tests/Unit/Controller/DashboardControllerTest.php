@@ -26,6 +26,10 @@ class DashboardControllerTest extends TestCase
         ];
 
         $container = \TestHelper::createMockServiceManager();
+        $container->set(\DebugBar\DataCollector\TimeDataCollector::class, new \DebugBar\DataCollector\TimeDataCollector());
+        $container->set(\DebugBar\DataCollector\MemoryCollector::class, new \DebugBar\DataCollector\MemoryCollector());
+        $container->set(\DebugBar\DataCollector\MessagesCollector::class, new \DebugBar\DataCollector\MessagesCollector());
+        $container->set(\DebugBar\DataCollector\PhpInfoCollector::class, new \DebugBar\DataCollector\PhpInfoCollector());
         $container->set(MicroscopeHandler::class, new class {
             public function getRecentReports(int $n): array { return []; }
         });
