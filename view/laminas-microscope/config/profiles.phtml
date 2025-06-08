@@ -142,9 +142,10 @@ const profiles = {
         name: 'Performance',
         description: 'Debug Bar and Microscope for performance monitoring',
         config: {
+            collectors: ['time', 'memory', 'pdo'],
             components: {
                 whoops: { enabled: false },
-                debug_bar: { enabled: true, collectors: ['time', 'memory', 'pdo'] },
+                debug_bar: { enabled: true },
                 microscope: { enabled: true, auto_analyze: true }
             }
         }
@@ -153,9 +154,10 @@ const profiles = {
         name: 'Full Debugging',
         description: 'All components enabled for complete debugging',
         config: {
+            collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config'],
             components: {
                 whoops: { enabled: true, show_in_production: false },
-                debug_bar: { enabled: true, collectors: ['time', 'memory', 'exceptions', 'pdo', 'request', 'config'] },
+                debug_bar: { enabled: true },
                 microscope: { enabled: true, auto_analyze: true }
             }
         }

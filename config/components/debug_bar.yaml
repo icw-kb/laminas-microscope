@@ -5,14 +5,6 @@ storage:
   enabled: true
   driver: 'file'
   path: '/tmp/debugbar'
-collectors:
-  - 'time'
-  - 'memory'
-  - 'exceptions'
-  - 'pdo'
-  - 'request'
-  - 'config'
-  - 'messages'
 exclude_paths:
   - '/health'
   - '/metrics'

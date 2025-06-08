@@ -21,10 +21,10 @@ class DebugBarIntegrationTest extends TestCase
             'laminas_microscope' => [
                 'enabled' => true,
                 'environment' => 'testing',
+                'collectors' => ['time', 'memory', 'messages'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
-                        'collectors' => ['time', 'memory', 'messages'], // Removed phpinfo to avoid conflicts
                         'inject_into_response' => true,
                     ],
                 ],
@@ -334,10 +334,10 @@ class DebugBarIntegrationTest extends TestCase
             'laminas_microscope' => [
                 'enabled' => true,
                 'environment' => 'testing',
+                'collectors' => ['time', 'memory', 'messages', 'phpinfo'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
-                        'collectors' => ['time', 'memory', 'messages', 'phpinfo'],
                     ],
                 ],
             ],
@@ -387,10 +387,10 @@ class DebugBarIntegrationTest extends TestCase
             'laminas_microscope' => [
                 'enabled' => true,
                 'environment' => 'testing',
+                'collectors' => ['phpinfo'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
-                        'collectors' => ['phpinfo'], // Only phpinfo to test conflict handling
                     ],
                 ],
             ],

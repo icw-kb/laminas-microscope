@@ -51,6 +51,7 @@ class TestHelper
                     'path' => sys_get_temp_dir() . '/laminas-microscope-test',
                     'retention_days' => 7,
                 ],
+                'collectors' => ['time', 'memory', 'pdo'],
                 'components' => [
                     'whoops' => [
                         'enabled' => true,
@@ -58,7 +59,6 @@ class TestHelper
                     ],
                     'debug_bar' => [
                         'enabled' => true,
-                        'collectors' => ['time', 'memory', 'pdo'],
                     ],
                     'microscope' => [
                         'enabled' => true,

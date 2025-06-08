@@ -94,6 +94,7 @@ class ConfigurationManager
                 'enabled' => true,
                 'environment' => 'development',
                 'debug_mode' => false,
+                'collectors' => ['time', 'memory', 'pdo'],
                 'storage' => [
                     'path' => 'data/laminas-microscope',
                     'retention_days' => 30,
@@ -107,7 +108,6 @@ class ConfigurationManager
                     ],
                     'debug_bar' => [
                         'enabled' => true,
-                        'collectors' => ['time', 'memory', 'pdo'],
                     ],
                     'microscope' => [
                         'enabled' => true,

@@ -52,7 +52,7 @@ class ConfigurationServiceTest extends TestCase
 
     public function testGetWithArrayValue(): void
     {
-        $value = $this->configService->get('laminas_microscope.components.debug_bar.collectors');
+        $value = $this->configService->get('laminas_microscope.collectors');
         $this->assertIsArray($value);
         $this->assertContains('time', $value);
         $this->assertContains('memory', $value);

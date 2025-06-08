@@ -15,11 +15,11 @@ class DashboardControllerTest extends TestCase
     {
         $config = [
             'laminas_microscope' => [
+                'collectors' => ['time', 'memory'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => false,
                         'collectors_only' => true,
-                        'collectors' => ['time', 'memory'],
                     ],
                 ],
             ],

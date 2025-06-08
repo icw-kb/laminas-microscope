@@ -437,7 +437,7 @@ class DebugBarHandler
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        $collectors = $config['collectors'] ?? ['time', 'memory', 'messages'];
+        $collectors = $this->configService->get('laminas_microscope.collectors', $config['collectors'] ?? ['time', 'memory', 'messages']);
 
         // --- DEBUG LOGGING ---
         error_log("LaminasMicroscope: DEBUG: Configured collectors: " . implode(', ', $collectors) . ".\n");

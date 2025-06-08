@@ -20,10 +20,10 @@ class DebugBarHandlerTest extends TestCase
         $config = \TestHelper::createMockConfig([
             'laminas_microscope' => [
                 'enabled' => true,
+                'collectors' => ['time', 'memory', 'messages'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
-                        'collectors' => ['time', 'memory', 'messages'],
                         'show_in_production' => false,
                     ],
                 ],
@@ -585,10 +585,10 @@ class DebugBarHandlerTest extends TestCase
             $config = \TestHelper::createMockConfig([
                 'laminas_microscope' => [
                     'enabled' => true,
+                    'collectors' => $configuredCollectors,
                     'components' => [
                         'debug_bar' => [
                             'enabled' => true,
-                            'collectors' => $configuredCollectors,
                         ],
                     ],
                 ],
@@ -667,11 +667,11 @@ class DebugBarHandlerTest extends TestCase
     {
         $config = \TestHelper::createMockConfig([
             'laminas_microscope' => [
+                'collectors' => ['time'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => false,
                         'collectors_only' => true,
-                        'collectors' => ['time'],
                     ],
                 ],
             ],

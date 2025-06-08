@@ -129,8 +129,7 @@ laminas_microscope:
       # Register collectors without injecting UI
       collectors_only: false
 
-      # Enabled collectors
-      collectors:
+  collectors:
         - 'time'         # Request timing
         - 'memory'       # Memory usage
         - 'exceptions'   # Exception tracking
@@ -234,6 +233,14 @@ laminas_microscope:
 laminas_microscope:
   enabled: true
   debug: true
+  collectors:
+    - 'time'
+    - 'memory'
+    - 'exceptions'
+    - 'pdo'
+    - 'request'
+    - 'config'
+    - 'messages'
   components:
     whoops:
       enabled: true
@@ -242,14 +249,6 @@ laminas_microscope:
     debug_bar:
       enabled: true
       collectors_only: true
-      collectors:
-        - 'time'
-        - 'memory'
-        - 'exceptions'
-        - 'pdo'
-        - 'request'
-        - 'config'
-        - 'messages'
     microscope:
       enabled: true
       auto_analyze: true
@@ -265,16 +264,16 @@ laminas_microscope:
   debug: false
   ip_whitelist:
     - '192.168.1.0/24'
+  collectors:
+    - 'time'
+    - 'memory'
+    - 'pdo'
   components:
     whoops:
       enabled: true
       show_in_production: false
     debug_bar:
       enabled: true
-      collectors:
-        - 'time'
-        - 'memory'
-        - 'pdo'
     microscope:
       enabled: true
       auto_analyze: false
@@ -323,15 +322,15 @@ laminas_microscope:
 ```yaml
 # config/autoload/debug-suite/performance.yaml
 laminas_microscope:
+  collectors:
+    - 'time'
+    - 'memory'
+    - 'pdo'
   components:
     whoops:
       enabled: false
     debug_bar:
       enabled: true
-      collectors:
-        - 'time'
-        - 'memory'
-        - 'pdo'
     microscope:
       enabled: true
       auto_analyze: true
@@ -347,19 +346,19 @@ laminas_microscope:
 # config/autoload/debug-suite/debugging.yaml
 laminas_microscope:
   debug: true
+  collectors:
+    - 'time'
+    - 'memory'
+    - 'exceptions'
+    - 'pdo'
+    - 'request'
+    - 'config'
+    - 'messages'
   components:
     whoops:
       enabled: true
     debug_bar:
       enabled: true
-      collectors:
-        - 'time'
-        - 'memory'
-        - 'exceptions'
-        - 'pdo'
-        - 'request'
-        - 'config'
-        - 'messages'
     microscope:
       enabled: true
       auto_analyze: true
@@ -545,10 +544,10 @@ laminas_microscope:
 ```yaml
 laminas_microscope:
   enabled: true
+  collectors: ['time', 'memory', 'pdo']
   components:
     debug_bar:
       enabled: true
-      collectors: ['time', 'memory', 'pdo']
     microscope:
       enabled: true
       auto_analyze: true
