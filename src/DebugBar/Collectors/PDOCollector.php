@@ -70,17 +70,25 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
     private function hookIntoDbAdapters(): void
     {
         try {
-            // Try to get common DB adapter service names
-            $adapterNames = [Adapter::class, 'db', 'dbAdapter']; 
+            $adapterNames = [Adapter::class, 'db', 'dbAdapter'];
+            $config = $this->serviceManager->get('config');
 
             foreach ($adapterNames as $adapterName) {
+                if (in_array($adapterName, ['db', 'dbAdapter'], true) && !isset($config['db'])) {
+                    continue;
+                }
+
                 if ($this->serviceManager->has($adapterName)) {
-                    $adapter = $this->serviceManager->get($adapterName);
+                    try {
+                        $adapter = $this->serviceManager->get($adapterName);
+                    } catch (Exception) {
+                        continue;
+                    }
+
                     $this->hookIntoAdapter($adapter);
                 }
             }
-        } catch (Exception $e) { 
-            // Continue silently if no adapters found
+        } catch (Exception) {
         }
     }
 
