@@ -10,22 +10,47 @@ use Laminas\ModuleManager\Feature\InitProviderInterface;
 use Laminas\ModuleManager\Feature\BootstrapListenerInterface;
 use Laminas\ModuleManager\ModuleManagerInterface;
 use Laminas\EventManager\EventInterface;
+use Laminas\EventManager\EventManagerInterface;
 use Laminas\Mvc\MvcEvent;
+use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Manager\ComponentManager;
-use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\DebugBar\DebugBarHandler;
-use LaminasMicroscope\Microscope\MicroscopeHandler;
-use LaminasMicroscope\Whoops\WhoopsHandler;
-use Closure;
+use LaminasMicroscope\Listener\DebugBarEventListener;
+use LaminasMicroscope\Listener\MicroscopeEventListener;
+use LaminasMicroscope\Listener\WhoopsEventListener;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
+/**
+ * Laminas Microscope Module
+ * 
+ * Provides debugging and profiling capabilities for Laminas applications
+ * through Whoops error handling, Debug Bar profiling, and Microscope analysis.
+ */
 class Module implements
     AutoloaderProviderInterface,
     ConfigProviderInterface,
     InitProviderInterface,
     BootstrapListenerInterface
 {
-    // Store timestamps for timing phases
+    // Event priorities
+    private const PRIORITY_WHOOPS_ERROR = 100;
+    private const PRIORITY_MICROSCOPE_ROUTE = 1000;
+    private const PRIORITY_MICROSCOPE_DISPATCH = 1000;
+    private const PRIORITY_MICROSCOPE_RENDER = 1;
+    private const PRIORITY_MICROSCOPE_FINISH = -2000;
+    private const PRIORITY_DEBUGBAR_ROUTE = 1001;
+    private const PRIORITY_DEBUGBAR_DISPATCH = 1001;
+    private const PRIORITY_DEBUGBAR_RENDER = 2;
+    private const PRIORITY_DEBUGBAR_FINISH_TIMING = -900;
+    private const PRIORITY_DEBUGBAR_FINISH_INJECT = -1000;
+    private const PRIORITY_DEBUGBAR_LOG_RENDER = 1;
+    private const PRIORITY_DEBUGBAR_LOG_DISPATCH = -1;
+    private const PRIORITY_DEBUGBAR_LOG_ROUTE = -10000;
+    
+    private const DEBUGBAR_ASSETS_ROUTE = 'laminas-microscope/debugbar-assets';
+    
     private array $eventTimestamps = [];
+    private ?LoggerInterface $logger = null;
 
     public function init(ModuleManagerInterface $manager): void
     {
@@ -34,27 +59,26 @@ class Module implements
 
     public function onBootstrap(EventInterface $e): void
     {
-
-        $serviceManager = $e->getApplication()->getServiceManager();
-        $componentManager = $serviceManager->get(ComponentManager::class);
-
-        // Initialize all enabled components early in the bootstrap
-        // This ensures Whoops\Run::register() is called if Whoops is enabled
-        // and DebugBar is initialized to start its internal timers.
-        $componentManager->initializeAllComponents();
-
-        // Only attach listeners for enabled components
-        $this->attachEventListeners($e, $componentManager);
-
-        // Record the start time of the bootstrap phase
-        if ($componentManager->isEnabled('debug_bar')) {
-            $debugBarHandler = $serviceManager->get(DebugBarHandler::class);
-
-            if ($debugBarHandler->shouldDisplay()) {
-                 $this->eventTimestamps['bootstrap_start'] = microtime(true);
-            } else {
-            }
-        } else {
+        try {
+            $serviceManager = $e->getApplication()->getServiceManager();
+            $this->logger = $this->getLogger($serviceManager);
+            
+            $componentManager = $serviceManager->get(ComponentManager::class);
+            
+            // Initialize all enabled components early in the bootstrap
+            // This ensures Whoops\Run::register() is called if Whoops is enabled
+            // and DebugBar is initialized to start its internal timers
+            $componentManager->initializeAllComponents();
+            
+            // Record bootstrap start time for debug bar timing
+            $this->recordBootstrapStartTime($componentManager);
+            
+            // Attach event listeners for enabled components
+            $this->attachEventListeners($e, $componentManager);
+            
+        } catch (Throwable $exception) {
+            $this->logError('Failed to bootstrap Laminas Microscope', $exception);
+            // Don't break the application if microscope fails to initialize
         }
     }
 
@@ -74,180 +98,125 @@ class Module implements
         ];
     }
 
+    /**
+     * Attach event listeners for enabled components
+     */
     private function attachEventListeners(EventInterface $e, ComponentManager $componentManager): void
     {
-
         $eventManager = $e->getApplication()->getEventManager();
         $serviceManager = $e->getApplication()->getServiceManager();
 
         if ($componentManager->isEnabled('whoops')) {
-            $eventManager->attach(MvcEvent::EVENT_DISPATCH_ERROR, function (MvcEvent $event) use ($serviceManager) {
-                $exception = $event->getParam('exception');
-                if ($exception instanceof \Throwable) {
-                    $whoopsHandler = $serviceManager->get(WhoopsHandler::class);
-                    if ($whoopsHandler->shouldDisplay()) {
-                         $whoopsRun = $whoopsHandler->getWhoops();
-                         if ($whoopsRun) {
-                             while (ob_get_level() > 0) {
-                                 ob_end_clean();
-                             }
-                             $whoopsRun->handleException($exception);
-                             $event->stopPropagation(true);
-                             $event->setResult($event->getResponse());
-                             return $event->getResponse();
-                         }
-                    }
-                }
-            }, 100); 
-
-            $eventManager->attach(MvcEvent::EVENT_RENDER_ERROR, function (MvcEvent $event) use ($serviceManager) {
-                $exception = $event->getParam('exception');
-                if ($exception instanceof \Throwable) {
-                     $whoopsHandler = $serviceManager->get(WhoopsHandler::class);
-                     if ($whoopsHandler->shouldDisplay()) {
-                         $whoopsRun = $whoopsHandler->getWhoops();
-                         if ($whoopsRun) {
-                             while (ob_get_level() > 0) {
-                                 ob_end_clean();
-                             }
-                             $whoopsRun->handleException($exception);
-                             $event->stopPropagation(true);
-                             $event->setResult($event->getResponse());
-                             return $event->getResponse();
-                         }
-                     }
-                }
-            }, 100); 
+            $this->attachWhoopsListeners($eventManager, $serviceManager);
         }
 
         if ($componentManager->isEnabled('microscope')) {
-            $eventManager->attach(MvcEvent::EVENT_ROUTE, function (MvcEvent $event) use ($serviceManager) {
-                $handler = $serviceManager->get(MicroscopeHandler::class);
-                MicroscopeHandler::startProfiling($event); 
-            }, 1000);
-
-            $eventManager->attach(MvcEvent::EVENT_DISPATCH, function (MvcEvent $event) use ($serviceManager) {
-                $handler = $serviceManager->get(MicroscopeHandler::class);
-                MicroscopeHandler::profileDispatch($event); // This records dispatch_end timestamp
-            }, 1000); 
-
-            $eventManager->attach(MvcEvent::EVENT_RENDER, function (MvcEvent $event) use ($serviceManager) {
-                $handler = $serviceManager->get(MicroscopeHandler::class);
-                MicroscopeHandler::startRender($event);
-            }, 1); 
-
-            $eventManager->attach(MvcEvent::EVENT_FINISH, function (MvcEvent $event) use ($serviceManager) {
-                $handler = $serviceManager->get(MicroscopeHandler::class);
-                MicroscopeHandler::stopRender($event);
-                MicroscopeHandler::finalizeProfiling($event); 
-            }, -2000);
+            $this->attachMicroscopeListeners($eventManager, $serviceManager);
         }
 
         if ($componentManager->isEnabled('debug_bar')) {
-            $debugBarHandler = $serviceManager->get(DebugBarHandler::class);
+            $this->attachDebugBarListeners($eventManager, $serviceManager);
+        }
+    }
 
+    /**
+     * Attach Whoops error handling listeners
+     */
+    private function attachWhoopsListeners(EventManagerInterface $eventManager, ServiceManager $serviceManager): void
+    {
+        $listener = new WhoopsEventListener($serviceManager, $this->logger);
+        
+        $eventManager->attach(MvcEvent::EVENT_DISPATCH_ERROR, [$listener, 'onError'], self::PRIORITY_WHOOPS_ERROR);
+        $eventManager->attach(MvcEvent::EVENT_RENDER_ERROR, [$listener, 'onError'], self::PRIORITY_WHOOPS_ERROR);
+    }
 
-            $eventManager->attach(MvcEvent::EVENT_ROUTE, function (MvcEvent $event) use ($debugBarHandler) {
-                 $routeMatch = $event->getRouteMatch();
+    /**
+     * Attach Microscope profiling listeners
+     */
+    private function attachMicroscopeListeners(EventManagerInterface $eventManager, ServiceManager $serviceManager): void
+    {
+        $listener = new MicroscopeEventListener($serviceManager, $this->logger);
+        
+        $eventManager->attach(MvcEvent::EVENT_ROUTE, [$listener, 'onRoute'], self::PRIORITY_MICROSCOPE_ROUTE);
+        $eventManager->attach(MvcEvent::EVENT_DISPATCH, [$listener, 'onDispatch'], self::PRIORITY_MICROSCOPE_DISPATCH);
+        $eventManager->attach(MvcEvent::EVENT_RENDER, [$listener, 'onRender'], self::PRIORITY_MICROSCOPE_RENDER);
+        $eventManager->attach(MvcEvent::EVENT_FINISH, [$listener, 'onFinish'], self::PRIORITY_MICROSCOPE_FINISH);
+    }
 
-                 if ($debugBarHandler->shouldDisplay()) {
-                     $this->eventTimestamps['route_start'] = microtime(true);
+    /**
+     * Attach Debug Bar timing and injection listeners
+     */
+    private function attachDebugBarListeners(EventManagerInterface $eventManager, ServiceManager $serviceManager): void
+    {
+        $listener = new DebugBarEventListener(
+            $serviceManager, 
+            $this->eventTimestamps, 
+            $this->logger,
+            self::DEBUGBAR_ASSETS_ROUTE
+        );
+        
+        // Timing listeners (higher priority than microscope to ensure accurate timing)
+        $eventManager->attach(MvcEvent::EVENT_ROUTE, [$listener, 'onRoute'], self::PRIORITY_DEBUGBAR_ROUTE);
+        $eventManager->attach(MvcEvent::EVENT_DISPATCH, [$listener, 'onDispatch'], self::PRIORITY_DEBUGBAR_DISPATCH);
+        $eventManager->attach(MvcEvent::EVENT_RENDER, [$listener, 'onRender'], self::PRIORITY_DEBUGBAR_RENDER);
+        $eventManager->attach(MvcEvent::EVENT_FINISH, [$listener, 'onFinishTiming'], self::PRIORITY_DEBUGBAR_FINISH_TIMING);
+        
+        // Debug bar injection and logging (separate priorities for different concerns)
+        $eventManager->attach(MvcEvent::EVENT_FINISH, [$listener, 'onFinishInject'], self::PRIORITY_DEBUGBAR_FINISH_INJECT);
+        $eventManager->attach(MvcEvent::EVENT_RENDER, [$listener, 'logResponseHeaders'], self::PRIORITY_DEBUGBAR_LOG_RENDER);
+        $eventManager->attach(MvcEvent::EVENT_DISPATCH, [$listener, 'logMvcResult'], self::PRIORITY_DEBUGBAR_LOG_DISPATCH);
+        $eventManager->attach(MvcEvent::EVENT_ROUTE, [$listener, 'logAssetRoute'], self::PRIORITY_DEBUGBAR_LOG_ROUTE);
+    }
 
-                     if (isset($this->eventTimestamps['bootstrap_start'])) {
-                         $bootstrapDuration = (microtime(true) - $this->eventTimestamps['bootstrap_start']) * 1000; // ms
-                         $debugBarHandler->addMeasure('Bootstrap', $this->eventTimestamps['bootstrap_start'], microtime(true));
-                         unset($this->eventTimestamps['bootstrap_start']); // Clear the start time
-                     } else {
-                     }
+    /**
+     * Record bootstrap start time for debug bar timing if debug bar is enabled
+     */
+    private function recordBootstrapStartTime(ComponentManager $componentManager): void
+    {
+        if ($componentManager->isEnabled('debug_bar')) {
+            $this->eventTimestamps['bootstrap_start'] = microtime(true);
+        }
+    }
 
-                     error_log("LaminasMicroscope: DEBUG: Module::EVENT_ROUTE listener - Calling startTimer('route').\n"); // Added log
-                     $debugBarHandler->startTimer('route', 'Routing');
-                     error_log("LaminasMicroscope: DEBUG: Module::EVENT_ROUTE listener - Called startTimer('route').\n"); // Added log
+    /**
+     * Get logger from service manager if available
+     */
+    private function getLogger(ServiceManager $serviceManager): ?LoggerInterface
+    {
+        try {
+            if ($serviceManager->has(LoggerInterface::class)) {
+                return $serviceManager->get(LoggerInterface::class);
+            }
+        } catch (Throwable $e) {
+            // Logger not available, continue without logging
+        }
+        
+        return null;
+    }
 
-                 } else {
-                     error_log("LaminasMicroscope: DEBUG: Module::EVENT_ROUTE listener - Debug Bar should NOT display. Skipping timer recording.\n"); // Added log
-                 }
-            }, 1001); // Higher priority than Microscope's ROUTE listener
-
-            $eventManager->attach(MvcEvent::EVENT_DISPATCH, function (MvcEvent $event) use ($debugBarHandler) {
-                 $routeMatch = $event->getRouteMatch();
-                 if ($routeMatch && $routeMatch->getMatchedRouteName() === 'laminas-microscope/debugbar-assets') {
-                     return;
-                 }
-                 if ($debugBarHandler->shouldDisplay()) {
-                     $this->eventTimestamps['dispatch_start'] = microtime(true);
-
-                     if (isset($this->eventTimestamps['route_start'])) {
-                         $routeDuration = (microtime(true) - $this->eventTimestamps['route_start']) * 1000; // ms
-                         $debugBarHandler->stopTimer('route'); // Stop the route timer started in EVENT_ROUTE
-                         unset($this->eventTimestamps['route_start']); // Clear the start time
-                     } else {
-                     }
-
-                     $debugBarHandler->startTimer('dispatch', 'Dispatch');
-                 }
-            }, 1001); // Higher priority than Microscope's DISPATCH listener
-
-            $eventManager->attach(MvcEvent::EVENT_RENDER, function (MvcEvent $event) use ($debugBarHandler) {
-                 $routeMatch = $event->getRouteMatch();
-                 if ($routeMatch && $routeMatch->getMatchedRouteName() === 'laminas-microscope/debugbar-assets') {
-                     return;
-                 }
-                 if ($debugBarHandler->shouldDisplay()) {
-                     $this->eventTimestamps['render_start'] = microtime(true);
-
-                     if (isset($this->eventTimestamps['dispatch_start'])) {
-                         $dispatchDuration = (microtime(true) - $this->eventTimestamps['dispatch_start']) * 1000; // ms
-                         $debugBarHandler->stopTimer('dispatch'); // Stop the dispatch timer started in EVENT_DISPATCH
-                         unset($this->eventTimestamps['dispatch_start']); // Clear the start time
-                     } else {
-                     }
-
-                     $debugBarHandler->startTimer('render', 'Rendering');
-                 }
-            }, 2); // Higher priority than Microscope's RENDER listener
-
-            $eventManager->attach(MvcEvent::EVENT_FINISH, function (MvcEvent $event) use ($serviceManager, $debugBarHandler) {
-                 $routeMatch = $event->getRouteMatch();
-                 if ($routeMatch && $routeMatch->getMatchedRouteName() === 'laminas-microscope/debugbar-assets') {
-                     return;
-                 }
-                 if ($debugBarHandler->shouldDisplay()) {
-                     if (isset($this->eventTimestamps['render_start'])) {
-                         $renderDuration = (microtime(true) - $this->eventTimestamps['render_start']) * 1000; // ms
-                         $debugBarHandler->stopTimer('render'); // Stop the render timer started in EVENT_RENDER
-                         unset($this->eventTimestamps['render_start']); // Clear the start time
-                     } else {
-                     }
-
-                 }
-            }, -900); // Run before DebugBar injection (-1000)
-
-
-            $eventManager->attach(MvcEvent::EVENT_FINISH, function (MvcEvent $event) use ($serviceManager) {
-
-                try {
-                    $handler = $serviceManager->get(DebugBarHandler::class);
-                    DebugBarHandler::injectDebugBar($event);
-
-                } catch (\Exception $e) {
-                }
-            }, -1000); // High priority to run late
-
-            $eventManager->attach(MvcEvent::EVENT_RENDER, function (MvcEvent $event) use ($serviceManager) {
-                 DebugBarHandler::logResponseHeadersAndResultAtRender($event);
-            }, 1); // Low priority to run early in RENDER
-
-            $eventManager->attach(MvcEvent::EVENT_DISPATCH, function (MvcEvent $event) use ($serviceManager) {
-                 DebugBarHandler::logMvcEventResultAtDispatch($event);
-            }, -1); // High priority to run late in DISPATCH (after controller returns result)
-
-            $eventManager->attach(MvcEvent::EVENT_ROUTE, function (MvcEvent $event) {
-                $routeMatch = $event->getRouteMatch();
-                if ($routeMatch && $routeMatch->getMatchedRouteName() === 'laminas-microscope/debugbar-assets') {
-                    error_log("LaminasMicroscope: DEBUG: ROUTE matched for debugbar-assets!\n"); // Corrected newline
-                }
-            }, -10000); // Very low priority to run after normal routing
+    /**
+     * Log error messages with context
+     */
+    private function logError(string $message, Throwable $exception): void
+    {
+        if ($this->logger) {
+            $this->logger->error($message, [
+                'exception' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+        }
+        
+        // Fallback to error_log if no logger available (but only in debug mode)
+        if (!$this->logger && getenv('APPLICATION_ENV') === 'development') {
+            error_log(sprintf(
+                'LaminasMicroscope Error: %s - %s in %s:%d',
+                $message,
+                $exception->getMessage(),
+                $exception->getFile(),
+                $exception->getLine()
+            ));
         }
     }
 }
