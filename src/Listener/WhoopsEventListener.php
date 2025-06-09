@@ -10,6 +10,9 @@ use LaminasMicroscope\Whoops\WhoopsHandler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
+use function ob_end_clean;
+use function ob_get_level;
+
 /**
  * Event listener for Whoops error handling
  */
@@ -29,19 +32,19 @@ class WhoopsEventListener
         try {
             $exception = $event->getParam('exception');
 
-            if (!$exception instanceof Throwable) {
+            if (! $exception instanceof Throwable) {
                 return;
             }
 
             $whoopsHandler = $this->serviceManager->get(WhoopsHandler::class);
 
-            if (!$whoopsHandler->shouldDisplay()) {
+            if (! $whoopsHandler->shouldDisplay()) {
                 return;
             }
 
             $whoopsRun = $whoopsHandler->getWhoops();
 
-            if (!$whoopsRun) {
+            if (! $whoopsRun) {
                 $this->logError('Whoops handler not available', $exception);
                 return;
             }
@@ -78,9 +81,9 @@ class WhoopsEventListener
         if ($this->logger) {
             $this->logger->error($message, [
                 'exception' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-                'trace' => $exception->getTraceAsString()
+                'file'      => $exception->getFile(),
+                'line'      => $exception->getLine(),
+                'trace'     => $exception->getTraceAsString(),
             ]);
         }
     }

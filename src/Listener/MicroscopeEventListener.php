@@ -10,6 +10,8 @@ use LaminasMicroscope\Microscope\MicroscopeHandler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
+use function method_exists;
+
 /**
  * Event listener for Microscope profiling and analysis
  */
@@ -109,8 +111,8 @@ class MicroscopeEventListener
         if ($this->logger) {
             $this->logger->error($message, [
                 'exception' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine()
+                'file'      => $exception->getFile(),
+                'line'      => $exception->getLine(),
             ]);
         }
     }

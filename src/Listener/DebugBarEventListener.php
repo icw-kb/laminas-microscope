@@ -10,6 +10,9 @@ use LaminasMicroscope\DebugBar\DebugBarHandler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
+use function method_exists;
+use function microtime;
+
 /**
  * Event listener for Debug Bar timing, injection, and logging
  */
@@ -19,7 +22,7 @@ class DebugBarEventListener
         'bootstrap_start',
         'route_start',
         'dispatch_start',
-        'render_start'
+        'render_start',
     ];
 
     public function __construct(
@@ -38,7 +41,7 @@ class DebugBarEventListener
         try {
             $debugBarHandler = $this->getDebugBarHandler();
 
-            if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
+            if (! $debugBarHandler || ! $debugBarHandler->shouldDisplay()) {
                 return;
             }
 
@@ -72,7 +75,7 @@ class DebugBarEventListener
 
             $debugBarHandler = $this->getDebugBarHandler();
 
-            if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
+            if (! $debugBarHandler || ! $debugBarHandler->shouldDisplay()) {
                 return;
             }
 
@@ -102,7 +105,7 @@ class DebugBarEventListener
 
             $debugBarHandler = $this->getDebugBarHandler();
 
-            if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
+            if (! $debugBarHandler || ! $debugBarHandler->shouldDisplay()) {
                 return;
             }
 
@@ -132,7 +135,7 @@ class DebugBarEventListener
 
             $debugBarHandler = $this->getDebugBarHandler();
 
-            if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
+            if (! $debugBarHandler || ! $debugBarHandler->shouldDisplay()) {
                 return;
             }
 
@@ -214,7 +217,7 @@ class DebugBarEventListener
     {
         if ($this->isAssetRequest($event) && $this->logger) {
             $this->logger->debug('Debug Bar asset route matched', [
-                'route' => $this->assetsRouteName
+                'route' => $this->assetsRouteName,
             ]);
         }
     }
@@ -257,8 +260,8 @@ class DebugBarEventListener
         if ($this->logger) {
             $this->logger->error($message, [
                 'exception' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine()
+                'file'      => $exception->getFile(),
+                'line'      => $exception->getLine(),
             ]);
         }
     }
