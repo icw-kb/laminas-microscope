@@ -20,6 +20,8 @@ use LaminasMicroscope\Service\AnalysisService;
 use LaminasMicroscope\Listener\WhoopsEventListener;
 use LaminasMicroscope\Listener\MicroscopeEventListener;
 use LaminasMicroscope\Listener\DebugBarEventListener;
+use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
 
 // Factory imports
 use LaminasMicroscope\Factory\ConfigurationServiceFactory;
@@ -36,6 +38,8 @@ use LaminasMicroscope\Factory\Controller\ConfigurationControllerFactory;
 use LaminasMicroscope\Factory\Listener\WhoopsEventListenerFactory;
 use LaminasMicroscope\Factory\Listener\MicroscopeEventListenerFactory;
 use LaminasMicroscope\Factory\Listener\DebugBarEventListenerFactory;
+use LaminasMicroscope\Factory\CacheManagerFactory;
+use LaminasMicroscope\Factory\EnhancedPDOCollectorFactory;
 
 return [
     'router' => [
@@ -141,8 +145,10 @@ return [
             WhoopsHandler::class => WhoopsHandlerFactory::class,
             DebugBarHandler::class => DebugBarHandlerFactory::class,
             MicroscopeHandler::class => MicroscopeHandlerFactory::class,
+            CacheManager::class => CacheManagerFactory::class,
             
-            // Debug Bar Collectors (using simple closures for these simpler services)
+            // Debug Bar Collectors
+            EnhancedPDOCollector::class => EnhancedPDOCollectorFactory::class,
             PDOCollector::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 return new PDOCollector($container);
             },
