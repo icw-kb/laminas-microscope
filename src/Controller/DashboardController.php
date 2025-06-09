@@ -12,6 +12,9 @@ use Laminas\Http\Response;
 use RuntimeException;
 use Exception;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
+use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
+use LaminasMicroscope\Microscope\Storage\ReportStorage;
 use DebugBar\JavascriptRenderer; 
 
 class DashboardController extends AbstractActionController
@@ -219,6 +222,83 @@ class DashboardController extends AbstractActionController
             'configuration' => $this->config->toArray(),
             'recent_reports' => $this->getRecentReports(),
         ];
+    }
+
+    /**
+     * Analytics dashboard action - Phase 3 feature
+     */
+    public function analyticsAction(): ViewModel
+    {
+        try {
+            $reportStorage = $this->getServiceLocator()->get(ReportStorage::class);
+            
+            $analytics = [
+                'query_analysis' => $reportStorage->getQueryAnalysis(),
+                'route_analysis' => $reportStorage->getRouteAnalysis(),
+                'performance_data' => $reportStorage->getPerformanceData(),
+                'summary' => $reportStorage->getSummary(),
+            ];
+            
+            return new ViewModel([
+                'analytics' => $analytics,
+                'config' => $this->config,
+            ]);
+        } catch (Exception $e) {
+            return new ViewModel([
+                'error' => $e->getMessage(),
+                'config' => $this->config,
+            ]);
+        }
+    }
+
+    /**
+     * Cache management action - Phase 3 feature
+     */
+    public function cacheAction(): ViewModel
+    {
+        $action = $this->params()->fromRoute('action', 'index');
+        
+        try {
+            $cacheManager = $this->getServiceLocator()->get(CacheManager::class);
+            
+            if ($action === 'clear' && $this->getRequest()->isPost()) {
+                $category = $this->params()->fromPost('category', 'default');
+                $cacheManager->flush($category);
+                $this->flashMessenger()->addSuccessMessage("Cache cleared for category: {$category}");
+                return $this->redirect()->toRoute('laminas-microscope/cache');
+            }
+            
+            return new ViewModel([
+                'cacheStats' => $cacheManager->getStats(),
+                'config' => $this->config,
+            ]);
+        } catch (Exception $e) {
+            return new ViewModel([
+                'error' => $e->getMessage(),
+                'config' => $this->config,
+            ]);
+        }
+    }
+
+    /**
+     * Performance monitoring action - Phase 3 feature
+     */
+    public function performanceAction(): ViewModel
+    {
+        try {
+            $collector = $this->getServiceLocator()->get(EnhancedPDOCollector::class);
+            $performanceData = $collector->collect();
+            
+            return new ViewModel([
+                'performanceData' => $performanceData,
+                'config' => $this->config,
+            ]);
+        } catch (Exception $e) {
+            return new ViewModel([
+                'error' => $e->getMessage(),
+                'config' => $this->config,
+            ]);
+        }
     }
 
     /**

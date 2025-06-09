@@ -108,6 +108,46 @@ return [
                             ],
                         ],
                     ],
+                    'analytics' => [
+                        'type' => 'Segment',
+                        'options' => [
+                            'route' => '/analytics[/:action[/:id]]',
+                            'defaults' => [
+                                'controller' => DashboardController::class,
+                                'action' => 'analytics',
+                            ],
+                            'constraints' => [
+                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                                'id' => '[0-9a-zA-Z-]+',
+                            ],
+                        ],
+                    ],
+                    'cache' => [
+                        'type' => 'Segment',
+                        'options' => [
+                            'route' => '/cache[/:action]',
+                            'defaults' => [
+                                'controller' => DashboardController::class,
+                                'action' => 'cache',
+                            ],
+                            'constraints' => [
+                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                            ],
+                        ],
+                    ],
+                    'performance' => [
+                        'type' => 'Segment',
+                        'options' => [
+                            'route' => '/performance[/:action]',
+                            'defaults' => [
+                                'controller' => DashboardController::class,
+                                'action' => 'performance',
+                            ],
+                            'constraints' => [
+                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                            ],
+                        ],
+                    ],
                     // Add route for serving DebugBar assets
                     'debugbar-assets' => [
                         'type' => 'Segment',
@@ -182,6 +222,10 @@ return [
             'laminas-microscope/config/index' => __DIR__ . '/../view/laminas-microscope/config/index.phtml',
             'laminas-microscope/config/profiles' => __DIR__ . '/../view/laminas-microscope/config/profiles.phtml',
             'laminas-microscope/index' => __DIR__ . '/../view/laminas-microscope/index.phtml',
+            // Phase 3 Templates
+            'laminas-microscope/dashboard/analytics' => __DIR__ . '/../view/laminas-microscope/dashboard/analytics.phtml',
+            'laminas-microscope/dashboard/cache' => __DIR__ . '/../view/laminas-microscope/dashboard/cache.phtml',
+            'laminas-microscope/dashboard/performance' => __DIR__ . '/../view/laminas-microscope/dashboard/performance.phtml',
         ],
     ],
     // Add default configuration for laminas_microscope key
