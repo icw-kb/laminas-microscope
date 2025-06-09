@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LaminasMicroscope\Whoops;
 
 use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Contracts\HandlerInterface;
 use Whoops\Run;
 use Whoops\Handler\PrettyPageHandler;
 use Whoops\Handler\JsonResponseHandler;
@@ -14,7 +15,7 @@ use Exception;
 /**
  * Handler for Whoops error display integration
  */
-class WhoopsHandler
+class WhoopsHandler implements HandlerInterface
 {
     private ?Run $whoops = null;
     private bool $initialized = false;

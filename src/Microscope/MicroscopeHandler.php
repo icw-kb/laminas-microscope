@@ -6,6 +6,8 @@ namespace LaminasMicroscope\Microscope;
 
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Contracts\HandlerInterface;
+use LaminasMicroscope\Utility\FormatUtility;
 use LaminasMicroscope\Microscope\Storage\ReportStorage;
 use Laminas\Mvc\MvcEvent;
 use LaminasMicroscope\Collector\CollectorRegistry;
@@ -17,7 +19,7 @@ use Laminas\Router\RouteMatch;
 /**
  * MicroscopeHandler - Advanced profiling and analysis for Laminas applications
  */
-class MicroscopeHandler
+class MicroscopeHandler implements HandlerInterface
 {
     private ComponentManager $componentManager;
     private ConfigurationService $configService;
@@ -393,19 +395,22 @@ class MicroscopeHandler
     }
 
     /**
-     * Format bytes to human readable format
+     * Reset the handler to its initial state
      */
-    private function formatBytes(int $bytes): string
+    public function reset(): void
     {
-        if ($bytes === 0) {
-            return '0 B';
-        }
+        $this->profileData = [];
+        $this->eventTimestamps = [];
+        $this->requestStartTime = 0.0;
+        $this->startMemory = 0;
+    }
 
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $base = log($bytes, 1024);
-        $index = floor($base);
-
-        return round(pow(1024, $base - $index), 2) . ' ' . $units[$index];
+    /**
+     * Check if the handler is initialized
+     */
+    public function isInitialized(): bool
+    {
+        return isset($this->requestStartTime) && $this->requestStartTime > 0;
     }
 
     /**
@@ -461,8 +466,8 @@ class MicroscopeHandler
 
         $this->profileData['performance'] = [
             'total_time' => $totalTime,
-            'memory_usage' => $this->formatBytes($memoryUsed),
-            'peak_memory' => $this->formatBytes(memory_get_peak_usage(true)),
+            'memory_usage' => FormatUtility::formatBytes($memoryUsed),
+            'peak_memory' => FormatUtility::formatBytes(memory_get_peak_usage(true)),
             'memory_usage_bytes' => $memoryUsed,
             'peak_memory_bytes' => memory_get_peak_usage(true),
             'event_timestamps' => $timestamps, // Store raw timestamps

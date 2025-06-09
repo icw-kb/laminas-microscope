@@ -8,9 +8,10 @@ use DebugBar\DataCollector\DataCollector;
 use DebugBar\DataCollector\Renderable; 
 use Laminas\ServiceManager\ServiceManager; 
 use Exception; 
-use Laminas\Db\Adapter\Adapter; // Added use statement
+use Laminas\Db\Adapter\Adapter;
+use LaminasMicroscope\Utility\FormatUtility;
 
-class PDOCollector extends DataCollector implements Renderable, CollectorInterface
+class PDOCollector extends DataCollector implements Renderable, \LaminasMicroscope\Contracts\CollectorInterface
 {
     private ServiceManager $serviceManager;
     private array $queries = [];
@@ -29,7 +30,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
             'nb_statements' => count($this->queries),
             'nb_failed_statements' => count(array_filter($this->queries, function($q) { return $q['is_success'] === false; })),
             'accumulated_duration' => $this->totalTime,
-            'accumulated_duration_str' => $this->formatDuration($this->totalTime),
+            'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000), // Convert ms to seconds
             'statements' => $this->queries,
             'connections' => $this->connections,
         ];
@@ -151,8 +152,8 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
 
     public function addQuery(array $query): void
     {
-        $query['duration_str'] = $this->formatDuration($query['duration']);
-        $query['memory_str'] = $this->formatBytes($query['memory']);
+        $query['duration_str'] = FormatUtility::formatDuration($query['duration'] / 1000); // Convert ms to seconds
+        $query['memory_str'] = FormatUtility::formatBytes($query['memory']);
 
         // Detect slow queries
         $slowThreshold = 100; // 100ms
@@ -186,41 +187,4 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
         return trim(strtolower($sql));
     }
 
-    /**
-     * Format duration in seconds to a human-readable string (ms or µs)
-     *
-     * @param float $seconds Duration in seconds
-     * @return string Formatted duration string
-     */
-    public function formatDuration($seconds): string // Changed visibility to public
-    {
-        if ($seconds < 0.001) {
-            return round($seconds * 1000000) . 'µs';
-        } elseif ($seconds < 1) {
-            return round($seconds * 1000, 2) . 'ms';
-        }
-
-        return round($seconds, 2) . 's';
-    }
-
-    /**
-     * Format bytes to human readable format
-     *
-     * @param int $size Size in bytes
-     * @param int $precision Number of decimal places
-     * @return string Formatted size string
-     */
-    public function formatBytes($size, $precision = 2): string // Changed signature and visibility
-    {
-        if ($size === 0) return '0 B';
-
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($size, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-
-        $bytes /= (1 << (10 * $pow));
-
-        return round($bytes, $precision) . ' ' . $units[$pow];
-    }
 }
