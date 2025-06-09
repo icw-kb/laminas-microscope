@@ -22,6 +22,7 @@ use LaminasMicroscope\Listener\MicroscopeEventListener;
 use LaminasMicroscope\Listener\DebugBarEventListener;
 use LaminasMicroscope\Cache\CacheManager;
 use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
+use LaminasMicroscope\Microscope\Storage\ReportStorage;
 
 // Factory imports
 use LaminasMicroscope\Factory\ConfigurationServiceFactory;
@@ -40,6 +41,7 @@ use LaminasMicroscope\Factory\Listener\MicroscopeEventListenerFactory;
 use LaminasMicroscope\Factory\Listener\DebugBarEventListenerFactory;
 use LaminasMicroscope\Factory\CacheManagerFactory;
 use LaminasMicroscope\Factory\EnhancedPDOCollectorFactory;
+use LaminasMicroscope\Factory\ReportStorageFactory;
 
 return [
     'router' => [
@@ -186,6 +188,7 @@ return [
             DebugBarHandler::class => DebugBarHandlerFactory::class,
             MicroscopeHandler::class => MicroscopeHandlerFactory::class,
             CacheManager::class => CacheManagerFactory::class,
+            ReportStorage::class => ReportStorageFactory::class,
             
             // Debug Bar Collectors
             EnhancedPDOCollector::class => EnhancedPDOCollectorFactory::class,

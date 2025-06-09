@@ -230,7 +230,13 @@ class DashboardController extends AbstractActionController
     public function analyticsAction(): ViewModel
     {
         try {
-            $reportStorage = $this->getServiceLocator()->get(ReportStorage::class);
+            // Check if ReportStorage service exists
+            if (!$this->getServiceLocator()->has(ReportStorage::class)) {
+                // Create a basic ReportStorage instance if service not available
+                $reportStorage = new ReportStorage($this->config);
+            } else {
+                $reportStorage = $this->getServiceLocator()->get(ReportStorage::class);
+            }
             
             $analytics = [
                 'query_analysis' => $reportStorage->getQueryAnalysis(),
@@ -244,9 +250,33 @@ class DashboardController extends AbstractActionController
                 'config' => $this->config,
             ]);
         } catch (Exception $e) {
+            // Return empty analytics data on error
+            $emptyAnalytics = [
+                'query_analysis' => [
+                    'total_queries' => 0,
+                    'slow_queries' => [],
+                    'duplicate_queries' => [],
+                    'n_plus_one_patterns' => [],
+                ],
+                'route_analysis' => [
+                    'total_requests' => 0,
+                    'popular_routes' => [],
+                    'slow_routes' => [],
+                ],
+                'performance_data' => [
+                    'total_requests' => 0,
+                    'average_response_time' => 0,
+                ],
+                'summary' => [
+                    'performance_score' => 100,
+                    'recommendations' => [],
+                ],
+            ];
+            
             return new ViewModel([
-                'error' => $e->getMessage(),
+                'analytics' => $emptyAnalytics,
                 'config' => $this->config,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -259,7 +289,12 @@ class DashboardController extends AbstractActionController
         $action = $this->params()->fromRoute('action', 'index');
         
         try {
-            $cacheManager = $this->getServiceLocator()->get(CacheManager::class);
+            // Check if CacheManager service exists
+            if (!$this->getServiceLocator()->has(CacheManager::class)) {
+                $cacheManager = new CacheManager($this->config);
+            } else {
+                $cacheManager = $this->getServiceLocator()->get(CacheManager::class);
+            }
             
             if ($action === 'clear' && $this->getRequest()->isPost()) {
                 $category = $this->params()->fromPost('category', 'default');
@@ -273,9 +308,11 @@ class DashboardController extends AbstractActionController
                 'config' => $this->config,
             ]);
         } catch (Exception $e) {
+            // Return empty cache stats on error
             return new ViewModel([
-                'error' => $e->getMessage(),
+                'cacheStats' => ['default' => ['type' => 'FileAdapter', 'stats' => ['hits' => 0, 'misses' => 0, 'writes' => 0, 'deletes' => 0]]],
                 'config' => $this->config,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -286,17 +323,51 @@ class DashboardController extends AbstractActionController
     public function performanceAction(): ViewModel
     {
         try {
-            $collector = $this->getServiceLocator()->get(EnhancedPDOCollector::class);
-            $performanceData = $collector->collect();
+            // Check if EnhancedPDOCollector service exists
+            if (!$this->getServiceLocator()->has(EnhancedPDOCollector::class)) {
+                // Create basic performance data if service not available
+                $performanceData = [
+                    'performance_score' => 100,
+                    'nb_statements' => 0,
+                    'nb_slow_statements' => 0,
+                    'nb_duplicate_statements' => 0,
+                    'accumulated_duration_str' => '0ms',
+                    'analysis' => [
+                        'n_plus_one_patterns' => [],
+                        'query_types' => [],
+                    ],
+                    'recommendations' => [],
+                    'statements' => [],
+                ];
+            } else {
+                $collector = $this->getServiceLocator()->get(EnhancedPDOCollector::class);
+                $performanceData = $collector->collect();
+            }
             
             return new ViewModel([
                 'performanceData' => $performanceData,
                 'config' => $this->config,
             ]);
         } catch (Exception $e) {
+            // Return empty performance data on error
+            $emptyPerformanceData = [
+                'performance_score' => 100,
+                'nb_statements' => 0,
+                'nb_slow_statements' => 0,
+                'nb_duplicate_statements' => 0,
+                'accumulated_duration_str' => '0ms',
+                'analysis' => [
+                    'n_plus_one_patterns' => [],
+                    'query_types' => [],
+                ],
+                'recommendations' => [],
+                'statements' => [],
+            ];
+            
             return new ViewModel([
-                'error' => $e->getMessage(),
+                'performanceData' => $emptyPerformanceData,
                 'config' => $this->config,
+                'error' => $e->getMessage(),
             ]);
         }
     }

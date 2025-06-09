@@ -102,7 +102,7 @@ $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/di
                                             <?php if (isset($stats['stats']['cache_size'])): ?>
                                                 <div class="mt-2 text-center">
                                                     <div class="small">
-                                                        <strong>Size:</strong> <?= $this->formatBytes($stats['stats']['cache_size']) ?>
+                                                        <strong>Size:</strong> <?= formatBytes($stats['stats']['cache_size']) ?>
                                                     </div>
                                                     <?php if (isset($stats['stats']['total_files'])): ?>
                                                         <div class="small">
@@ -253,7 +253,8 @@ $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/di
 
 <?php
 // Helper function for formatting bytes
-$this->plugin('view_helper')->__invoke('FormatBytes', function($bytes) {
+function formatBytes($bytes) {
+    if (!is_numeric($bytes)) return '0 B';
     $units = ['B', 'KB', 'MB', 'GB'];
     $unit = 0;
     while ($bytes >= 1024 && $unit < count($units) - 1) {
@@ -261,5 +262,5 @@ $this->plugin('view_helper')->__invoke('FormatBytes', function($bytes) {
         $unit++;
     }
     return sprintf('%.2f %s', $bytes, $units[$unit]);
-});
+}
 ?>
