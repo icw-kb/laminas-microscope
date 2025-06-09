@@ -400,6 +400,42 @@ class DebugBarHandler implements HandlerInterface
                 }
                 break;
 
+            case 'config':
+                try {
+                    $configCollector = $this->container->get(\LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector::class);
+                    if (!$this->debugBar->hasCollector($configCollector->getName())) {
+                        $this->debugBar->addCollector($configCollector);
+                        $this->collectorRegistry->register($configCollector);
+                    }
+                } catch (Exception $e) {
+                    // Silently ignore if service cannot be created
+                }
+                break;
+
+            case 'pdo':
+                try {
+                    $pdoCollector = $this->container->get(\LaminasMicroscope\DebugBar\Collectors\PDOCollector::class);
+                    if (!$this->debugBar->hasCollector($pdoCollector->getName())) {
+                        $this->debugBar->addCollector($pdoCollector);
+                        $this->collectorRegistry->register($pdoCollector);
+                    }
+                } catch (Exception $e) {
+                    // Silently ignore if service cannot be created
+                }
+                break;
+
+            case 'request':
+                try {
+                    $requestCollector = $this->container->get(\LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector::class);
+                    if (!$this->debugBar->hasCollector($requestCollector->getName())) {
+                        $this->debugBar->addCollector($requestCollector);
+                        $this->collectorRegistry->register($requestCollector);
+                    }
+                } catch (Exception $e) {
+                    // Silently ignore if service cannot be created
+                }
+                break;
+
             default:
                 break;
         }
