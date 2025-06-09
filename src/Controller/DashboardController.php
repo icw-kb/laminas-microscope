@@ -21,13 +21,22 @@ class DashboardController extends AbstractActionController
 {
     private ComponentManager $componentManager;
     private ConfigurationService $config;
+    private ?ReportStorage $reportStorage;
+    private ?CacheManager $cacheManager;
+    private ?EnhancedPDOCollector $enhancedPDOCollector;
 
     public function __construct(
         ComponentManager $componentManager,
-        ConfigurationService $config
+        ConfigurationService $config,
+        ?ReportStorage $reportStorage = null,
+        ?CacheManager $cacheManager = null,
+        ?EnhancedPDOCollector $enhancedPDOCollector = null
     ) {
         $this->componentManager = $componentManager;
         $this->config = $config;
+        $this->reportStorage = $reportStorage;
+        $this->cacheManager = $cacheManager;
+        $this->enhancedPDOCollector = $enhancedPDOCollector;
     }
 
     /**
@@ -168,9 +177,10 @@ class DashboardController extends AbstractActionController
     private function getRecentReports(): array
     {
         try {
-            $storagePath = $this->config->getStoragePath();
-            $microscope = $this->getServiceLocator()->get(MicroscopeHandler::class);
-            return $microscope->getRecentReports(5); 
+            if ($this->reportStorage !== null) {
+                return $this->reportStorage->loadRecentReports(5);
+            }
+            return [];
         } catch (Exception $e) {
             return [];
         }
@@ -199,8 +209,9 @@ class DashboardController extends AbstractActionController
     private function clearAnalysisReports(): void
     {
         try {
-            $microscope = $this->getServiceLocator()->get(MicroscopeHandler::class);
-            $microscope->clearReports();
+            if ($this->reportStorage !== null) {
+                $this->reportStorage->clearReports();
+            }
         } catch (RuntimeException $e) {
             throw new RuntimeException('Failed to clear reports: ' . $e->getMessage());
         }
@@ -230,13 +241,8 @@ class DashboardController extends AbstractActionController
     public function analyticsAction(): ViewModel
     {
         try {
-            // Check if ReportStorage service exists
-            if (!$this->getServiceLocator()->has(ReportStorage::class)) {
-                // Create a basic ReportStorage instance if service not available
-                $reportStorage = new ReportStorage($this->config);
-            } else {
-                $reportStorage = $this->getServiceLocator()->get(ReportStorage::class);
-            }
+            // Use injected service or create fallback
+            $reportStorage = $this->reportStorage ?? new ReportStorage($this->config);
             
             $analytics = [
                 'query_analysis' => $reportStorage->getQueryAnalysis(),
@@ -289,12 +295,8 @@ class DashboardController extends AbstractActionController
         $action = $this->params()->fromRoute('action', 'index');
         
         try {
-            // Check if CacheManager service exists
-            if (!$this->getServiceLocator()->has(CacheManager::class)) {
-                $cacheManager = new CacheManager($this->config);
-            } else {
-                $cacheManager = $this->getServiceLocator()->get(CacheManager::class);
-            }
+            // Use injected service or create fallback
+            $cacheManager = $this->cacheManager ?? new CacheManager($this->config);
             
             if ($action === 'clear' && $this->getRequest()->isPost()) {
                 $category = $this->params()->fromPost('category', 'default');
@@ -323,8 +325,9 @@ class DashboardController extends AbstractActionController
     public function performanceAction(): ViewModel
     {
         try {
-            // Check if EnhancedPDOCollector service exists
-            if (!$this->getServiceLocator()->has(EnhancedPDOCollector::class)) {
+            if ($this->enhancedPDOCollector !== null) {
+                $performanceData = $this->enhancedPDOCollector->collect();
+            } else {
                 // Create basic performance data if service not available
                 $performanceData = [
                     'performance_score' => 100,
@@ -339,9 +342,6 @@ class DashboardController extends AbstractActionController
                     'recommendations' => [],
                     'statements' => [],
                 ];
-            } else {
-                $collector = $this->getServiceLocator()->get(EnhancedPDOCollector::class);
-                $performanceData = $collector->collect();
             }
             
             return new ViewModel([

@@ -9,6 +9,9 @@ use Laminas\ServiceManager\Factory\FactoryInterface;
 use LaminasMicroscope\Controller\DashboardController;
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Microscope\Storage\ReportStorage;
+use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
 
 class DashboardControllerFactory implements FactoryInterface
 {
@@ -17,6 +20,41 @@ class DashboardControllerFactory implements FactoryInterface
         $componentManager = $container->get(ComponentManager::class);
         $config = $container->get(ConfigurationService::class);
         
-        return new DashboardController($componentManager, $config);
+        // Try to get Phase 3 services, but don't fail if they're not available
+        $reportStorage = null;
+        $cacheManager = null;
+        $enhancedPDOCollector = null;
+        
+        try {
+            if ($container->has(ReportStorage::class)) {
+                $reportStorage = $container->get(ReportStorage::class);
+            }
+        } catch (\Exception $e) {
+            // Service not available, will use fallback
+        }
+        
+        try {
+            if ($container->has(CacheManager::class)) {
+                $cacheManager = $container->get(CacheManager::class);
+            }
+        } catch (\Exception $e) {
+            // Service not available, will use fallback
+        }
+        
+        try {
+            if ($container->has(EnhancedPDOCollector::class)) {
+                $enhancedPDOCollector = $container->get(EnhancedPDOCollector::class);
+            }
+        } catch (\Exception $e) {
+            // Service not available, will use fallback
+        }
+        
+        return new DashboardController(
+            $componentManager, 
+            $config,
+            $reportStorage,
+            $cacheManager,
+            $enhancedPDOCollector
+        );
     }
 }
