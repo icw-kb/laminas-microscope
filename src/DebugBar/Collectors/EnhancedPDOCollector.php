@@ -12,8 +12,9 @@ use Laminas\Db\Adapter\Adapter;
 use LaminasMicroscope\Utility\FormatUtility;
 use LaminasMicroscope\Cache\CacheManager;
 use LaminasMicroscope\Analyzer\QueryAnalyzer;
+use LaminasMicroscope\Collector\CollectorInterface;
 
-class EnhancedPDOCollector extends DataCollector implements Renderable, \LaminasMicroscope\Contracts\CollectorInterface
+class EnhancedPDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
     private ServiceManager $serviceManager;
     private ?CacheManager $cacheManager;

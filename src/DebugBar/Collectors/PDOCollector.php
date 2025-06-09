@@ -10,8 +10,9 @@ use Laminas\ServiceManager\ServiceManager;
 use Exception; 
 use Laminas\Db\Adapter\Adapter;
 use LaminasMicroscope\Utility\FormatUtility;
+use LaminasMicroscope\Collector\CollectorInterface;
 
-class PDOCollector extends DataCollector implements Renderable, \LaminasMicroscope\Contracts\CollectorInterface
+class PDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
     private ServiceManager $serviceManager;
     private array $queries = [];
