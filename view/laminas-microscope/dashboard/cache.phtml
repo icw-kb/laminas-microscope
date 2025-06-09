@@ -1,0 +1,304 @@
+<?php
+$this->headTitle('Cache Management - Microscope');
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+$this->headLink()->appendStylesheet('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+?>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/analytics') ?>">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/performance') ?>">
+                            <i class="fas fa-rocket"></i> Performance
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="<?= $this->url('laminas-microscope/cache') ?>">
+                            <i class="fas fa-memory"></i> Cache
+                        </a>
+                    </li>
+                    
+                    <hr class="my-2">
+                    <li class="nav-item">
+                        <small class="text-muted px-3">COLLECTORS</small>
+                    </li>
+                    
+                    <?php 
+                    // Get collector names from config
+                    $collectorNames = $config->get(
+                        'laminas_microscope.collectors',
+                        $config->get('laminas_microscope.components.debug_bar.collectors', [])
+                    );
+                    
+                    // Add default collectors if none configured
+                    if (empty($collectorNames)) {
+                        $collectorNames = ['pdo', 'config', 'request'];
+                    }
+                    ?>
+                    
+                    <?php foreach ($collectorNames as $collector): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>#pane-<?= $collector ?>">
+                                <i class="fas fa-cog"></i> <?= ucfirst($collector) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                    
+                    <hr class="my-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/microscope') ?>">
+                            <i class="fas fa-microscope"></i> Microscope
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/config') ?>">
+                            <i class="fas fa-cogs"></i> Configuration
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-memory"></i> Cache Management</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error: <?= $this->escapeHtml($error) ?>
+                </div>
+            <?php else: ?>
+
+                <!-- Cache Statistics -->
+                <div class="row mb-4">
+                    <?php foreach ($cacheStats as $category => $stats): ?>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-layer-group"></i> <?= ucfirst($category) ?> Cache
+                                    </h5>
+                                    <span class="badge bg-secondary"><?= $stats['type'] ?></span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <table class="table table-sm table-borderless">
+                                                <tr>
+                                                    <td><strong>Hits:</strong></td>
+                                                    <td class="text-success"><?= number_format($stats['stats']['hits'] ?? 0) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Misses:</strong></td>
+                                                    <td class="text-warning"><?= number_format($stats['stats']['misses'] ?? 0) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Writes:</strong></td>
+                                                    <td class="text-info"><?= number_format($stats['stats']['writes'] ?? 0) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Deletes:</strong></td>
+                                                    <td class="text-danger"><?= number_format($stats['stats']['deletes'] ?? 0) ?></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <?php 
+                                            $hits = $stats['stats']['hits'] ?? 0;
+                                            $misses = $stats['stats']['misses'] ?? 0;
+                                            $total = $hits + $misses;
+                                            $hitRate = $total > 0 ? round(($hits / $total) * 100, 2) : 0;
+                                            ?>
+                                            <div class="text-center">
+                                                <div class="display-6 <?= $hitRate >= 80 ? 'text-success' : ($hitRate >= 60 ? 'text-warning' : 'text-danger') ?>">
+                                                    <?= $hitRate ?>%
+                                                </div>
+                                                <small class="text-muted">Hit Rate</small>
+                                            </div>
+                                            
+                                            <?php if (isset($stats['stats']['cache_size'])): ?>
+                                                <div class="mt-2 text-center">
+                                                    <div class="small">
+                                                        <strong>Size:</strong> <?= formatBytes($stats['stats']['cache_size']) ?>
+                                                    </div>
+                                                    <?php if (isset($stats['stats']['total_files'])): ?>
+                                                        <div class="small">
+                                                            <strong>Files:</strong> <?= number_format($stats['stats']['total_files']) ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Clear Cache Button -->
+                                    <div class="mt-3">
+                                        <form method="post" action="<?= $this->url('laminas-microscope/cache', ['action' => 'clear']) ?>" class="d-inline">
+                                            <input type="hidden" name="category" value="<?= $category ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="return confirm('Are you sure you want to clear the <?= $category ?> cache?')">
+                                                <i class="fas fa-trash"></i> Clear <?= ucfirst($category) ?> Cache
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Redis Specific Information -->
+                <?php foreach ($cacheStats as $category => $stats): ?>
+                    <?php if (str_contains($stats['type'], 'Redis')): ?>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="fab fa-redis"></i> Redis Information - <?= ucfirst($category) ?></h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <table class="table table-sm">
+                                                    <tr>
+                                                        <td><strong>Version:</strong></td>
+                                                        <td><?= $stats['stats']['redis_version'] ?? 'Unknown' ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Connected Clients:</strong></td>
+                                                        <td><?= $stats['stats']['connected_clients'] ?? 0 ?></td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <table class="table table-sm">
+                                                    <tr>
+                                                        <td><strong>Used Memory:</strong></td>
+                                                        <td><?= $stats['stats']['used_memory_human'] ?? '0B' ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Keyspace Hits:</strong></td>
+                                                        <td><?= number_format($stats['stats']['keyspace_hits'] ?? 0) ?></td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <table class="table table-sm">
+                                                    <tr>
+                                                        <td><strong>Keyspace Misses:</strong></td>
+                                                        <td><?= number_format($stats['stats']['keyspace_misses'] ?? 0) ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Global Hit Rate:</strong></td>
+                                                        <td>
+                                                            <?php 
+                                                            $globalHits = $stats['stats']['keyspace_hits'] ?? 0;
+                                                            $globalMisses = $stats['stats']['keyspace_misses'] ?? 0;
+                                                            $globalTotal = $globalHits + $globalMisses;
+                                                            $globalRate = $globalTotal > 0 ? round(($globalHits / $globalTotal) * 100, 2) : 0;
+                                                            ?>
+                                                            <span class="badge bg-<?= $globalRate >= 80 ? 'success' : ($globalRate >= 60 ? 'warning' : 'danger') ?>">
+                                                                <?= $globalRate ?>%
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+
+                <!-- Cache Configuration -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-cog"></i> Cache Configuration</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Phase 3 Cache System Active:</strong>
+                                    Multi-layer caching with automatic fallback and intelligent TTL management.
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Cache Categories:</h6>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Query Results</span>
+                                                <span class="badge bg-primary">5 min TTL</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Analysis Results</span>
+                                                <span class="badge bg-primary">10 min TTL</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Configuration Cache</span>
+                                                <span class="badge bg-primary">1 hour TTL</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Report Cache</span>
+                                                <span class="badge bg-primary">30 min TTL</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Cache Features:</h6>
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-check text-success"></i> Pattern-based invalidation</li>
+                                            <li><i class="fas fa-check text-success"></i> Automatic fallback adapters</li>
+                                            <li><i class="fas fa-check text-success"></i> Memory-safe operations</li>
+                                            <li><i class="fas fa-check text-success"></i> Performance statistics</li>
+                                            <li><i class="fas fa-check text-success"></i> Namespace isolation</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <?php endif; ?>
+        </main>
+    </div>
+</div>
+
+<?php
+// Helper function for formatting bytes
+function formatBytes($bytes) {
+    if (!is_numeric($bytes)) return '0 B';
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $unit = 0;
+    while ($bytes >= 1024 && $unit < count($units) - 1) {
+        $bytes /= 1024;
+        $unit++;
+    }
+    return sprintf('%.2f %s', $bytes, $units[$unit]);
+}
+?>

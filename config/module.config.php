@@ -20,6 +20,9 @@ use LaminasMicroscope\Service\AnalysisService;
 use LaminasMicroscope\Listener\WhoopsEventListener;
 use LaminasMicroscope\Listener\MicroscopeEventListener;
 use LaminasMicroscope\Listener\DebugBarEventListener;
+use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
+use LaminasMicroscope\Microscope\Storage\ReportStorage;
 
 // Factory imports
 use LaminasMicroscope\Factory\ConfigurationServiceFactory;
@@ -36,6 +39,9 @@ use LaminasMicroscope\Factory\Controller\ConfigurationControllerFactory;
 use LaminasMicroscope\Factory\Listener\WhoopsEventListenerFactory;
 use LaminasMicroscope\Factory\Listener\MicroscopeEventListenerFactory;
 use LaminasMicroscope\Factory\Listener\DebugBarEventListenerFactory;
+use LaminasMicroscope\Factory\CacheManagerFactory;
+use LaminasMicroscope\Factory\EnhancedPDOCollectorFactory;
+use LaminasMicroscope\Factory\ReportStorageFactory;
 
 return [
     'router' => [
@@ -104,6 +110,46 @@ return [
                             ],
                         ],
                     ],
+                    'analytics' => [
+                        'type' => 'Segment',
+                        'options' => [
+                            'route' => '/analytics[/:action[/:id]]',
+                            'defaults' => [
+                                'controller' => DashboardController::class,
+                                'action' => 'analytics',
+                            ],
+                            'constraints' => [
+                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                                'id' => '[0-9a-zA-Z-]+',
+                            ],
+                        ],
+                    ],
+                    'cache' => [
+                        'type' => 'Segment',
+                        'options' => [
+                            'route' => '/cache[/:action]',
+                            'defaults' => [
+                                'controller' => DashboardController::class,
+                                'action' => 'cache',
+                            ],
+                            'constraints' => [
+                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                            ],
+                        ],
+                    ],
+                    'performance' => [
+                        'type' => 'Segment',
+                        'options' => [
+                            'route' => '/performance[/:action]',
+                            'defaults' => [
+                                'controller' => DashboardController::class,
+                                'action' => 'performance',
+                            ],
+                            'constraints' => [
+                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                            ],
+                        ],
+                    ],
                     // Add route for serving DebugBar assets
                     'debugbar-assets' => [
                         'type' => 'Segment',
@@ -141,8 +187,11 @@ return [
             WhoopsHandler::class => WhoopsHandlerFactory::class,
             DebugBarHandler::class => DebugBarHandlerFactory::class,
             MicroscopeHandler::class => MicroscopeHandlerFactory::class,
+            CacheManager::class => CacheManagerFactory::class,
+            ReportStorage::class => ReportStorageFactory::class,
             
-            // Debug Bar Collectors (using simple closures for these simpler services)
+            // Debug Bar Collectors
+            EnhancedPDOCollector::class => EnhancedPDOCollectorFactory::class,
             PDOCollector::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 return new PDOCollector($container);
             },
@@ -176,6 +225,10 @@ return [
             'laminas-microscope/config/index' => __DIR__ . '/../view/laminas-microscope/config/index.phtml',
             'laminas-microscope/config/profiles' => __DIR__ . '/../view/laminas-microscope/config/profiles.phtml',
             'laminas-microscope/index' => __DIR__ . '/../view/laminas-microscope/index.phtml',
+            // Phase 3 Templates
+            'laminas-microscope/dashboard/analytics' => __DIR__ . '/../view/laminas-microscope/dashboard/analytics.phtml',
+            'laminas-microscope/dashboard/cache' => __DIR__ . '/../view/laminas-microscope/dashboard/cache.phtml',
+            'laminas-microscope/dashboard/performance' => __DIR__ . '/../view/laminas-microscope/dashboard/performance.phtml',
         ],
     ],
     // Add default configuration for laminas_microscope key

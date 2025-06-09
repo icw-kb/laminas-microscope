@@ -12,19 +12,31 @@ use Laminas\Http\Response;
 use RuntimeException;
 use Exception;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
+use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
+use LaminasMicroscope\Microscope\Storage\ReportStorage;
 use DebugBar\JavascriptRenderer; 
 
 class DashboardController extends AbstractActionController
 {
     private ComponentManager $componentManager;
     private ConfigurationService $config;
+    private ?ReportStorage $reportStorage;
+    private ?CacheManager $cacheManager;
+    private ?EnhancedPDOCollector $enhancedPDOCollector;
 
     public function __construct(
         ComponentManager $componentManager,
-        ConfigurationService $config
+        ConfigurationService $config,
+        ?ReportStorage $reportStorage = null,
+        ?CacheManager $cacheManager = null,
+        ?EnhancedPDOCollector $enhancedPDOCollector = null
     ) {
         $this->componentManager = $componentManager;
         $this->config = $config;
+        $this->reportStorage = $reportStorage;
+        $this->cacheManager = $cacheManager;
+        $this->enhancedPDOCollector = $enhancedPDOCollector;
     }
 
     /**
@@ -165,9 +177,10 @@ class DashboardController extends AbstractActionController
     private function getRecentReports(): array
     {
         try {
-            $storagePath = $this->config->getStoragePath();
-            $microscope = $this->getServiceLocator()->get(MicroscopeHandler::class);
-            return $microscope->getRecentReports(5); 
+            if ($this->reportStorage !== null) {
+                return $this->reportStorage->loadRecentReports(5);
+            }
+            return [];
         } catch (Exception $e) {
             return [];
         }
@@ -196,8 +209,9 @@ class DashboardController extends AbstractActionController
     private function clearAnalysisReports(): void
     {
         try {
-            $microscope = $this->getServiceLocator()->get(MicroscopeHandler::class);
-            $microscope->clearReports();
+            if ($this->reportStorage !== null) {
+                $this->reportStorage->clearReports();
+            }
         } catch (RuntimeException $e) {
             throw new RuntimeException('Failed to clear reports: ' . $e->getMessage());
         }
@@ -219,6 +233,143 @@ class DashboardController extends AbstractActionController
             'configuration' => $this->config->toArray(),
             'recent_reports' => $this->getRecentReports(),
         ];
+    }
+
+    /**
+     * Analytics dashboard action - Phase 3 feature
+     */
+    public function analyticsAction(): ViewModel
+    {
+        try {
+            // Use injected service or create fallback
+            $reportStorage = $this->reportStorage ?? new ReportStorage($this->config);
+            
+            $analytics = [
+                'query_analysis' => $reportStorage->getQueryAnalysis(),
+                'route_analysis' => $reportStorage->getRouteAnalysis(),
+                'performance_data' => $reportStorage->getPerformanceData(),
+                'summary' => $reportStorage->getSummary(),
+            ];
+            
+            return new ViewModel([
+                'analytics' => $analytics,
+                'config' => $this->config,
+            ]);
+        } catch (Exception $e) {
+            // Return empty analytics data on error
+            $emptyAnalytics = [
+                'query_analysis' => [
+                    'total_queries' => 0,
+                    'slow_queries' => [],
+                    'duplicate_queries' => [],
+                    'n_plus_one_patterns' => [],
+                ],
+                'route_analysis' => [
+                    'total_requests' => 0,
+                    'popular_routes' => [],
+                    'slow_routes' => [],
+                ],
+                'performance_data' => [
+                    'total_requests' => 0,
+                    'average_response_time' => 0,
+                ],
+                'summary' => [
+                    'performance_score' => 100,
+                    'recommendations' => [],
+                ],
+            ];
+            
+            return new ViewModel([
+                'analytics' => $emptyAnalytics,
+                'config' => $this->config,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Cache management action - Phase 3 feature
+     */
+    public function cacheAction(): ViewModel
+    {
+        $action = $this->params()->fromRoute('action', 'index');
+        
+        try {
+            // Use injected service or create fallback
+            $cacheManager = $this->cacheManager ?? new CacheManager($this->config);
+            
+            if ($action === 'clear' && $this->getRequest()->isPost()) {
+                $category = $this->params()->fromPost('category', 'default');
+                $cacheManager->flush($category);
+                $this->flashMessenger()->addSuccessMessage("Cache cleared for category: {$category}");
+                return $this->redirect()->toRoute('laminas-microscope/cache');
+            }
+            
+            return new ViewModel([
+                'cacheStats' => $cacheManager->getStats(),
+                'config' => $this->config,
+            ]);
+        } catch (Exception $e) {
+            // Return empty cache stats on error
+            return new ViewModel([
+                'cacheStats' => ['default' => ['type' => 'FileAdapter', 'stats' => ['hits' => 0, 'misses' => 0, 'writes' => 0, 'deletes' => 0]]],
+                'config' => $this->config,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Performance monitoring action - Phase 3 feature
+     */
+    public function performanceAction(): ViewModel
+    {
+        try {
+            if ($this->enhancedPDOCollector !== null) {
+                $performanceData = $this->enhancedPDOCollector->collect();
+            } else {
+                // Create basic performance data if service not available
+                $performanceData = [
+                    'performance_score' => 100,
+                    'nb_statements' => 0,
+                    'nb_slow_statements' => 0,
+                    'nb_duplicate_statements' => 0,
+                    'accumulated_duration_str' => '0ms',
+                    'analysis' => [
+                        'n_plus_one_patterns' => [],
+                        'query_types' => [],
+                    ],
+                    'recommendations' => [],
+                    'statements' => [],
+                ];
+            }
+            
+            return new ViewModel([
+                'performanceData' => $performanceData,
+                'config' => $this->config,
+            ]);
+        } catch (Exception $e) {
+            // Return empty performance data on error
+            $emptyPerformanceData = [
+                'performance_score' => 100,
+                'nb_statements' => 0,
+                'nb_slow_statements' => 0,
+                'nb_duplicate_statements' => 0,
+                'accumulated_duration_str' => '0ms',
+                'analysis' => [
+                    'n_plus_one_patterns' => [],
+                    'query_types' => [],
+                ],
+                'recommendations' => [],
+                'statements' => [],
+            ];
+            
+            return new ViewModel([
+                'performanceData' => $emptyPerformanceData,
+                'config' => $this->config,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

@@ -1,0 +1,379 @@
+<?php
+$this->headTitle('Performance Monitoring - Microscope');
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+$this->headLink()->appendStylesheet('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/chart.js');
+?>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/analytics') ?>">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="<?= $this->url('laminas-microscope/performance') ?>">
+                            <i class="fas fa-rocket"></i> Performance
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/cache') ?>">
+                            <i class="fas fa-memory"></i> Cache
+                        </a>
+                    </li>
+                    
+                    <hr class="my-2">
+                    <li class="nav-item">
+                        <small class="text-muted px-3">COLLECTORS</small>
+                    </li>
+                    
+                    <?php 
+                    // Get collector names from config
+                    $collectorNames = $config->get(
+                        'laminas_microscope.collectors',
+                        $config->get('laminas_microscope.components.debug_bar.collectors', [])
+                    );
+                    
+                    // Add default collectors if none configured
+                    if (empty($collectorNames)) {
+                        $collectorNames = ['pdo', 'config', 'request'];
+                    }
+                    ?>
+                    
+                    <?php foreach ($collectorNames as $collector): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>#pane-<?= $collector ?>">
+                                <i class="fas fa-cog"></i> <?= ucfirst($collector) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                    
+                    <hr class="my-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/microscope') ?>">
+                            <i class="fas fa-microscope"></i> Microscope
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/config') ?>">
+                            <i class="fas fa-cogs"></i> Configuration
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-rocket"></i> Performance Monitoring</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="startRealTimeMonitoring()">
+                            <i class="fas fa-play"></i> Live Monitor
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error: <?= $this->escapeHtml($error) ?>
+                </div>
+            <?php else: ?>
+
+                <!-- Performance Score Card -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h3 class="mb-1">Performance Score</h3>
+                                        <p class="text-muted mb-0">
+                                            Overall system performance based on query efficiency, caching, and response times
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <?php 
+                                        $score = $performanceData['performance_score'] ?? 0;
+                                        $scoreColor = $score >= 80 ? 'success' : ($score >= 60 ? 'warning' : 'danger');
+                                        ?>
+                                        <div class="display-1 text-<?= $scoreColor ?>">
+                                            <?= $score ?>
+                                        </div>
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-<?= $scoreColor ?>" 
+                                                 style="width: <?= $score ?>%" 
+                                                 role="progressbar">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">out of 100</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Metrics -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="text-primary">
+                                    <i class="fas fa-database fa-2x mb-2"></i>
+                                </div>
+                                <h4><?= $performanceData['nb_statements'] ?? 0 ?></h4>
+                                <p class="card-text">Total Queries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="text-warning">
+                                    <i class="fas fa-clock fa-2x mb-2"></i>
+                                </div>
+                                <h4><?= $performanceData['nb_slow_statements'] ?? 0 ?></h4>
+                                <p class="card-text">Slow Queries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="text-danger">
+                                    <i class="fas fa-copy fa-2x mb-2"></i>
+                                </div>
+                                <h4><?= $performanceData['nb_duplicate_statements'] ?? 0 ?></h4>
+                                <p class="card-text">Duplicate Queries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="text-info">
+                                    <i class="fas fa-stopwatch fa-2x mb-2"></i>
+                                </div>
+                                <h4><?= $performanceData['accumulated_duration_str'] ?? '0s' ?></h4>
+                                <p class="card-text">Total Time</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Analysis -->
+                <?php if (isset($performanceData['analysis'])): ?>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-exclamation-triangle"></i> N+1 Query Patterns</h5>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (!empty($performanceData['analysis']['n_plus_one_patterns'])): ?>
+                                        <?php foreach ($performanceData['analysis']['n_plus_one_patterns'] as $pattern): ?>
+                                            <div class="alert alert-<?= $pattern['severity'] === 'HIGH' ? 'danger' : ($pattern['severity'] === 'MEDIUM' ? 'warning' : 'info') ?>">
+                                                <div class="d-flex justify-content-between">
+                                                    <div>
+                                                        <strong><?= $pattern['count'] ?> similar queries</strong>
+                                                        <br>
+                                                        <small><code><?= $this->escapeHtml(substr($pattern['pattern'], 0, 80)) ?>...</code></small>
+                                                    </div>
+                                                    <div>
+                                                        <span class="badge bg-<?= $pattern['severity'] === 'HIGH' ? 'danger' : ($pattern['severity'] === 'MEDIUM' ? 'warning' : 'info') ?>">
+                                                            <?= $pattern['severity'] ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <small><i class="fas fa-lightbulb"></i> <?= $pattern['recommendation'] ?></small>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p class="text-success"><i class="fas fa-check"></i> No N+1 query patterns detected.</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-chart-bar"></i> Query Types Distribution</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="queryTypesChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Recommendations -->
+                <?php if (!empty($performanceData['recommendations'])): ?>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-lightbulb"></i> Performance Recommendations</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <?php foreach ($performanceData['recommendations'] as $index => $recommendation): ?>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="alert alert-<?= $recommendation['priority'] === 'high' ? 'warning' : 'info' ?> mb-0">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <h6 class="alert-heading">
+                                                                <i class="fas fa-<?= $recommendation['type'] === 'performance' ? 'tachometer-alt' : ($recommendation['type'] === 'efficiency' ? 'cog' : 'sitemap') ?>"></i>
+                                                                <?= ucfirst($recommendation['type']) ?> Issue
+                                                            </h6>
+                                                            <p class="mb-0"><?= $this->escapeHtml($recommendation['message']) ?></p>
+                                                        </div>
+                                                        <div>
+                                                            <span class="badge bg-<?= $recommendation['priority'] === 'high' ? 'danger' : ($recommendation['priority'] === 'medium' ? 'warning' : 'info') ?>">
+                                                                <?= ucfirst($recommendation['priority']) ?>
+                                                            </span>
+                                                            <?php if (isset($recommendation['count'])): ?>
+                                                                <br>
+                                                                <small class="text-muted"><?= $recommendation['count'] ?> instances</small>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Recent Query Analysis -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-list"></i> Recent Query Analysis</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($performanceData['statements'])): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Query</th>
+                                                    <th>Type</th>
+                                                    <th>Duration</th>
+                                                    <th>Status</th>
+                                                    <th>Issues</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach (array_slice($performanceData['statements'], 0, 20) as $statement): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <code class="small">
+                                                                <?= $this->escapeHtml(substr($statement['sql'], 0, 60)) ?>...
+                                                            </code>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-secondary">
+                                                                <?= $statement['type'] ?? 'UNKNOWN' ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-<?= ($statement['is_slow'] ?? false) ? 'warning' : 'success' ?>">
+                                                                <?= $statement['duration_str'] ?? '0ms' ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($statement['is_success'] ?? true): ?>
+                                                                <span class="badge bg-success">Success</span>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-danger">Failed</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($statement['is_duplicate'] ?? false): ?>
+                                                                <span class="badge bg-warning me-1">Duplicate</span>
+                                                            <?php endif; ?>
+                                                            <?php if ($statement['is_very_slow'] ?? false): ?>
+                                                                <span class="badge bg-danger me-1">Very Slow</span>
+                                                            <?php elseif ($statement['is_slow'] ?? false): ?>
+                                                                <span class="badge bg-warning me-1">Slow</span>
+                                                            <?php endif; ?>
+                                                            <?php if (($statement['complexity']['score'] ?? 0) > 5): ?>
+                                                                <span class="badge bg-info">Complex</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted">No query data available.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <?php endif; ?>
+        </main>
+    </div>
+</div>
+
+<script>
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (isset($performanceData['analysis']['query_types'])): ?>
+        // Query Types Chart
+        const queryTypesCtx = document.getElementById('queryTypesChart').getContext('2d');
+        const queryTypesData = <?= json_encode($performanceData['analysis']['query_types']) ?>;
+        
+        new Chart(queryTypesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(queryTypesData),
+                datasets: [{
+                    data: Object.values(queryTypesData).map(item => item.count),
+                    backgroundColor: [
+                        '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    <?php endif; ?>
+});
+
+function startRealTimeMonitoring() {
+    alert('Real-time monitoring feature coming in Phase 3B!');
+}
+</script>

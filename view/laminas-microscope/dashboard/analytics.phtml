@@ -1,0 +1,336 @@
+<?php
+$this->headTitle('Analytics - Microscope');
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+$this->headLink()->appendStylesheet('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
+$this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/chart.js');
+?>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="<?= $this->url('laminas-microscope/analytics') ?>">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/performance') ?>">
+                            <i class="fas fa-rocket"></i> Performance
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/cache') ?>">
+                            <i class="fas fa-memory"></i> Cache
+                        </a>
+                    </li>
+                    
+                    <hr class="my-2">
+                    <li class="nav-item">
+                        <small class="text-muted px-3">COLLECTORS</small>
+                    </li>
+                    
+                    <?php 
+                    // Get collector names from config
+                    $collectorNames = $config->get(
+                        'laminas_microscope.collectors',
+                        $config->get('laminas_microscope.components.debug_bar.collectors', [])
+                    );
+                    
+                    // Add default collectors if none configured
+                    if (empty($collectorNames)) {
+                        $collectorNames = ['pdo', 'config', 'request'];
+                    }
+                    ?>
+                    
+                    <?php foreach ($collectorNames as $collector): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>#pane-<?= $collector ?>">
+                                <i class="fas fa-cog"></i> <?= ucfirst($collector) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                    
+                    <hr class="my-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/microscope') ?>">
+                            <i class="fas fa-microscope"></i> Microscope
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= $this->url('laminas-microscope/config') ?>">
+                            <i class="fas fa-cogs"></i> Configuration
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-chart-line"></i> Analytics Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshAnalytics()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportAnalytics()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error: <?= $this->escapeHtml($error) ?>
+                </div>
+            <?php else: ?>
+                
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5 class="card-title">Total Queries</h5>
+                                        <h3><?= number_format($analytics['query_analysis']['total_queries']) ?></h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-database fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5 class="card-title">Slow Queries</h5>
+                                        <h3><?= count($analytics['query_analysis']['slow_queries']) ?></h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-clock fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-danger">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5 class="card-title">N+1 Patterns</h5>
+                                        <h3><?= count($analytics['query_analysis']['n_plus_one_patterns']) ?></h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5 class="card-title">Performance Score</h5>
+                                        <h3><?= $analytics['summary']['performance_score'] ?>/100</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-medal fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-pie"></i> Query Performance Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="queryPerformanceChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-bar"></i> Route Performance</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="routePerformanceChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Tables -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-table"></i> Slow Queries</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($analytics['query_analysis']['slow_queries'])): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Query</th>
+                                                    <th>Time (ms)</th>
+                                                    <th>Count</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach (array_slice($analytics['query_analysis']['slow_queries'], 0, 10) as $query): ?>
+                                                    <tr>
+                                                        <td><code class="small"><?= $this->escapeHtml(substr($query['query'] ?? 'N/A', 0, 50)) ?>...</code></td>
+                                                        <td><span class="badge bg-warning"><?= number_format($query['duration'] ?? 0, 2) ?></span></td>
+                                                        <td><?= $query['count'] ?? 1 ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted">No slow queries detected.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-route"></i> Popular Routes</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($analytics['route_analysis']['popular_routes'])): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Route</th>
+                                                    <th>Hits</th>
+                                                    <th>Avg Time</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($analytics['route_analysis']['popular_routes'] as $route => $hits): ?>
+                                                    <tr>
+                                                        <td><code><?= $this->escapeHtml($route) ?></code></td>
+                                                        <td><span class="badge bg-primary"><?= $hits ?></span></td>
+                                                        <td>-</td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted">No route data available.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <?php if (!empty($analytics['summary']['recommendations'])): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-lightbulb"></i> Optimization Recommendations</h5>
+                                </div>
+                                <div class="card-body">
+                                    <?php foreach ($analytics['summary']['recommendations'] as $recommendation): ?>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i> <?= $this->escapeHtml($recommendation) ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+            <?php endif; ?>
+        </main>
+    </div>
+</div>
+
+<script>
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Query Performance Chart
+    const queryCtx = document.getElementById('queryPerformanceChart').getContext('2d');
+    new Chart(queryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Fast Queries', 'Slow Queries', 'Very Slow Queries'],
+            datasets: [{
+                data: [
+                    <?= $analytics['query_analysis']['total_queries'] - count($analytics['query_analysis']['slow_queries']) ?>,
+                    <?= count($analytics['query_analysis']['slow_queries']) ?>,
+                    <?= count(array_filter($analytics['query_analysis']['slow_queries'], function($q) { return ($q['duration'] ?? 0) > 1000; })) ?>
+                ],
+                backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Route Performance Chart
+    const routeCtx = document.getElementById('routePerformanceChart').getContext('2d');
+    const routeData = <?= json_encode(array_slice($analytics['route_analysis']['popular_routes'], 0, 5)) ?>;
+    new Chart(routeCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(routeData),
+            datasets: [{
+                label: 'Route Hits',
+                data: Object.values(routeData),
+                backgroundColor: '#007bff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+
+function refreshAnalytics() {
+    location.reload();
+}
+
+function exportAnalytics() {
+    window.open('<?= $this->url('laminas-microscope/api', ['action' => 'export']) ?>', '_blank');
+}
+</script>
