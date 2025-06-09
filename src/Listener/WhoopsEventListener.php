@@ -28,19 +28,19 @@ class WhoopsEventListener
     {
         try {
             $exception = $event->getParam('exception');
-            
+
             if (!$exception instanceof Throwable) {
                 return;
             }
 
             $whoopsHandler = $this->serviceManager->get(WhoopsHandler::class);
-            
+
             if (!$whoopsHandler->shouldDisplay()) {
                 return;
             }
 
             $whoopsRun = $whoopsHandler->getWhoops();
-            
+
             if (!$whoopsRun) {
                 $this->logError('Whoops handler not available', $exception);
                 return;
@@ -48,14 +48,13 @@ class WhoopsEventListener
 
             // Clean output buffer before showing error page
             $this->cleanOutputBuffer();
-            
+
             // Handle the exception with Whoops
             $whoopsRun->handleException($exception);
-            
+
             // Stop event propagation to prevent default error handling
             $event->stopPropagation(true);
             $event->setResult($event->getResponse());
-            
         } catch (Throwable $e) {
             $this->logError('Failed to handle error with Whoops', $e);
         }

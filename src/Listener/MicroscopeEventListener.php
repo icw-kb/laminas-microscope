@@ -28,7 +28,7 @@ class MicroscopeEventListener
     {
         try {
             $handler = $this->serviceManager->get(MicroscopeHandler::class);
-            
+
             // Check if methods exist and call accordingly
             if (method_exists($handler, 'startProfiling')) {
                 $handler->startProfiling($event);
@@ -48,7 +48,7 @@ class MicroscopeEventListener
     {
         try {
             $handler = $this->serviceManager->get(MicroscopeHandler::class);
-            
+
             if (method_exists($handler, 'profileDispatch')) {
                 $handler->profileDispatch($event);
             } else {
@@ -66,7 +66,7 @@ class MicroscopeEventListener
     {
         try {
             $handler = $this->serviceManager->get(MicroscopeHandler::class);
-            
+
             if (method_exists($handler, 'startRender')) {
                 $handler->startRender($event);
             } else {
@@ -84,13 +84,13 @@ class MicroscopeEventListener
     {
         try {
             $handler = $this->serviceManager->get(MicroscopeHandler::class);
-            
+
             if (method_exists($handler, 'stopRender')) {
                 $handler->stopRender($event);
             } else {
                 MicroscopeHandler::stopRender($event);
             }
-            
+
             if (method_exists($handler, 'finalizeProfiling')) {
                 $handler->finalizeProfiling($event);
             } else {

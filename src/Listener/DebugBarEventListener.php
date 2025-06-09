@@ -18,7 +18,7 @@ class DebugBarEventListener
     private const TIMING_EVENTS = [
         'bootstrap_start',
         'route_start',
-        'dispatch_start', 
+        'dispatch_start',
         'render_start'
     ];
 
@@ -37,7 +37,7 @@ class DebugBarEventListener
     {
         try {
             $debugBarHandler = $this->getDebugBarHandler();
-            
+
             if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
                 return;
             }
@@ -47,15 +47,14 @@ class DebugBarEventListener
             // Measure bootstrap duration if we recorded the start time
             if (isset($this->eventTimestamps['bootstrap_start'])) {
                 $debugBarHandler->addMeasure(
-                    'Bootstrap', 
-                    $this->eventTimestamps['bootstrap_start'], 
+                    'Bootstrap',
+                    $this->eventTimestamps['bootstrap_start'],
                     microtime(true)
                 );
                 unset($this->eventTimestamps['bootstrap_start']);
             }
 
             $debugBarHandler->startTimer('route', 'Routing');
-            
         } catch (Throwable $e) {
             $this->logError('Failed to handle route event in Debug Bar', $e);
         }
@@ -72,7 +71,7 @@ class DebugBarEventListener
             }
 
             $debugBarHandler = $this->getDebugBarHandler();
-            
+
             if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
                 return;
             }
@@ -86,7 +85,6 @@ class DebugBarEventListener
             }
 
             $debugBarHandler->startTimer('dispatch', 'Dispatch');
-            
         } catch (Throwable $e) {
             $this->logError('Failed to handle dispatch event in Debug Bar', $e);
         }
@@ -103,7 +101,7 @@ class DebugBarEventListener
             }
 
             $debugBarHandler = $this->getDebugBarHandler();
-            
+
             if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
                 return;
             }
@@ -117,7 +115,6 @@ class DebugBarEventListener
             }
 
             $debugBarHandler->startTimer('render', 'Rendering');
-            
         } catch (Throwable $e) {
             $this->logError('Failed to handle render event in Debug Bar', $e);
         }
@@ -134,7 +131,7 @@ class DebugBarEventListener
             }
 
             $debugBarHandler = $this->getDebugBarHandler();
-            
+
             if (!$debugBarHandler || !$debugBarHandler->shouldDisplay()) {
                 return;
             }
@@ -144,7 +141,6 @@ class DebugBarEventListener
                 $debugBarHandler->stopTimer('render');
                 unset($this->eventTimestamps['render_start']);
             }
-            
         } catch (Throwable $e) {
             $this->logError('Failed to handle finish timing in Debug Bar', $e);
         }
@@ -157,7 +153,7 @@ class DebugBarEventListener
     {
         try {
             $handler = $this->getDebugBarHandler();
-            
+
             if ($handler) {
                 if (method_exists($handler, 'injectDebugBar')) {
                     $handler->injectDebugBar($event);
@@ -166,7 +162,6 @@ class DebugBarEventListener
                     DebugBarHandler::injectDebugBar($event);
                 }
             }
-            
         } catch (Throwable $e) {
             $this->logError('Failed to inject Debug Bar', $e);
         }
@@ -179,7 +174,7 @@ class DebugBarEventListener
     {
         try {
             $handler = $this->getDebugBarHandler();
-            
+
             if ($handler) {
                 if (method_exists($handler, 'logResponseHeadersAndResultAtRender')) {
                     $handler->logResponseHeadersAndResultAtRender($event);
@@ -187,7 +182,6 @@ class DebugBarEventListener
                     DebugBarHandler::logResponseHeadersAndResultAtRender($event);
                 }
             }
-            
         } catch (Throwable $e) {
             $this->logError('Failed to log response headers in Debug Bar', $e);
         }
@@ -200,7 +194,7 @@ class DebugBarEventListener
     {
         try {
             $handler = $this->getDebugBarHandler();
-            
+
             if ($handler) {
                 if (method_exists($handler, 'logMvcEventResultAtDispatch')) {
                     $handler->logMvcEventResultAtDispatch($event);
@@ -208,7 +202,6 @@ class DebugBarEventListener
                     DebugBarHandler::logMvcEventResultAtDispatch($event);
                 }
             }
-            
         } catch (Throwable $e) {
             $this->logError('Failed to log MVC result in Debug Bar', $e);
         }
