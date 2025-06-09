@@ -59,8 +59,7 @@ class MicroscopeController extends AbstractActionController
             $viewModel->setTemplate('laminas-microscope/microscope/index');
             return $viewModel;
 
-        } catch (Exception $e) { 
-            error_log("Laminas Microscope Error in indexAction: " . $e->getMessage());
+        } catch (Exception $e) {
 
             $viewModel = new ViewModel([
                 'error' => $e->getMessage(),
@@ -110,9 +109,7 @@ class MicroscopeController extends AbstractActionController
             $viewModel->setTemplate('laminas-microscope/microscope/profiler'); 
             return $viewModel;
 
-        } catch (Exception $e) { 
-             // Log the error
-            error_log("Laminas Microscope Error in profilerAction: " . $e->getMessage());
+        } catch (Exception $e) {
 
             $viewModel = new ViewModel([
                 'error' => $e->getMessage(),
