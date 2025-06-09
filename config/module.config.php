@@ -16,12 +16,26 @@ use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Controller\MicroscopeController;
 use LaminasMicroscope\Controller\DashboardController;
 use LaminasMicroscope\Controller\ConfigurationController;
-use LaminasMicroscope\Service\AnalysisService; // Ensure AnalysisService is imported
-use Laminas\ServiceManager\ServiceManager; // Added this use statement
-use LaminasMicroscope\Factory\ConfigurationServiceFactory; // Import the new factory
+use LaminasMicroscope\Service\AnalysisService;
 use LaminasMicroscope\Listener\WhoopsEventListener;
 use LaminasMicroscope\Listener\MicroscopeEventListener;
 use LaminasMicroscope\Listener\DebugBarEventListener;
+
+// Factory imports
+use LaminasMicroscope\Factory\ConfigurationServiceFactory;
+use LaminasMicroscope\Factory\ComponentManagerFactory;
+use LaminasMicroscope\Factory\DebugBarHandlerFactory;
+use LaminasMicroscope\Factory\MicroscopeHandlerFactory;
+use LaminasMicroscope\Factory\WhoopsHandlerFactory;
+use LaminasMicroscope\Factory\AnalysisServiceFactory;
+use LaminasMicroscope\Factory\ConfigurationManagerFactory;
+use LaminasMicroscope\Factory\CollectorRegistryFactory;
+use LaminasMicroscope\Factory\Controller\DashboardControllerFactory;
+use LaminasMicroscope\Factory\Controller\MicroscopeControllerFactory;
+use LaminasMicroscope\Factory\Controller\ConfigurationControllerFactory;
+use LaminasMicroscope\Factory\Listener\WhoopsEventListenerFactory;
+use LaminasMicroscope\Factory\Listener\MicroscopeEventListenerFactory;
+use LaminasMicroscope\Factory\Listener\DebugBarEventListenerFactory;
 
 return [
     'router' => [
@@ -112,90 +126,23 @@ return [
     ],
     'controllers' => [
         'factories' => [
-            // Factory for MicroscopeController
-            // Changed type hint from ContainerInterface to ServiceManager
-            MicroscopeController::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                // Get ConfigurationService, AnalysisService, ComponentManager, and MicroscopeHandler from the container
-                $config = $container->get(ConfigurationService::class);
-                $analysisService = $container->get(AnalysisService::class); // Requesting AnalysisService
-                $componentManager = $container->get(ComponentManager::class); // Requesting ComponentManager
-                $microscopeHandler = $container->get(MicroscopeHandler::class); // Requesting MicroscopeHandler
-                // Instantiate MicroscopeController with the correct dependencies
-                return new MicroscopeController($config, $analysisService, $componentManager, $microscopeHandler); // Pass all dependencies
-            },
-            // Factory for DashboardController
-            // Changed type hint from ContainerInterface to ServiceManager
-            DashboardController::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $componentManager = $container->get(ComponentManager::class);
-                $config = $container->get(ConfigurationService::class);
-                // Assuming DashboardController constructor takes ComponentManager and ConfigurationService
-                return new DashboardController($componentManager, $config);
-            },
-            // Factory for ConfigurationController
-            // Changed type hint from ContainerInterface to ServiceManager
-            ConfigurationController::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $componentManager = $container->get(ComponentManager::class);
-                $config = $container->get(ConfigurationService::class);
-                $configManager = $container->get(ConfigurationManager::class);
-                // Assuming ConfigurationController constructor takes ComponentManager, ConfigurationService, and ConfigurationManager
-                return new ConfigurationController($componentManager, $config, $configManager);
-            },
+            MicroscopeController::class => MicroscopeControllerFactory::class,
+            DashboardController::class => DashboardControllerFactory::class,
+            ConfigurationController::class => ConfigurationControllerFactory::class,
         ],
     ],
     'service_manager' => [
         'factories' => [
-            // Use the dedicated factory class for ConfigurationService
             ConfigurationService::class => ConfigurationServiceFactory::class,
-
-            // Factory for ComponentManager
-            // Changed type hint from ContainerInterface to ServiceManager
-            ComponentManager::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $config = $container->get(ConfigurationService::class);
-                $registry = $container->get(CollectorRegistry::class);
-                return new ComponentManager($config, $registry, $container);
-            },
-            // Factory for ConfigurationManager
-            // Changed type hint from ContainerInterface to ServiceManager
-            ConfigurationManager::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $config = $container->get(ConfigurationService::class);
-                // ConfigurationManager constructor takes ConfigurationService and optional LoggerInterface
-                // Assuming no logger is needed for now, adjust if necessary
-                return new ConfigurationManager($config);
-            },
-            // Factory for AnalysisService
-            // Changed type hint from ContainerInterface to ServiceManager
-            AnalysisService::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                 $config = $container->get(ConfigurationService::class);
-                 $microscopeHandler = $container->get(MicroscopeHandler::class); // Get MicroscopeHandler
-                 // Instantiate AnalysisService with ConfigurationService and MicroscopeHandler
-                 return new AnalysisService($config, $microscopeHandler); // Pass all dependencies
-            },
-            CollectorRegistry::class => function () {
-                return new \LaminasMicroscope\Collector\CollectorRegistry();
-            },
-            // Factory for WhoopsHandler
-            // Changed type hint from ContainerInterface to ServiceManager
-            WhoopsHandler::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                // WhoopsHandler constructor takes ConfigurationService
-                $config = $container->get(ConfigurationService::class);
-                return new WhoopsHandler($config);
-            },
-            // Factory for DebugBarHandler
-            // Changed type hint from ContainerInterface to ServiceManager
-            DebugBarHandler::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $config = $container->get(ConfigurationService::class);
-                $registry = $container->get(CollectorRegistry::class);
-                return new DebugBarHandler($config, $container, $registry);
-            },
-            // Factory for MicroscopeHandler
-            // Changed type hint from ContainerInterface to ServiceManager
-            MicroscopeHandler::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $componentManager = $container->get(ComponentManager::class);
-                $config = $container->get(ConfigurationService::class);
-                $registry = $container->get(CollectorRegistry::class);
-                return new MicroscopeHandler($componentManager, $config, $container, $registry);
-            },
-            // Debug Bar Collectors
+            ComponentManager::class => ComponentManagerFactory::class,
+            ConfigurationManager::class => ConfigurationManagerFactory::class,
+            AnalysisService::class => AnalysisServiceFactory::class,
+            CollectorRegistry::class => CollectorRegistryFactory::class,
+            WhoopsHandler::class => WhoopsHandlerFactory::class,
+            DebugBarHandler::class => DebugBarHandlerFactory::class,
+            MicroscopeHandler::class => MicroscopeHandlerFactory::class,
+            
+            // Debug Bar Collectors (using simple closures for these simpler services)
             PDOCollector::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 return new PDOCollector($container);
             },
@@ -211,38 +158,9 @@ return [
             },
             
             // Event Listeners
-            WhoopsEventListener::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $logger = null;
-                if ($container->has(\Psr\Log\LoggerInterface::class)) {
-                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
-                }
-                return new WhoopsEventListener($container, $logger);
-            },
-            
-            MicroscopeEventListener::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $logger = null;
-                if ($container->has(\Psr\Log\LoggerInterface::class)) {
-                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
-                }
-                return new MicroscopeEventListener($container, $logger);
-            },
-            
-            DebugBarEventListener::class => function (Laminas\ServiceManager\ServiceManager $container) {
-                $logger = null;
-                if ($container->has(\Psr\Log\LoggerInterface::class)) {
-                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
-                }
-                
-                // Event timestamps will be passed from Module.php
-                $eventTimestamps = [];
-                
-                return new DebugBarEventListener(
-                    $container, 
-                    $eventTimestamps, 
-                    $logger,
-                    'laminas-microscope/debugbar-assets'
-                );
-            },
+            WhoopsEventListener::class => WhoopsEventListenerFactory::class,
+            MicroscopeEventListener::class => MicroscopeEventListenerFactory::class,
+            DebugBarEventListener::class => DebugBarEventListenerFactory::class,
         ],
     ],
     'view_manager' => [

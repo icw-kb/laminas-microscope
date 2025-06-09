@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Config;
 
+use LaminasMicroscope\Config\Validator\ConfigurationValidatorFactory;
+use LaminasMicroscope\Exception\ConfigurationException;
+
 /**
  * Service for managing Laminas Microscope configuration
  */
 class ConfigurationService
 {
     private array $config;
+    private array $validationErrors = [];
 
     public function __construct(array $config = [])
     {
-        // --- NEW DEBUG LOGGING ---
-        // Log the configuration array received by the constructor
-        error_log("LaminasMicroscope: DEBUG: ConfigurationService received config: " . json_encode($config) . ".\n");
-        // --- END NEW DEBUG LOGGING ---
-
         $this->config = $config;
+        $this->validateConfiguration();
     }
 
     /**
@@ -128,11 +128,7 @@ class ConfigurationService
      */
     public function getComponentConfig(string $component): array
     {
-        // --- DEBUG LOGGING ---
         $config = $this->get("laminas_microscope.components.{$component}", []);
-        error_log("LaminasMicroscope: DEBUG: ConfigurationService::getComponentConfig('{$component}') returning: " . json_encode($config) . ".\n");
-        // --- END DEBUG LOGGING ---
-
         return is_array($config) ? $config : [];
     }
 
@@ -167,5 +163,53 @@ class ConfigurationService
     {
         $extensions = $this->get('laminas_microscope.storage.allowed_extensions', ['json', 'log', 'txt', 'xml']);
         return is_array($extensions) ? $extensions : [];
+    }
+
+    /**
+     * Validate the configuration
+     */
+    private function validateConfiguration(): void
+    {
+        $validator = ConfigurationValidatorFactory::create();
+        
+        if (!$validator->validate($this->config)) {
+            $this->validationErrors = $validator->getErrors();
+            
+            // For now, we'll log errors but not throw exceptions to maintain backward compatibility
+            // In a future version, we could make this stricter by throwing ConfigurationException
+            foreach ($validator->getErrorMessages() as $error) {
+                error_log("LaminasMicroscope Configuration Warning: {$error}");
+            }
+        }
+    }
+
+    /**
+     * Check if configuration is valid
+     */
+    public function isValid(): bool
+    {
+        return empty($this->validationErrors);
+    }
+
+    /**
+     * Get configuration validation errors
+     */
+    public function getValidationErrors(): array
+    {
+        return $this->validationErrors;
+    }
+
+    /**
+     * Validate configuration and throw exception if invalid (strict mode)
+     */
+    public function validateStrict(): void
+    {
+        if (!$this->isValid()) {
+            $messages = array_map(fn($error) => $error['message'] ?? 'Unknown error', $this->validationErrors);
+            throw new ConfigurationException(
+                'Configuration validation failed: ' . implode('; ', $messages),
+                $this->validationErrors
+            );
+        }
     }
 }

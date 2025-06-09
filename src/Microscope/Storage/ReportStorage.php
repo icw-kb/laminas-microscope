@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace LaminasMicroscope\Microscope\Storage;
 
 use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Exception\StorageException;
+use LaminasMicroscope\Utility\ErrorHandler;
 use RecursiveIteratorIterator; 
 use RecursiveDirectoryIterator; 
 use Exception; 
@@ -33,13 +35,19 @@ class ReportStorage
         $filename = $this->generateReportFilename($report);
         $filepath = $this->storagePath . '/' . $filename;
 
-        try {
+        return ErrorHandler::executeWithDefault(function () use ($report, $filepath) {
             $data = json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            return file_put_contents($filepath, $data) !== false;
-        } catch (Exception $e) { 
-            error_log("Failed to store microscope report: " . $e->getMessage());
-            return false;
-        }
+            if ($data === false) {
+                throw StorageException::writeError($filepath, 'JSON encoding failed');
+            }
+            
+            $result = file_put_contents($filepath, $data);
+            if ($result === false) {
+                throw StorageException::writeError($filepath, 'File write operation failed');
+            }
+            
+            return true;
+        }, false, 'ReportStorage::storeReport');
     }
 
     /**
@@ -345,9 +353,17 @@ class ReportStorage
      */
     private function ensureStorageDirectoryExists(): void
     {
-        if (!is_dir($this->storagePath)) {
-            mkdir($this->storagePath, 0755, true);
-        }
+        ErrorHandler::handleSafely(function () {
+            if (!is_dir($this->storagePath)) {
+                if (!mkdir($this->storagePath, 0755, true) && !is_dir($this->storagePath)) {
+                    throw StorageException::pathNotWritable($this->storagePath);
+                }
+            }
+            
+            if (!is_writable($this->storagePath)) {
+                throw StorageException::pathNotWritable($this->storagePath);
+            }
+        }, 'ReportStorage::ensureStorageDirectoryExists');
     }
 
     /**
