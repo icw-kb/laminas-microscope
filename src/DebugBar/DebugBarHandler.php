@@ -421,6 +421,8 @@ class DebugBarHandler implements HandlerInterface
                     }
                 } catch (Exception $e) {
                     // Silently ignore if service cannot be created
+                    // This can happen if database configuration is missing
+                    error_log("LaminasMicroscope: PDO collector initialization failed - " . $e->getMessage());
                 }
                 break;
 

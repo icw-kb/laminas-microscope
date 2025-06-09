@@ -75,8 +75,14 @@ class PDOCollector extends DataCollector implements Renderable, \LaminasMicrosco
 
             foreach ($adapterNames as $adapterName) {
                 if ($this->serviceManager->has($adapterName)) {
-                    $adapter = $this->serviceManager->get($adapterName);
-                    $this->hookIntoAdapter($adapter);
+                    try {
+                        $adapter = $this->serviceManager->get($adapterName);
+                        $this->hookIntoAdapter($adapter);
+                    } catch (Exception $e) {
+                        // Skip this adapter if it can't be instantiated
+                        // This handles cases where 'db' service is registered but config is missing
+                        continue;
+                    }
                 }
             }
         } catch (Exception $e) { 

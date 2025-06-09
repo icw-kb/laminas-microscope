@@ -425,6 +425,45 @@ laminas_microscope:
       index_analysis: true
 ```
 
+### Database Configuration for PDO Collector
+
+If you're using the `pdo` collector, you need to configure a database adapter in your application config. Add this to your main application configuration:
+
+```php
+// config/autoload/database.local.php
+return [
+    'db' => [
+        'driver' => 'Pdo_Mysql',  // or Pdo_Sqlite, Pdo_Pgsql, etc.
+        'database' => 'your_database_name',
+        'username' => 'your_username',
+        'password' => 'your_password',
+        'hostname' => 'localhost',
+        'port' => 3306,
+        'charset' => 'utf8',
+        'options' => [
+            'buffer_results' => true,
+        ],
+    ],
+];
+```
+
+**For development without a real database:**
+
+```php
+// config/autoload/database.local.php
+return [
+    'db' => [
+        'driver' => 'Pdo_Sqlite',
+        'database' => ':memory:', // In-memory SQLite
+        'options' => [
+            'buffer_results' => true,
+        ],
+    ],
+];
+```
+
+**Note:** If you don't need database query monitoring, simply remove `'pdo'` from the collectors list in your laminas-microscope configuration.
+
 ## 📊 Performance Tuning
 
 ### Memory Optimization
