@@ -19,6 +19,9 @@ use LaminasMicroscope\Controller\ConfigurationController;
 use LaminasMicroscope\Service\AnalysisService; // Ensure AnalysisService is imported
 use Laminas\ServiceManager\ServiceManager; // Added this use statement
 use LaminasMicroscope\Factory\ConfigurationServiceFactory; // Import the new factory
+use LaminasMicroscope\Listener\WhoopsEventListener;
+use LaminasMicroscope\Listener\MicroscopeEventListener;
+use LaminasMicroscope\Listener\DebugBarEventListener;
 
 return [
     'router' => [
@@ -205,6 +208,40 @@ return [
             QueryLogger::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 $pdoCollector = $container->get(PDOCollector::class);
                 return new QueryLogger($pdoCollector);
+            },
+            
+            // Event Listeners
+            WhoopsEventListener::class => function (Laminas\ServiceManager\ServiceManager $container) {
+                $logger = null;
+                if ($container->has(\Psr\Log\LoggerInterface::class)) {
+                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
+                }
+                return new WhoopsEventListener($container, $logger);
+            },
+            
+            MicroscopeEventListener::class => function (Laminas\ServiceManager\ServiceManager $container) {
+                $logger = null;
+                if ($container->has(\Psr\Log\LoggerInterface::class)) {
+                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
+                }
+                return new MicroscopeEventListener($container, $logger);
+            },
+            
+            DebugBarEventListener::class => function (Laminas\ServiceManager\ServiceManager $container) {
+                $logger = null;
+                if ($container->has(\Psr\Log\LoggerInterface::class)) {
+                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
+                }
+                
+                // Event timestamps will be passed from Module.php
+                $eventTimestamps = [];
+                
+                return new DebugBarEventListener(
+                    $container, 
+                    $eventTimestamps, 
+                    $logger,
+                    'laminas-microscope/debugbar-assets'
+                );
             },
         ],
     ],
