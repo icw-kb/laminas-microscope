@@ -2,18 +2,8 @@
 <ruleset name="LaminasMicroscope">
     <description>Coding standards for Laminas Microscope</description>
 
-    <!-- Include the PSR-12 standard -->
-    <rule ref="PSR12"/>
-
-    <!-- Include additional Laminas coding standards -->
-    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
-    <rule ref="Generic.Formatting.SpaceAfterCast"/>
-    <rule ref="Generic.Functions.FunctionCallArgumentSpacing"/>
-    <rule ref="Generic.NamingConventions.UpperCaseConstantName"/>
-    <rule ref="Generic.PHP.DeprecatedFunctions"/>
-    <rule ref="Generic.PHP.ForbiddenFunctions"/>
-    <rule ref="Generic.Strings.UnnecessaryStringConcat"/>
-    <rule ref="Generic.WhiteSpace.IncrementDecrementSpacing"/>
+    <!-- Include the Laminas Coding Standard (includes PSR-12 + additional rules) -->
+    <rule ref="LaminasCodingStandard"/>
 
     <!-- Show progress -->
     <arg value="p"/>
