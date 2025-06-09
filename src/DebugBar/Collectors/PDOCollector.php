@@ -59,9 +59,11 @@ class PDOCollector extends DataCollector implements Renderable, \LaminasMicrosco
 
     private function setupQueryLogging(): void
     {
-        // Hook into Laminas DB adapters
+        // Hook into Laminas DB adapters only if database configuration exists
         try {
-            $this->hookIntoDbAdapters();
+            if ($this->hasDatabaseConfiguration()) {
+                $this->hookIntoDbAdapters();
+            }
         } catch (Exception $e) { 
             // Silently fail if no DB adapters are configured
         }
@@ -74,15 +76,17 @@ class PDOCollector extends DataCollector implements Renderable, \LaminasMicrosco
             $adapterNames = [Adapter::class, 'db', 'dbAdapter']; 
 
             foreach ($adapterNames as $adapterName) {
-                if ($this->serviceManager->has($adapterName)) {
-                    try {
+                // Use more careful service checking to avoid triggering factories
+                try {
+                    if ($this->serviceManager->has($adapterName)) {
+                        // Check if we can safely get the service
                         $adapter = $this->serviceManager->get($adapterName);
                         $this->hookIntoAdapter($adapter);
-                    } catch (Exception $e) {
-                        // Skip this adapter if it can't be instantiated
-                        // This handles cases where 'db' service is registered but config is missing
-                        continue;
                     }
+                } catch (Exception $e) {
+                    // Skip this adapter if it can't be instantiated
+                    // This handles cases where service is registered but config is missing
+                    continue;
                 }
             }
         } catch (Exception $e) { 
@@ -191,6 +195,30 @@ class PDOCollector extends DataCollector implements Renderable, \LaminasMicrosco
         $sql = preg_replace('/\\\\\\\\?|\\\\\\\\$\\\\\\\\d+|:\\\\\\\\w+/', '?', $sql);
         $sql = preg_replace('/\\\\\\\\s+/', ' ', $sql);
         return trim(strtolower($sql));
+    }
+
+    /**
+     * Check if database configuration exists to avoid triggering AdapterServiceFactory
+     * without proper configuration which causes "Undefined array key 'db'" warnings
+     */
+    private function hasDatabaseConfiguration(): bool
+    {
+        try {
+            // Get the full config array to check for database configuration
+            if ($this->serviceManager->has('config')) {
+                $config = $this->serviceManager->get('config');
+                
+                // Check for common database configuration keys
+                return isset($config['db']) || 
+                       isset($config['database']) ||
+                       isset($config['databases']) ||
+                       isset($config['adapters']);
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
 }
