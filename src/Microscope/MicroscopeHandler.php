@@ -4,18 +4,12 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Microscope;
 
-use DebugBar\DataCollector\ExceptionsCollector;
-use DebugBar\DataCollector\MemoryCollector;
-use DebugBar\DataCollector\MessagesCollector;
-use DebugBar\DataCollector\PhpInfoCollector;
-use DebugBar\DataCollector\TimeDataCollector;
 use Exception;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Router\RouteMatch;
 use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Contracts\HandlerInterface;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Microscope\Storage\ReportStorage;
 use LaminasMicroscope\Utility\FormatUtility;
@@ -110,9 +104,6 @@ class MicroscopeHandler implements HandlerInterface
         $this->startMemory                      = memory_get_usage(true);
         $this->eventTimestamps                  = []; // Reset timestamps
         $this->eventTimestamps['request_start'] = $this->requestStartTime; // Record overall request start
-
-        // Setup collectors based on configuration
-        $this->setupCollectors();
     }
 
     /**
@@ -544,67 +535,4 @@ class MicroscopeHandler implements HandlerInterface
         return $this->profileData['performance']['breakdown'] ?? [];
     }
 
-    /**
-     * Setup collectors based on microscope configuration
-     */
-    private function setupCollectors(): void
-    {
-        $config     = $this->configService->getComponentConfig('microscope');
-        $collectors = $config['collectors'] ?? ['time', 'memory', 'pdo', 'exceptions'];
-
-        foreach ($collectors as $collectorName) {
-            $this->initializeCollector($collectorName);
-        }
-    }
-
-    /**
-     * Initialize a specific collector for Microscope
-     */
-    private function initializeCollector(string $name): void
-    {
-        // Check if collector already exists in registry
-        if ($this->collectorRegistry->has($name)) {
-            return;
-        }
-
-        try {
-            switch ($name) {
-                case 'time':
-                    $collector = new TimeDataCollector();
-                    $this->collectorRegistry->register($collector);
-                    break;
-
-                case 'memory':
-                    $collector = new MemoryCollector();
-                    $this->collectorRegistry->register($collector);
-                    break;
-
-                case 'messages':
-                    $collector = new MessagesCollector();
-                    $this->collectorRegistry->register($collector);
-                    break;
-
-                case 'exceptions':
-                    $collector = new ExceptionsCollector();
-                    $this->collectorRegistry->register($collector);
-                    break;
-
-                case 'pdo':
-                    // PDO collector needs special handling via container
-                    if ($this->container->has(PDOCollector::class)) {
-                        $collector = $this->container->get(PDOCollector::class);
-                        $this->collectorRegistry->register($collector);
-                    }
-                    break;
-
-                case 'phpinfo':
-                case 'php':
-                    $collector = new PhpInfoCollector();
-                    $this->collectorRegistry->register($collector);
-                    break;
-            }
-        } catch (Exception $e) {
-            // Silently ignore collector initialization errors
-        }
-    }
 }

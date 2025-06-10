@@ -4,22 +4,38 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Manager;
 
-use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\DebugBar\DebugBarHandler;
-use LaminasMicroscope\Whoops\WhoopsHandler;
-use LaminasMicroscope\Service\AnalysisService;
-use Psr\Container\ContainerInterface;
-use LaminasMicroscope\Container\MockContainer;
-use LaminasMicroscope\Microscope\MicroscopeHandler; // Added use statement
+use Exception;
+// Added use statement
 use LaminasMicroscope\Collector\CollectorRegistry;
-use Exception; // Added use statement
+use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Container\MockContainer;
+use LaminasMicroscope\DebugBar\DebugBarHandler;
+use LaminasMicroscope\Microscope\MicroscopeHandler;
+use LaminasMicroscope\Registry;
+use LaminasMicroscope\Service\AnalysisService;
+use LaminasMicroscope\Whoops\WhoopsHandler;
+use Psr\Container\ContainerInterface;
+
+use function array_diff;
+use function array_filter;
+use function array_keys;
+use function array_unique;
+use function class_exists;
+use function count;
+use function error_log;
+use function in_array;
+use function is_array;
+use function memory_get_usage;
+use function method_exists;
+
+// Added use statement
 
 /**
  * Manager for all Laminas Microscope components
  */
 class ComponentManager
 {
-    private array $components = [];
+    private array $components  = [];
     private array $initialized = [];
     private CollectorRegistry $registry;
 
@@ -62,11 +78,11 @@ class ComponentManager
      */
     public function getComponent(string $name): ?object
     {
-        if (!isset($this->components[$name])) {
+        if (! isset($this->components[$name])) {
             return null;
         }
 
-        if (!isset($this->initialized[$name])) {
+        if (! isset($this->initialized[$name])) {
             $this->initialized[$name] = $this->createComponent($name);
         }
 
@@ -105,13 +121,13 @@ class ComponentManager
      */
     public function initializeComponent(string $name): ?object
     {
-        if (!isset($this->components[$name])) {
+        if (! isset($this->components[$name])) {
             return null;
         }
-        $config = $this->getComponentConfig($name);
+        $config         = $this->getComponentConfig($name);
         $collectorsOnly = $name === 'debug_bar' && ($config['collectors_only'] ?? false);
 
-        if (!$this->isComponentEnabled($name) && !$collectorsOnly) {
+        if (! $this->isComponentEnabled($name) && ! $collectorsOnly) {
             return null;
         }
 
@@ -127,8 +143,8 @@ class ComponentManager
             $component->initialize();
         }
 
-        if ($name === 'debug_bar' && class_exists(\LaminasMicroscope\Registry::class)) {
-            \LaminasMicroscope\Registry::setDebugBar($component);
+        if ($name === 'debug_bar' && class_exists(Registry::class)) {
+            Registry::setDebugBar($component);
         }
 
         return $component;
@@ -146,12 +162,12 @@ class ComponentManager
 
         foreach ($order as $componentName) {
              // Check if component is still enabled after considering dependencies
-             if ($this->isComponentEnabled($componentName)) {
+            if ($this->isComponentEnabled($componentName)) {
                 $component = $this->initializeComponent($componentName);
                 if ($component) {
                     $initialized[$componentName] = $component;
                 }
-             }
+            }
         }
 
         return $initialized;
@@ -201,10 +217,10 @@ class ComponentManager
 
         foreach ($this->getRegisteredComponents() as $name) {
             $status[$name] = [
-                'registered' => true,
-                'enabled' => $this->isComponentEnabled($name),
+                'registered'  => true,
+                'enabled'     => $this->isComponentEnabled($name),
                 'initialized' => $this->isComponentInitialized($name),
-                'config' => $this->getComponentConfig($name),
+                'config'      => $this->getComponentConfig($name),
             ];
         }
 
@@ -223,7 +239,7 @@ class ComponentManager
             if (($config['type'] ?? '') === $type) {
                 $components[$name] = $this->getComponent($name);
             }
-            }
+        }
         return $components;
     }
 
@@ -240,7 +256,7 @@ class ComponentManager
      */
     public function getComponentDependencies(string $name): array
     {
-        $config = $this->configService->getComponentConfig($name);
+        $config       = $this->configService->getComponentConfig($name);
         $dependencies = $config['dependencies'] ?? [];
         return is_array($dependencies) ? $dependencies : [];
     }
@@ -251,10 +267,10 @@ class ComponentManager
     public function validateDependencies(string $name): array
     {
         $dependencies = $this->getComponentDependencies($name);
-        $missing = [];
+        $missing      = [];
 
         foreach ($dependencies as $dependency) {
-            if (!$this->isComponentEnabled($dependency)) {
+            if (! $this->isComponentEnabled($dependency)) {
                 $missing[] = $dependency;
             }
         }
@@ -268,12 +284,12 @@ class ComponentManager
     public function getInitializationOrder(): array
     {
         $components = $this->getEnabledComponents();
-        $ordered = [];
-        $visited = [];
-        $visiting = []; // To detect circular dependencies
+        $ordered    = [];
+        $visited    = [];
+        $visiting   = []; // To detect circular dependencies
 
         foreach ($components as $component) {
-            if (!in_array($component, $visited)) {
+            if (! in_array($component, $visited)) {
                  $this->sortComponentsByDependencies($component, $ordered, $visited, $visiting);
             }
         }
@@ -286,7 +302,7 @@ class ComponentManager
      */
     public function enableComponent(string $name): bool
     {
-        if (!isset($this->components[$name])) {
+        if (! isset($this->components[$name])) {
             return false;
         }
 
@@ -299,7 +315,7 @@ class ComponentManager
      */
     public function disableComponent(string $name): bool
     {
-        if (!isset($this->components[$name])) {
+        if (! isset($this->components[$name])) {
             return false;
         }
 
@@ -314,10 +330,10 @@ class ComponentManager
     public function getComponentMetrics(): array
     {
         return [
-            'total_registered' => count($this->components),
-            'total_enabled' => count($this->getEnabledComponents()),
+            'total_registered'  => count($this->components),
+            'total_enabled'     => count($this->getEnabledComponents()),
             'total_initialized' => count($this->initialized),
-            'memory_usage' => memory_get_usage(true),
+            'memory_usage'      => memory_get_usage(true),
         ];
     }
 
@@ -357,7 +373,7 @@ class ComponentManager
         $this->registerComponent('debug_bar', DebugBarHandler::class);
         $this->registerComponent('whoops', WhoopsHandler::class);
         $this->registerComponent('analysis', AnalysisService::class);
-        $this->registerComponent('microscope', MicroscopeHandler::class); 
+        $this->registerComponent('microscope', MicroscopeHandler::class);
     }
 
     /**
@@ -365,7 +381,7 @@ class ComponentManager
      */
     private function createComponent(string $name): ?object
     {
-        if (!isset($this->components[$name])) {
+        if (! isset($this->components[$name])) {
             return null;
         }
 
@@ -406,12 +422,12 @@ class ComponentManager
                     // Try with ConfigurationService first
                     try {
                         return new $className($this->configService);
-                    } catch (Exception $e) { 
+                    } catch (Exception $e) {
                         // If that fails, try without parameters
                         return new $className();
                     }
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             // Return null if component creation fails
             error_log("Failed to create component '{$name}': " . $e->getMessage());
             return null;
@@ -434,7 +450,7 @@ class ComponentManager
                     // Handle this error appropriately, maybe skip this dependency or throw exception
                     continue;
                 }
-                if (!in_array($dependency, $visited)) {
+                if (! in_array($dependency, $visited)) {
                     $this->sortComponentsByDependencies($dependency, $ordered, $visited, $visiting);
                 }
             }

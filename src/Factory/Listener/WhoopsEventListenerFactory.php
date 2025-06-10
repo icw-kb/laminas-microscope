@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Factory\Listener;
 
-use Psr\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use LaminasMicroscope\Listener\WhoopsEventListener;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 class WhoopsEventListenerFactory implements FactoryInterface
@@ -17,7 +17,7 @@ class WhoopsEventListenerFactory implements FactoryInterface
         if ($container->has(LoggerInterface::class)) {
             $logger = $container->get(LoggerInterface::class);
         }
-        
+
         return new WhoopsEventListener($container, $logger);
     }
 }

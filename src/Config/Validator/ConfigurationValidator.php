@@ -6,6 +6,8 @@ namespace LaminasMicroscope\Config\Validator;
 
 use LaminasMicroscope\Config\Validator\Rule\ValidationRule;
 
+use function array_merge;
+
 /**
  * Validates Laminas Microscope configuration
  */
@@ -13,7 +15,7 @@ class ConfigurationValidator
 {
     /** @var ValidationRule[] */
     private array $rules = [];
-    
+
     /** @var string[] */
     private array $errors = [];
 
@@ -29,13 +31,13 @@ class ConfigurationValidator
     public function validate(array $config): bool
     {
         $this->errors = [];
-        
+
         foreach ($this->rules as $rule) {
-            if (!$rule->validate($config)) {
+            if (! $rule->validate($config)) {
                 $this->errors = array_merge($this->errors, $rule->getErrors());
             }
         }
-        
+
         return empty($this->errors);
     }
 

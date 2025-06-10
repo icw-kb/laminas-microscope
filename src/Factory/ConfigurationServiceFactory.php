@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Factory;
 
-use Psr\Container\ContainerInterface; // Corrected: Use Psr\\Container\\ContainerInterface
+use Exception;
+// Corrected: Use Psr\\Container\\ContainerInterface
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use LaminasMicroscope\Config\ConfigurationService;
-use Exception;
+use Psr\Container\ContainerInterface;
 
 class ConfigurationServiceFactory implements FactoryInterface
 {
     /**
-     * @param ContainerInterface $container
      * @param string $requestedName
      * @param null|array $options
-     * @return ConfigurationService
      */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): ConfigurationService
     {
@@ -27,7 +26,6 @@ class ConfigurationServiceFactory implements FactoryInterface
             // Pass the *entire* configuration array to the ConfigurationService constructor
             // The ConfigurationService will handle extracting the 'laminas_microscope' key internally
             return new ConfigurationService($config);
-
         } catch (Exception $e) {
             // Fallback: Return ConfigurationService with empty config if 'Config' service is not available
             return new ConfigurationService([]);

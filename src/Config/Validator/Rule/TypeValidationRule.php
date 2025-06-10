@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Config\Validator\Rule;
 
+use function array_key_exists;
+use function explode;
+use function gettype;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_numeric;
+use function is_object;
+use function is_string;
+
 /**
  * Validates field types in configuration
  */
@@ -20,22 +31,22 @@ class TypeValidationRule implements ValidationRule
     public function validate(array $config): bool
     {
         $this->errors = [];
-        
+
         foreach ($this->typeDefinitions as $field => $expectedType) {
             $value = $this->getNestedValue($config, $field);
-            
-            if ($value !== null && !$this->isValidType($value, $expectedType)) {
-                $actualType = gettype($value);
+
+            if ($value !== null && ! $this->isValidType($value, $expectedType)) {
+                $actualType     = gettype($value);
                 $this->errors[] = [
-                    'field' => $field,
-                    'message' => "Configuration field '{$field}' must be of type '{$expectedType}', got '{$actualType}'",
-                    'type' => 'type_validation',
+                    'field'    => $field,
+                    'message'  => "Configuration field '{$field}' must be of type '{$expectedType}', got '{$actualType}'",
+                    'type'     => 'type_validation',
                     'expected' => $expectedType,
-                    'actual' => $actualType
+                    'actual'   => $actualType,
                 ];
             }
         }
-        
+
         return empty($this->errors);
     }
 
@@ -49,16 +60,16 @@ class TypeValidationRule implements ValidationRule
      */
     private function getNestedValue(array $array, string $key): mixed
     {
-        $keys = explode('.', $key);
+        $keys    = explode('.', $key);
         $current = $array;
-        
+
         foreach ($keys as $k) {
-            if (!is_array($current) || !array_key_exists($k, $current)) {
+            if (! is_array($current) || ! array_key_exists($k, $current)) {
                 return null;
             }
             $current = $current[$k];
         }
-        
+
         return $current;
     }
 

@@ -7,9 +7,38 @@ namespace LaminasMicroscope\Microscope\Storage;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Exception\StorageException;
 use LaminasMicroscope\Utility\ErrorHandler;
-use RecursiveIteratorIterator; 
-use RecursiveDirectoryIterator; 
-use Exception; 
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+
+use function array_column;
+use function array_filter;
+use function array_merge;
+use function array_slice;
+use function arsort;
+use function count;
+use function date;
+use function file_get_contents;
+use function file_put_contents;
+use function filemtime;
+use function floor;
+use function glob;
+use function is_dir;
+use function is_writable;
+use function json_decode;
+use function json_encode;
+use function max;
+use function microtime;
+use function min;
+use function mkdir;
+use function rmdir;
+use function scandir;
+use function sprintf;
+use function time;
+use function unlink;
+use function usort;
+
+use const JSON_PRETTY_PRINT;
+use const JSON_UNESCAPED_SLASHES;
 
 /**
  * Storage handler for microscope reports and analysis data
@@ -23,7 +52,7 @@ class ReportStorage
         ConfigurationService $configService
     ) {
         $this->configService = $configService;
-        $this->storagePath = $this->configService->getStoragePath() . '/microscope';
+        $this->storagePath   = $this->configService->getStoragePath() . '/microscope';
         $this->ensureStorageDirectoryExists();
     }
 
@@ -40,12 +69,12 @@ class ReportStorage
             if ($data === false) {
                 throw StorageException::writeError($filepath, 'JSON encoding failed');
             }
-            
+
             $result = file_put_contents($filepath, $data);
             if ($result === false) {
                 throw StorageException::writeError($filepath, 'File write operation failed');
             }
-            
+
             return true;
         }, false, 'ReportStorage::storeReport');
     }
@@ -55,17 +84,17 @@ class ReportStorage
      */
     public function getQueryAnalysis(): array
     {
-        $reports = $this->loadRecentReports();
+        $reports  = $this->loadRecentReports();
         $analysis = [
-            'total_queries' => 0,
-            'slow_queries' => [],
-            'duplicate_queries' => [],
+            'total_queries'       => 0,
+            'slow_queries'        => [],
+            'duplicate_queries'   => [],
             'n_plus_one_patterns' => [],
-            'average_query_time' => 0,
-            'query_distribution' => [],
+            'average_query_time'  => 0,
+            'query_distribution'  => [],
         ];
 
-        $totalTime = 0;
+        $totalTime  = 0;
         $queryCount = 0;
 
         foreach ($reports as $report) {
@@ -110,12 +139,12 @@ class ReportStorage
      */
     public function getRouteAnalysis(): array
     {
-        $reports = $this->loadRecentReports();
+        $reports  = $this->loadRecentReports();
         $analysis = [
-            'total_requests' => 0,
-            'route_hits' => [],
-            'slow_routes' => [],
-            'popular_routes' => [],
+            'total_requests'          => 0,
+            'route_hits'              => [],
+            'slow_routes'             => [],
+            'popular_routes'          => [],
             'controller_distribution' => [],
         ];
 
@@ -123,8 +152,8 @@ class ReportStorage
             $analysis['total_requests']++;
 
             if (isset($report['routes'][0])) {
-                $route = $report['routes'][0];
-                $routeName = $route['route_name'] ?? 'unknown';
+                $route      = $report['routes'][0];
+                $routeName  = $route['route_name'] ?? 'unknown';
                 $controller = $route['controller'] ?? 'unknown';
 
                 // Count route hits
@@ -138,11 +167,11 @@ class ReportStorage
                 $totalTime = $report['performance']['total_time'] ?? 0;
                 if ($totalTime > 1000) { // More than 1 second
                     $analysis['slow_routes'][] = [
-                        'route' => $routeName,
+                        'route'      => $routeName,
                         'controller' => $controller,
-                        'time' => $totalTime,
-                        'url' => $report['url'] ?? '',
-                        'timestamp' => $report['timestamp'] ?? 0,
+                        'time'       => $totalTime,
+                        'url'        => $report['url'] ?? '',
+                        'timestamp'  => $report['timestamp'] ?? 0,
                     ];
                 }
             }
@@ -160,20 +189,20 @@ class ReportStorage
      */
     public function getPerformanceData(): array
     {
-        $reports = $this->loadRecentReports();
+        $reports  = $this->loadRecentReports();
         $analysis = [
-            'total_requests' => 0,
-            'average_response_time' => 0,
-            'average_memory_usage' => 0,
-            'peak_memory_usage' => 0,
-            'slow_requests' => [],
+            'total_requests'            => 0,
+            'average_response_time'     => 0,
+            'average_memory_usage'      => 0,
+            'peak_memory_usage'         => 0,
+            'slow_requests'             => [],
             'memory_intensive_requests' => [],
-            'performance_trends' => [],
+            'performance_trends'        => [],
         ];
 
-        $totalTime = 0;
+        $totalTime   = 0;
         $totalMemory = 0;
-        $maxMemory = 0;
+        $maxMemory   = 0;
 
         foreach ($reports as $report) {
             $analysis['total_requests']++;
@@ -181,20 +210,20 @@ class ReportStorage
             if (isset($report['performance'])) {
                 $perf = $report['performance'];
 
-                $requestTime = $perf['total_time'] ?? 0;
+                $requestTime   = $perf['total_time'] ?? 0;
                 $requestMemory = $perf['memory_usage'] ?? 0;
-                $peakMemory = $perf['peak_memory'] ?? 0;
+                $peakMemory    = $perf['peak_memory'] ?? 0;
 
-                $totalTime += $requestTime;
+                $totalTime   += $requestTime;
                 $totalMemory += $requestMemory;
-                $maxMemory = max($maxMemory, $peakMemory);
+                $maxMemory    = max($maxMemory, $peakMemory);
 
                 // Collect slow requests
                 if ($requestTime > 1000) {
                     $analysis['slow_requests'][] = [
-                        'url' => $report['url'] ?? '',
-                        'time' => $requestTime,
-                        'memory' => $requestMemory,
+                        'url'       => $report['url'] ?? '',
+                        'time'      => $requestTime,
+                        'memory'    => $requestMemory,
                         'timestamp' => $report['timestamp'] ?? 0,
                     ];
                 }
@@ -202,32 +231,32 @@ class ReportStorage
                 // Collect memory intensive requests
                 if ($requestMemory > 50 * 1024 * 1024) { // 50MB
                     $analysis['memory_intensive_requests'][] = [
-                        'url' => $report['url'] ?? '',
-                        'memory' => $requestMemory,
-                        'time' => $requestTime,
+                        'url'       => $report['url'] ?? '',
+                        'memory'    => $requestMemory,
+                        'time'      => $requestTime,
                         'timestamp' => $report['timestamp'] ?? 0,
                     ];
                 }
 
                 // Build performance trends (hourly buckets)
                 $hour = date('Y-m-d H:00', $report['timestamp'] ?? time());
-                if (!isset($analysis['performance_trends'][$hour])) {
+                if (! isset($analysis['performance_trends'][$hour])) {
                     $analysis['performance_trends'][$hour] = [
-                        'requests' => 0,
-                        'total_time' => 0,
+                        'requests'     => 0,
+                        'total_time'   => 0,
                         'total_memory' => 0,
                     ];
                 }
                 $analysis['performance_trends'][$hour]['requests']++;
-                $analysis['performance_trends'][$hour]['total_time'] += $requestTime;
+                $analysis['performance_trends'][$hour]['total_time']   += $requestTime;
                 $analysis['performance_trends'][$hour]['total_memory'] += $requestMemory;
             }
         }
 
-        $requestCount = $analysis['total_requests'];
+        $requestCount                      = $analysis['total_requests'];
         $analysis['average_response_time'] = $requestCount > 0 ? $totalTime / $requestCount : 0;
-        $analysis['average_memory_usage'] = $requestCount > 0 ? $totalMemory / $requestCount : 0;
-        $analysis['peak_memory_usage'] = $maxMemory;
+        $analysis['average_memory_usage']  = $requestCount > 0 ? $totalMemory / $requestCount : 0;
+        $analysis['peak_memory_usage']     = $maxMemory;
 
         return $analysis;
     }
@@ -239,14 +268,14 @@ class ReportStorage
     {
         $reports = $this->loadRecentReports();
         $summary = [
-            'total_reports' => count($reports),
-            'date_range' => $this->getDateRange($reports),
-            'issues_detected' => 0,
+            'total_reports'     => count($reports),
+            'date_range'        => $this->getDateRange($reports),
+            'issues_detected'   => 0,
             'performance_score' => 100,
-            'recommendations' => [],
+            'recommendations'   => [],
         ];
 
-        $issuesCount = 0;
+        $issuesCount       = 0;
         $performanceIssues = 0;
 
         foreach ($reports as $report) {
@@ -257,11 +286,11 @@ class ReportStorage
                     $issuesCount++;
                 }
 
-                if (!empty($analysis['slow_queries'])) {
+                if (! empty($analysis['slow_queries'])) {
                     $issuesCount += count($analysis['slow_queries']);
                 }
 
-                if (!empty($analysis['duplicate_queries'])) {
+                if (! empty($analysis['duplicate_queries'])) {
                     $issuesCount += count($analysis['duplicate_queries']);
                 }
 
@@ -280,7 +309,7 @@ class ReportStorage
         // Calculate performance score (0-100)
         $totalRequests = count($reports);
         if ($totalRequests > 0) {
-            $issueRatio = ($issuesCount + $performanceIssues) / $totalRequests;
+            $issueRatio                   = ($issuesCount + $performanceIssues) / $totalRequests;
             $summary['performance_score'] = max(0, 100 - ($issueRatio * 100));
         }
 
@@ -301,7 +330,7 @@ class ReportStorage
      */
     public function loadRecentReports(int $limit = 100): array
     {
-        if (!is_dir($this->storagePath)) {
+        if (! is_dir($this->storagePath)) {
             return [];
         }
 
@@ -311,12 +340,12 @@ class ReportStorage
         }
 
         // Sort by modification time (newest first)
-        usort($files, function($a, $b) {
+        usort($files, function ($a, $b) {
             return filemtime($b) - filemtime($a);
         });
 
         $reports = [];
-        $count = 0;
+        $count   = 0;
 
         foreach ($files as $file) {
             if ($count >= $limit) {
@@ -341,8 +370,8 @@ class ReportStorage
      */
     private function generateReportFilename(array $report): string
     {
-        $timestamp = $report['timestamp'] ?? microtime(true);
-        $date = date('Y-m-d_H-i-s', (int) $timestamp);
+        $timestamp    = $report['timestamp'] ?? microtime(true);
+        $date         = date('Y-m-d_H-i-s', (int) $timestamp);
         $microseconds = sprintf('%06d', ($timestamp - floor($timestamp)) * 1000000);
 
         return "report_{$date}_{$microseconds}.json";
@@ -354,13 +383,13 @@ class ReportStorage
     private function ensureStorageDirectoryExists(): void
     {
         ErrorHandler::handleSafely(function () {
-            if (!is_dir($this->storagePath)) {
-                if (!mkdir($this->storagePath, 0755, true) && !is_dir($this->storagePath)) {
+            if (! is_dir($this->storagePath)) {
+                if (! mkdir($this->storagePath, 0755, true) && ! is_dir($this->storagePath)) {
                     throw StorageException::pathNotWritable($this->storagePath);
                 }
             }
-            
-            if (!is_writable($this->storagePath)) {
+
+            if (! is_writable($this->storagePath)) {
                 throw StorageException::pathNotWritable($this->storagePath);
             }
         }, 'ReportStorage::ensureStorageDirectoryExists');
@@ -384,7 +413,7 @@ class ReportStorage
 
         return [
             'start' => date('Y-m-d H:i:s', min($timestamps)),
-            'end' => date('Y-m-d H:i:s', max($timestamps)),
+            'end'   => date('Y-m-d H:i:s', max($timestamps)),
         ];
     }
 
@@ -394,9 +423,9 @@ class ReportStorage
     public function cleanOldReports(): int
     {
         $retentionDays = $this->configService->getRetentionDays();
-        $cutoffTime = time() - ($retentionDays * 24 * 60 * 60);
+        $cutoffTime    = time() - ($retentionDays * 24 * 60 * 60);
 
-        $files = glob($this->storagePath . '/report_*.json');
+        $files        = glob($this->storagePath . '/report_*.json');
         $deletedCount = 0;
 
         foreach ($files as $file) {
@@ -415,17 +444,17 @@ class ReportStorage
      */
     public function clearReports(): void
     {
-        if (!is_dir($this->storagePath)) {
+        if (! is_dir($this->storagePath)) {
             return;
         }
 
-        $files = new RecursiveIteratorIterator( 
-            new RecursiveDirectoryIterator($this->storagePath, RecursiveDirectoryIterator::SKIP_DOTS), 
-            RecursiveIteratorIterator::CHILD_FIRST 
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->storagePath, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($files as $fileinfo) {
-            $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+            $todo = $fileinfo->isDir() ? 'rmdir' : 'unlink';
             $todo($fileinfo->getRealPath());
         }
 

@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Controller;
 
-use Laminas\Mvc\Controller\AbstractActionController;
-use Laminas\View\Model\ViewModel; 
-use Laminas\View\Model\JsonModel; 
-use LaminasMicroscope\Manager\ComponentManager;
-use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\Service\ConfigurationManager;
 use Exception;
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\JsonModel;
+use Laminas\View\Model\ViewModel;
+use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Manager\ComponentManager;
+use LaminasMicroscope\Service\ConfigurationManager;
+
+use function json_decode;
+use function json_encode;
+use function json_last_error;
+
+use const JSON_ERROR_NONE;
+use const JSON_PRETTY_PRINT;
 
 class ConfigurationController extends AbstractActionController
 {
@@ -24,45 +31,46 @@ class ConfigurationController extends AbstractActionController
         ConfigurationManager $configManager
     ) {
         $this->componentManager = $componentManager;
-        $this->config = $config;
-        $this->configManager = $configManager;
+        $this->config           = $config;
+        $this->configManager    = $configManager;
     }
 
- public function indexAction(): ViewModel
+    public function indexAction(): ViewModel
     {
-        $viewModel = new ViewModel([ 
-            'config' => $this->config, 
-            'profiles' => $this->configManager->getAvailableProfiles(),
-            'currentEnvironment' => $this->configManager->getEnvironment(), 
-            'configPaths' => $this->configManager->getConfigurationPaths(), 
+        $viewModel = new ViewModel([
+            'config'             => $this->config,
+            'profiles'           => $this->configManager->getAvailableProfiles(),
+            'currentEnvironment' => $this->configManager->getEnvironment(),
+            'configPaths'        => $this->configManager->getConfigurationPaths(),
         ]);
 
         $viewModel->setTemplate('laminas-microscope/config/index');
 
         return $viewModel;
     }
+
     public function profilesAction(): ViewModel
     {
-        return new ViewModel([ 
-            'profiles' => $this->configManager->getAvailableProfiles(), 
-            'currentEnvironment' => $this->configManager->getEnvironment(), 
+        return new ViewModel([
+            'profiles'           => $this->configManager->getAvailableProfiles(),
+            'currentEnvironment' => $this->configManager->getEnvironment(),
         ]);
     }
 
     public function loadProfileAction(): JsonModel
     {
-        if (!$this->getRequest()->isPost()) {
-            return new JsonModel(['success' => false, 'message' => 'POST request required']); 
+        if (! $this->getRequest()->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'POST request required']);
         }
 
         $profileName = $this->params()->fromPost('profile');
-        if (!$profileName) {
-            return new JsonModel(['success' => false, 'message' => 'Profile name required']); 
+        if (! $profileName) {
+            return new JsonModel(['success' => false, 'message' => 'Profile name required']);
         }
 
         $success = $this->configManager->loadProfile($profileName);
 
-        return new JsonModel([ 
+        return new JsonModel([
             'success' => $success,
             'message' => $success ? "Profile '{$profileName}' loaded successfully" : "Failed to load profile '{$profileName}'",
             'profile' => $profileName,
@@ -71,28 +79,28 @@ class ConfigurationController extends AbstractActionController
 
     public function switchEnvironmentAction(): JsonModel
     {
-        if (!$this->getRequest()->isPost()) {
-            return new JsonModel(['success' => false, 'message' => 'POST request required']); 
+        if (! $this->getRequest()->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'POST request required']);
         }
 
         $environment = $this->params()->fromPost('environment');
-        if (!$environment) {
-            return new JsonModel(['success' => false, 'message' => 'Environment required']); 
+        if (! $environment) {
+            return new JsonModel(['success' => false, 'message' => 'Environment required']);
         }
 
         $success = $this->configManager->switchEnvironment($environment);
 
-        return new JsonModel([ 
-            'success' => $success,
-            'message' => $success ? "Switched to '{$environment}' environment" : "Invalid environment '{$environment}'",
+        return new JsonModel([
+            'success'     => $success,
+            'message'     => $success ? "Switched to '{$environment}' environment" : "Invalid environment '{$environment}'",
             'environment' => $environment,
         ]);
     }
 
     public function exportAction()
     {
-        $format = $this->params()->fromQuery('format', 'json'); 
-        $content = $this->configManager->exportConfig(); 
+        $format  = $this->params()->fromQuery('format', 'json');
+        $content = $this->configManager->exportConfig();
 
         $response = $this->getResponse();
         $response->getHeaders()
@@ -110,8 +118,8 @@ class ConfigurationController extends AbstractActionController
 
     public function saveAction(): JsonModel
     {
-        if (!$this->getRequest()->isPost()) {
-            return new JsonModel(['success' => false, 'message' => 'POST request required']); 
+        if (! $this->getRequest()->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'POST request required']);
         }
 
         $configData = json_decode($this->getRequest()->getContent(), true);
@@ -127,13 +135,12 @@ class ConfigurationController extends AbstractActionController
              // For now, this only updates the runtime config.
              $success = true;
              $message = 'Configuration updated in runtime';
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
              $success = false;
              $message = 'Failed to update configuration: ' . $e->getMessage();
         }
 
-
-        return new JsonModel([ 
+        return new JsonModel([
             'success' => $success,
             'message' => $message,
         ]);
@@ -141,13 +148,13 @@ class ConfigurationController extends AbstractActionController
 
     public function resetAction(): JsonModel
     {
-        if (!$this->getRequest()->isPost()) {
-            return new JsonModel(['success' => false, 'message' => 'POST request required']); 
+        if (! $this->getRequest()->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'POST request required']);
         }
 
         $this->configManager->resetToDefaults();
 
-        return new JsonModel([ 
+        return new JsonModel([
             'success' => true,
             'message' => 'Configuration reset to defaults',
         ]);

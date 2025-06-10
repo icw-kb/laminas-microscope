@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Collector;
 
+use function method_exists;
+
 class CollectorRegistry
 {
     /** @var array<string, object> */
@@ -12,7 +14,7 @@ class CollectorRegistry
     public function register(object $collector): void
     {
         if (method_exists($collector, 'getName')) {
-            $name = $collector->getName();
+            $name                    = $collector->getName();
             $this->collectors[$name] = $collector;
         }
     }

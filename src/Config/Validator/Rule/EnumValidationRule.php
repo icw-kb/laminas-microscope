@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Config\Validator\Rule;
 
+use function array_key_exists;
+use function explode;
+use function implode;
+use function in_array;
+use function is_array;
+
 /**
  * Validates that field values are within allowed enum values
  */
@@ -20,21 +26,21 @@ class EnumValidationRule implements ValidationRule
     public function validate(array $config): bool
     {
         $this->errors = [];
-        
+
         foreach ($this->enumDefinitions as $field => $allowedValues) {
             $value = $this->getNestedValue($config, $field);
-            
-            if ($value !== null && !in_array($value, $allowedValues, true)) {
+
+            if ($value !== null && ! in_array($value, $allowedValues, true)) {
                 $this->errors[] = [
-                    'field' => $field,
+                    'field'   => $field,
                     'message' => "Configuration field '{$field}' must be one of: " . implode(', ', $allowedValues) . ". Got: '{$value}'",
-                    'type' => 'enum_validation',
+                    'type'    => 'enum_validation',
                     'allowed' => $allowedValues,
-                    'actual' => $value
+                    'actual'  => $value,
                 ];
             }
         }
-        
+
         return empty($this->errors);
     }
 
@@ -48,16 +54,16 @@ class EnumValidationRule implements ValidationRule
      */
     private function getNestedValue(array $array, string $key): mixed
     {
-        $keys = explode('.', $key);
+        $keys    = explode('.', $key);
         $current = $array;
-        
+
         foreach ($keys as $k) {
-            if (!is_array($current) || !array_key_exists($k, $current)) {
+            if (! is_array($current) || ! array_key_exists($k, $current)) {
                 return null;
             }
             $current = $current[$k];
         }
-        
+
         return $current;
     }
 }

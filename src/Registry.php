@@ -13,9 +13,9 @@ use LaminasMicroscope\Whoops\WhoopsHandler;
  */
 class Registry
 {
-    private static ?DebugBarHandler $debugBar = null;
+    private static ?DebugBarHandler $debugBar     = null;
     private static ?MicroscopeHandler $microscope = null;
-    private static ?WhoopsHandler $whoops = null;
+    private static ?WhoopsHandler $whoops         = null;
 
     public static function setDebugBar(DebugBarHandler $debugBar): void
     {
@@ -49,8 +49,8 @@ class Registry
 
     public static function clear(): void
     {
-        self::$debugBar = null;
+        self::$debugBar   = null;
         self::$microscope = null;
-        self::$whoops = null;
+        self::$whoops     = null;
     }
 }

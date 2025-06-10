@@ -95,42 +95,9 @@ class CollectorConfigurationTest extends BaseTestCase
         $this->assertTrue($this->collectorRegistry->has('messages'));
     }
     
-    public function testMicroscopeUsesComponentSpecificCollectors(): void
+    public function testMicroscopeDoesNotInitializeCollectors(): void
     {
-        // Configure the mock to return specific collectors for microscope
-        $this->configService->method('getComponentConfig')
-            ->with('microscope')
-            ->willReturn([
-                'enabled' => true,
-                'collectors' => ['time', 'memory', 'exceptions']
-            ]);
-            
-        $this->componentManager->method('isEnabled')
-            ->with('microscope')
-            ->willReturn(true);
-            
-        // Mock the storage path for microscope
-        $this->configService->method('getStoragePath')
-            ->willReturn('/tmp/test-microscope');
-            
-        $handler = new MicroscopeHandler(
-            $this->componentManager,
-            $this->configService,
-            $this->container,
-            $this->collectorRegistry
-        );
-        
-        $handler->initialize();
-        
-        // Verify that the expected collectors are registered
-        $this->assertTrue($this->collectorRegistry->has('time'));
-        $this->assertTrue($this->collectorRegistry->has('memory'));
-        $this->assertTrue($this->collectorRegistry->has('exceptions'));
-    }
-    
-    public function testMicroscopeUsesDefaultCollectorsWhenNotConfigured(): void
-    {
-        // Configure the mock to return no collectors
+        // Configure the mock
         $this->configService->method('getComponentConfig')
             ->with('microscope')
             ->willReturn(['enabled' => true]);
@@ -143,11 +110,6 @@ class CollectorConfigurationTest extends BaseTestCase
         $this->configService->method('getStoragePath')
             ->willReturn('/tmp/test-microscope');
             
-        // Mock container to say PDO collector doesn't exist
-        $this->container->method('has')
-            ->with('LaminasMicroscope\DebugBar\Collectors\PDOCollector')
-            ->willReturn(false);
-            
         $handler = new MicroscopeHandler(
             $this->componentManager,
             $this->configService,
@@ -157,12 +119,12 @@ class CollectorConfigurationTest extends BaseTestCase
         
         $handler->initialize();
         
-        // Verify that the default collectors are registered (except PDO which requires container)
-        $this->assertTrue($this->collectorRegistry->has('time'));
-        $this->assertTrue($this->collectorRegistry->has('memory'));
-        $this->assertTrue($this->collectorRegistry->has('exceptions'));
-        // PDO collector won't be registered because container doesn't have it
+        // Verify that MicroscopeHandler does not initialize any collectors
+        // It should only consume data from collectors initialized by other components
+        $this->assertFalse($this->collectorRegistry->has('time'));
+        $this->assertFalse($this->collectorRegistry->has('memory'));
         $this->assertFalse($this->collectorRegistry->has('pdo'));
+        $this->assertFalse($this->collectorRegistry->has('exceptions'));
     }
     
     public function testNoGlobalCollectorsFallback(): void

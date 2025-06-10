@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LaminasMicroscope\Service;
 
-use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Manager\ComponentManager;
+
+use function in_array;
 
 /**
  * Programmatic interface for controlling debug suite components
@@ -16,7 +20,7 @@ class ProgrammaticInterface
     public function __construct(ComponentManager $componentManager, ConfigurationService $config)
     {
         $this->componentManager = $componentManager;
-        $this->config = $config;
+        $this->config           = $config;
     }
 
     /**
@@ -70,7 +74,7 @@ class ProgrammaticInterface
     public function enableOnly(array $components): self
     {
         $allComponents = $this->componentManager->getAvailableComponents();
-        
+
         foreach ($allComponents as $component) {
             if (in_array($component, $components)) {
                 $this->componentManager->enable($component);
@@ -78,7 +82,7 @@ class ProgrammaticInterface
                 $this->componentManager->disable($component);
             }
         }
-        
+
         return $this;
     }
 
@@ -97,13 +101,13 @@ class ProgrammaticInterface
     public function loadProfile(string $name): self
     {
         $profile = $this->config->get("profiles.{$name}");
-        
+
         if ($profile) {
             foreach ($profile as $key => $value) {
                 $this->config->set("laminas_debug_suite.{$key}", $value);
             }
         }
-        
+
         return $this;
     }
 
@@ -113,17 +117,17 @@ class ProgrammaticInterface
     public function getStatus(): array
     {
         $components = $this->componentManager->getAvailableComponents();
-        $status = [];
-        
+        $status     = [];
+
         foreach ($components as $component) {
             $status[$component] = $this->componentManager->isEnabled($component);
         }
-        
+
         return [
-            'global_enabled' => $this->config->get('laminas_debug_suite.enabled'),
-            'environment' => $this->config->get('laminas_debug_suite.environment'),
-            'components' => $status,
-            'runtime_overrides' => $this->componentManager->getRuntimeOverrides()
+            'global_enabled'    => $this->config->get('laminas_debug_suite.enabled'),
+            'environment'       => $this->config->get('laminas_debug_suite.environment'),
+            'components'        => $status,
+            'runtime_overrides' => $this->componentManager->getRuntimeOverrides(),
         ];
     }
 
