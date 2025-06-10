@@ -8,6 +8,7 @@ use DebugBar\DataCollector\MemoryCollector;
 use DebugBar\DataCollector\MessagesCollector;
 use DebugBar\DataCollector\PhpInfoCollector;
 use DebugBar\DataCollector\TimeDataCollector;
+use DebugBar\DebugBar;
 use DebugBar\JavascriptRenderer;
 use DebugBar\StandardDebugBar;
 use Exception;
@@ -44,7 +45,7 @@ use function trim;
  */
 class DebugBarHandler implements HandlerInterface
 {
-    private ?StandardDebugBar $debugBar = null;
+    private ?DebugBar $debugBar = null;
     private bool $initialized           = false;
     private ContainerInterface $container;
     private CollectorRegistry $collectorRegistry;
@@ -86,7 +87,8 @@ class DebugBarHandler implements HandlerInterface
             return;
         }
 
-        $this->debugBar = new StandardDebugBar();
+        // Create DebugBar without default collectors to have full control
+        $this->debugBar = new \DebugBar\DebugBar();
         $this->setupCollectors();
 
         if (! $collectorsOnly) {
@@ -106,7 +108,7 @@ class DebugBarHandler implements HandlerInterface
     /**
      * Get the DebugBar instance
      */
-    public function getDebugBar(): ?StandardDebugBar
+    public function getDebugBar(): ?DebugBar
     {
         if (! $this->initialized) {
             $this->initialize();
