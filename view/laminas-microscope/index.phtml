@@ -11,7 +11,24 @@ $collectorNames = $config->get(
     'laminas_microscope.components.debug_bar.collectors',
     $config->get('laminas_microscope.collectors', [])
 );
-$data = $debugBar ? $debugBar->getData() : [];
+
+// Debug: Check what we're getting
+$debugInfo = [
+    'debugBar_exists' => $debugBar !== null,
+    'debugBar_class' => $debugBar ? get_class($debugBar) : 'null',
+    'collectorNames' => $collectorNames,
+];
+
+$data = [];
+if ($debugBar) {
+    try {
+        $data = $debugBar->getData();
+        $debugInfo['data_keys'] = array_keys($data);
+        $debugInfo['data_empty'] = empty($data);
+    } catch (Exception $e) {
+        $debugInfo['getData_error'] = $e->getMessage();
+    }
+}
 ?>
 <div class="container-fluid">
     <div class="row">
@@ -65,6 +82,12 @@ $data = $debugBar ? $debugBar->getData() : [];
             </div>
 
             <div class="tab-content" id="collectorTabContent">
+                <!-- Debug Information -->
+                <div class="alert alert-info">
+                    <strong>Debug Info:</strong>
+                    <pre><?= htmlspecialchars(var_export($debugInfo, true), ENT_QUOTES) ?></pre>
+                </div>
+                
                 <div class="tab-pane fade show active" id="pane-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
                     <div class="row mb-4">
                         <div class="col-md-6">
