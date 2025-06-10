@@ -7,8 +7,8 @@ $this->headLink()->appendStylesheet('https://cdnjs.cloudflare.com/ajax/libs/font
 $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js');
 
 $debugBar = Registry::getDebugBar();
-// Show only debug_bar component collectors on the main dashboard
-$collectorNames = $config->get('laminas_microscope.components.debug_bar.collectors', ['time', 'memory', 'messages']);
+// Show only microscope component collectors on the main dashboard
+$collectorNames = $config->get('laminas_microscope.components.microscope.collectors', ['time', 'memory', 'messages']);
 
 $data = $debugBar ? $debugBar->getData() : [];
 ?>
