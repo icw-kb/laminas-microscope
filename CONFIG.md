@@ -77,6 +77,69 @@ laminas_microscope:
     compress: true
 ```
 
+## 📊 Collector Configuration
+
+### Collector Hierarchy
+
+Collectors can be configured at different levels with the following priority:
+
+1. **Component-specific collectors** (highest priority)
+2. **Global collectors** (fallback)
+3. **Default collectors** (built-in fallback)
+
+```yaml
+laminas_microscope:
+  # Global collectors (used as fallback for all components)
+  collectors:
+    - 'time'
+    - 'memory'
+    - 'pdo'
+    - 'request'
+    - 'config'
+    
+  components:
+    debug_bar:
+      # DebugBar-specific collectors (overrides global)
+      collectors:
+        - 'time'
+        - 'memory'
+        - 'pdo'
+        - 'request'
+        - 'config'
+        
+    microscope:
+      # Microscope-specific collectors (overrides global)
+      collectors:
+        - 'time'
+        - 'memory'
+        - 'pdo'
+        - 'exceptions'
+```
+
+### Use Cases
+
+**Separate collector sets for different purposes:**
+
+```yaml
+laminas_microscope:
+  components:
+    debug_bar:
+      # UI-focused collectors for development
+      collectors:
+        - 'time'
+        - 'memory'
+        - 'request'
+        - 'config'
+        
+    microscope:
+      # Performance-focused collectors for analysis
+      collectors:
+        - 'time'
+        - 'memory'
+        - 'pdo'
+        - 'exceptions'
+```
+
 ## 🧩 Component Configuration
 
 ### Whoops Error Handler
@@ -128,7 +191,16 @@ laminas_microscope:
 
       # Register collectors without injecting UI
       collectors_only: false
+      
+      # DebugBar-specific collectors (overrides global collectors)
+      collectors:
+        - 'time'         # Request timing
+        - 'memory'       # Memory usage
+        - 'pdo'          # Database queries
+        - 'request'      # HTTP request/response
+        - 'config'       # Configuration data
 
+  # Global collectors (used as fallback)
   collectors:
         - 'time'         # Request timing
         - 'memory'       # Memory usage
@@ -177,6 +249,13 @@ laminas_microscope:
       
       # Analysis frequency (every N requests)
       analysis_frequency: 1
+      
+      # Microscope-specific collectors (overrides global collectors)
+      collectors:
+        - 'time'         # Request timing for performance analysis
+        - 'memory'       # Memory usage tracking
+        - 'pdo'          # Database query analysis
+        - 'exceptions'   # Exception tracking
       
       # Performance thresholds
       thresholds:

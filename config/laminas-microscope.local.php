@@ -4,6 +4,7 @@ return [
     'laminas_microscope' => [
         'enabled' => true,
         'environment' => 'development',
+        // Global collectors (used as fallback)
         'collectors' => [
             'time',
             'memory',
@@ -27,10 +28,25 @@ return [
                 'position' => 'bottom',
                 'max_queries' => 100,
                 'collectors_only' => false,
+                // DebugBar-specific collectors
+                'collectors' => [
+                    'time',
+                    'memory',
+                    'pdo',
+                    'request',
+                    'config',
+                ],
             ],
             'microscope' => [
                 'enabled' => true,
                 'auto_analyze' => true,
+                // Microscope-specific collectors (for analysis)
+                'collectors' => [
+                    'time',
+                    'memory',
+                    'pdo',
+                    'exceptions',
+                ],
                 'checks' => [
                     'n_plus_one' => true,
                     'unused_routes' => true,
