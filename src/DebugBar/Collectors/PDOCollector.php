@@ -44,18 +44,9 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
 
     public function getWidgets(): array
     {
-        return [
-            'database' => [
-                'icon' => 'database',
-                'widget' => 'PhpDebugBar.Widgets.SQLQueriesWidget',
-                'map' => 'pdo',
-                'default' => '[]'
-            ],
-            'database:badge' => [
-                'map' => 'pdo.nb_statements',
-                'default' => 0
-            ]
-        ];
+        // Return empty array since we're using custom dashboard UI
+        // instead of PhpDebugBar's built-in widgets
+        return [];
     }
 
     private function setupQueryLogging(): void

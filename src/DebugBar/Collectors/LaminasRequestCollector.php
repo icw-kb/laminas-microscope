@@ -42,14 +42,9 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
 
     public function getWidgets(): array
     {
-        return [
-            'request' => [
-                'icon' => 'tags',
-                'widget' => 'PhpDebugBar.Widgets.VariableListWidget',
-                'map' => 'request',
-                'default' => '{}'
-            ]
-        ];
+        // Return empty array since we're using custom dashboard UI
+        // instead of PhpDebugBar's built-in widgets
+        return [];
     }
 
     private function getHeaders(): array

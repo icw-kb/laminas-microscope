@@ -307,7 +307,8 @@ class DebugBarHandler implements HandlerInterface
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        $collectors = $this->configService->get('laminas_microscope.collectors', $config['collectors'] ?? ['time', 'memory', 'messages']);
+        // Prioritize component-specific collectors over global ones
+        $collectors = $config['collectors'] ?? $this->configService->get('laminas_microscope.collectors', ['time', 'memory', 'messages']);
 
 
         foreach ($collectors as $collectorName) {

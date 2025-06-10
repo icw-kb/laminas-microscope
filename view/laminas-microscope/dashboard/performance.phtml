@@ -38,15 +38,15 @@ $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/chart.js');
                     </li>
                     
                     <?php 
-                    // Get collector names from config
+                    // Get performance-specific collectors
                     $collectorNames = $config->get(
-                        'laminas_microscope.collectors',
-                        $config->get('laminas_microscope.components.debug_bar.collectors', [])
+                        'laminas_microscope.components.microscope.collectors',
+                        $config->get('laminas_microscope.collectors', [])
                     );
                     
-                    // Add default collectors if none configured
+                    // Add default performance collectors if none configured
                     if (empty($collectorNames)) {
-                        $collectorNames = ['pdo', 'config', 'request'];
+                        $collectorNames = ['time', 'memory', 'pdo'];
                     }
                     ?>
                     
