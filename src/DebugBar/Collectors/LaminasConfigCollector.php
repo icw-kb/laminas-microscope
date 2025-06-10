@@ -57,9 +57,18 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
 
     public function getWidgets(): array
     {
-        // Return empty array since we're using custom dashboard UI
-        // instead of PhpDebugBar's built-in widgets
-        return [];
+        return [
+            'config' => [
+                'icon'    => 'cog',
+                'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
+                'map'     => 'config',
+                'default' => '{}',
+            ],
+            'config:badge' => [
+                'map'     => 'config.count',
+                'default' => 0,
+            ],
+        ];
     }
 
     private function getApplicationConfig(): array
