@@ -12,23 +12,7 @@ $collectorNames = $config->get(
     $config->get('laminas_microscope.collectors', [])
 );
 
-// Debug: Check what we're getting
-$debugInfo = [
-    'debugBar_exists' => $debugBar !== null,
-    'debugBar_class' => $debugBar ? get_class($debugBar) : 'null',
-    'collectorNames' => $collectorNames,
-];
-
-$data = [];
-if ($debugBar) {
-    try {
-        $data = $debugBar->getData();
-        $debugInfo['data_keys'] = array_keys($data);
-        $debugInfo['data_empty'] = empty($data);
-    } catch (Exception $e) {
-        $debugInfo['getData_error'] = $e->getMessage();
-    }
-}
+$data = $debugBar ? $debugBar->getData() : [];
 ?>
 <div class="container-fluid">
     <div class="row">
@@ -82,12 +66,6 @@ if ($debugBar) {
             </div>
 
             <div class="tab-content" id="collectorTabContent">
-                <!-- Debug Information -->
-                <div class="alert alert-info">
-                    <strong>Debug Info:</strong>
-                    <pre><?= htmlspecialchars(var_export($debugInfo, true), ENT_QUOTES) ?></pre>
-                </div>
-                
                 <div class="tab-pane fade show active" id="pane-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -106,6 +84,47 @@ if ($debugBar) {
                                 <tr><td><strong>Current Memory:</strong></td><td><?= round(memory_get_usage(true) / 1024 / 1024, 2) ?> MB</td></tr>
                                 <tr><td><strong>Request Time:</strong></td><td><?= date('Y-m-d H:i:s') ?></td></tr>
                             </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Collector Status -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4>Collector Data Status</h4>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Collector</th>
+                                            <th>Status</th>
+                                            <th>Data Keys</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($collectorNames as $collector): ?>
+                                            <tr>
+                                                <td><strong><?= ucfirst($collector) ?></strong></td>
+                                                <td>
+                                                    <?php if (isset($data[$collector])): ?>
+                                                        <span class="badge bg-success">Has Data</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-warning">No Data</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (isset($data[$collector]) && is_array($data[$collector])): ?>
+                                                        <?= implode(', ', array_keys($data[$collector])) ?>
+                                                    <?php elseif (isset($data[$collector])): ?>
+                                                        <?= gettype($data[$collector]) ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">None</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
