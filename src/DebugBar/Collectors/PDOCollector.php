@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
+use DebugBar\DataCollector\AssetProvider;
 use DebugBar\DataCollector\DataCollector;
 use DebugBar\DataCollector\Renderable;
 use Exception;
@@ -19,7 +20,7 @@ use function preg_replace;
 use function strtolower;
 use function trim;
 
-class PDOCollector extends DataCollector implements Renderable, CollectorInterface
+class PDOCollector extends DataCollector implements Renderable, AssetProvider, CollectorInterface
 {
     private ServiceManager $serviceManager;
     private array $queries     = [];
@@ -229,5 +230,13 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
         } catch (Exception $e) {
             return false;
         }
+    }
+
+    public function getAssets(): array
+    {
+        return [
+            'css' => 'widgets/sqlqueries/widget.css',
+            'js'  => 'widgets/sqlqueries/widget.js',
+        ];
     }
 }

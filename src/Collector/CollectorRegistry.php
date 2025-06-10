@@ -36,4 +36,9 @@ class CollectorRegistry
     {
         return $this->collectors;
     }
+
+    public function clear(): void
+    {
+        $this->collectors = [];
+    }
 }

@@ -403,7 +403,7 @@ class DebugBarHandler implements HandlerInterface
             case 'config':
                 try {
                     $configCollector = $this->container->get(LaminasConfigCollector::class);
-                    if (! $this->debugBar->hasCollector($configCollector->getName())) {
+                    if ($configCollector && ! $this->debugBar->hasCollector($configCollector->getName())) {
                         $this->debugBar->addCollector($configCollector);
                         $this->collectorRegistry->register($configCollector);
                     }
@@ -415,7 +415,7 @@ class DebugBarHandler implements HandlerInterface
             case 'pdo':
                 try {
                     $pdoCollector = $this->container->get(PDOCollector::class);
-                    if (! $this->debugBar->hasCollector($pdoCollector->getName())) {
+                    if ($pdoCollector && ! $this->debugBar->hasCollector($pdoCollector->getName())) {
                         $this->debugBar->addCollector($pdoCollector);
                         $this->collectorRegistry->register($pdoCollector);
                     }
@@ -429,7 +429,7 @@ class DebugBarHandler implements HandlerInterface
             case 'request':
                 try {
                     $requestCollector = $this->container->get(LaminasRequestCollector::class);
-                    if (! $this->debugBar->hasCollector($requestCollector->getName())) {
+                    if ($requestCollector && ! $this->debugBar->hasCollector($requestCollector->getName())) {
                         $this->debugBar->addCollector($requestCollector);
                         $this->collectorRegistry->register($requestCollector);
                     }
@@ -464,6 +464,8 @@ class DebugBarHandler implements HandlerInterface
             $this->debugBar    = null;
             $this->renderer    = null;
             $this->initialized = false;
+            // Clear registry to ensure fresh collectors on re-initialization
+            $this->collectorRegistry->clear();
         } else {
         }
     }

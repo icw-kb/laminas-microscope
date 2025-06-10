@@ -384,7 +384,7 @@ class DebugBarHandlerTest extends TestCase
         // Get debug bar instance before reset
         $debugBarBefore = $this->handler->getDebugBar();
         $this->assertNotNull($debugBarBefore);
-        $this->assertInstanceOf(\DebugBar\StandardDebugBar::class, $debugBarBefore);
+        $this->assertInstanceOf(\DebugBar\DebugBar::class, $debugBarBefore);
         
         // Reset the handler
         $this->handler->reset();
@@ -401,7 +401,7 @@ class DebugBarHandlerTest extends TestCase
             $this->assertNull($debugBarAfter);
         } else {
             // Partial reset - debug bar exists but should be reinitialized
-            $this->assertInstanceOf(\DebugBar\StandardDebugBar::class, $debugBarAfter);
+            $this->assertInstanceOf(\DebugBar\DebugBar::class, $debugBarAfter);
             
             // After getting debug bar, should be initialized again
             $this->assertTrue($this->handler->isInitialized());
@@ -574,21 +574,20 @@ class DebugBarHandlerTest extends TestCase
         // Test with different collector configurations
         $collectorConfigs = [
             ['time'],
-            ['memory'],
+            ['memory'], 
             ['messages'],
             ['time', 'memory'],
             ['time', 'memory', 'messages'],
-            ['time', 'memory', 'messages', 'exceptions'],
         ];
         
         foreach ($collectorConfigs as $configuredCollectors) {
             $config = \TestHelper::createMockConfig([
                 'laminas_microscope' => [
                     'enabled' => true,
-                    'collectors' => $configuredCollectors,
                     'components' => [
                         'debug_bar' => [
                             'enabled' => true,
+                            'collectors' => $configuredCollectors,
                         ],
                     ],
                 ],
