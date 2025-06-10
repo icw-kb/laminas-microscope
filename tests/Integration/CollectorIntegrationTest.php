@@ -76,35 +76,8 @@ class CollectorIntegrationTest extends TestCase
         // DebugBar should show exactly what's configured: time, memory, pdo, request, config
         $expectedCollectors = ['time', 'memory', 'pdo', 'request', 'config'];
         
-        // Debug: Let's see what collectors are actually present
-        echo "\nActual collectors in DebugBar: " . implode(', ', $collectorNames) . "\n";
-        echo "Expected collectors: " . implode(', ', $expectedCollectors) . "\n";
+        // Verify the exact collectors match configuration
         
-        // Debug: Check collector data and widgets
-        foreach ($collectors as $name => $collector) {
-            echo "\nCollector '{$name}':\n";
-            echo "  Class: " . get_class($collector) . "\n";
-            if (method_exists($collector, 'getWidgets')) {
-                $widgets = $collector->getWidgets();
-                echo "  Widgets: " . (empty($widgets) ? 'NONE' : implode(', ', array_keys($widgets))) . "\n";
-            }
-            if (method_exists($collector, 'collect')) {
-                try {
-                    $data = $collector->collect();
-                    echo "  Data keys: " . implode(', ', array_keys($data)) . "\n";
-                } catch (Exception $e) {
-                    echo "  Data collection failed: " . $e->getMessage() . "\n";
-                }
-            }
-        }
-        
-        // Check which collectors are missing
-        $missingCollectors = array_diff($expectedCollectors, $collectorNames);
-        if (!empty($missingCollectors)) {
-            echo "\nMissing collectors: " . implode(', ', $missingCollectors) . "\n";
-        }
-        
-        // Only assert after we've gathered all debug info
         $this->assertEquals(
             $expectedCollectors, 
             $collectorNames, 
