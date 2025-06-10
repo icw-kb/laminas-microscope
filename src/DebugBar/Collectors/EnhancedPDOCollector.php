@@ -72,18 +72,9 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
 
     public function getWidgets(): array
     {
-        return [
-            'database' => [
-                'icon' => 'database',
-                'widget' => 'PhpDebugBar.Widgets.SQLQueriesWidget',
-                'map' => 'enhanced_pdo',
-                'default' => '[]'
-            ],
-            'database:badge' => [
-                'map' => 'enhanced_pdo.nb_statements',
-                'default' => 0
-            ]
-        ];
+        // Return empty array since we're using custom dashboard UI
+        // instead of PhpDebugBar's built-in widgets
+        return [];
     }
 
     public function addQuery(array $query): void
