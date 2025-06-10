@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Factory;
 
-use Psr\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use LaminasMicroscope\Collector\CollectorRegistry;
+use Psr\Container\ContainerInterface;
 
 class CollectorRegistryFactory implements FactoryInterface
 {

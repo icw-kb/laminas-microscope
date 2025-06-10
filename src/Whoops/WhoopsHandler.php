@@ -6,30 +6,30 @@ namespace LaminasMicroscope\Whoops;
 
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Contracts\HandlerInterface;
-use Whoops\Run;
-use Whoops\Handler\PrettyPageHandler;
 use Whoops\Handler\JsonResponseHandler;
 use Whoops\Handler\PlainTextHandler;
-use Exception;
+use Whoops\Handler\PrettyPageHandler;
+use Whoops\Run;
 
 /**
  * Handler for Whoops error display integration
  */
 class WhoopsHandler implements HandlerInterface
 {
-    private ?Run $whoops = null;
+    private ?Run $whoops      = null;
     private bool $initialized = false;
 
     public function __construct(
         private ConfigurationService $configService
-    ) {}
+    ) {
+    }
 
     /**
      * Check if Whoops is enabled
      */
     public function isEnabled(): bool
     {
-        if (!$this->configService->isEnabled()) {
+        if (! $this->configService->isEnabled()) {
             return false;
         }
 
@@ -42,7 +42,7 @@ class WhoopsHandler implements HandlerInterface
      */
     public function initialize(): void
     {
-        if ($this->initialized || !$this->isEnabled()) {
+        if ($this->initialized || ! $this->isEnabled()) {
             return;
         }
 
@@ -57,7 +57,7 @@ class WhoopsHandler implements HandlerInterface
      */
     public function getWhoops(): ?Run
     {
-        if (!$this->initialized) {
+        if (! $this->initialized) {
             $this->initialize();
         }
 
@@ -69,11 +69,11 @@ class WhoopsHandler implements HandlerInterface
      */
     public function shouldDisplay(): bool
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return false;
         }
 
-        $config = $this->configService->getComponentConfig('whoops');
+        $config      = $this->configService->getComponentConfig('whoops');
         $environment = $this->configService->getEnvironment();
 
         // Don't show in production unless explicitly enabled
@@ -91,7 +91,7 @@ class WhoopsHandler implements HandlerInterface
     {
         if ($this->whoops) {
             $this->whoops->unregister();
-            $this->whoops = null;
+            $this->whoops      = null;
             $this->initialized = false;
         }
     }
@@ -109,11 +109,11 @@ class WhoopsHandler implements HandlerInterface
      */
     private function setupHandlers(): void
     {
-        if (!$this->whoops) {
+        if (! $this->whoops) {
             return;
         }
 
-        $config = $this->configService->getComponentConfig('whoops');
+        $config   = $this->configService->getComponentConfig('whoops');
         $handlers = $config['handlers'] ?? ['pretty', 'json'];
 
         foreach ($handlers as $handlerName) {
@@ -126,7 +126,7 @@ class WhoopsHandler implements HandlerInterface
      */
     private function addHandler(string $name): void
     {
-        if (!$this->whoops) {
+        if (! $this->whoops) {
             return;
         }
 

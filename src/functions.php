@@ -2,19 +2,24 @@
 
 declare(strict_types=1);
 
+use LaminasMicroscope\DebugBar\DebugBarHandler;
+use LaminasMicroscope\Registry;
+use LaminasMicroscope\Utility\FormatUtility;
+use Symfony\Component\VarDumper\VarDumper;
+
 /**
  * Global helper functions for Laminas Microscope
  */
 
-if (!function_exists('microscope_dump')) {
+if (! function_exists('microscope_dump')) {
     /**
      * Dump variable using Symfony VarDumper if available
      */
     function microscope_dump(...$vars): void
     {
-        if (class_exists(\Symfony\Component\VarDumper\VarDumper::class)) { 
+        if (class_exists(VarDumper::class)) {
             foreach ($vars as $var) {
-                \Symfony\Component\VarDumper\VarDumper::dump($var); 
+                VarDumper::dump($var);
             }
         } else {
             foreach ($vars as $var) {
@@ -24,7 +29,7 @@ if (!function_exists('microscope_dump')) {
     }
 }
 
-if (!function_exists('microscope_dd')) {
+if (! function_exists('microscope_dd')) {
     /**
      * Dump and die
      */
@@ -35,18 +40,18 @@ if (!function_exists('microscope_dd')) {
     }
 }
 
-if (!function_exists('microscope_measure')) {
+if (! function_exists('microscope_measure')) {
     /**
      * Quick measurement helper
      */
     function microscope_measure(string $name, callable $callback): mixed
     {
-        $start = microtime(true);
+        $start  = microtime(true);
         $result = $callback();
-        $end = microtime(true);
+        $end    = microtime(true);
 
-        if (class_exists(\LaminasMicroscope\DebugBar\DebugBarHandler::class)) { 
-            $debugBar = \LaminasMicroscope\Registry::getDebugBar(); 
+        if (class_exists(DebugBarHandler::class)) {
+            $debugBar = Registry::getDebugBar();
             if ($debugBar && $debugBar->isEnabled()) {
                 $debugBar->addMessage(
                     sprintf('Measurement "%s": %.2fms', $name, ($end - $start) * 1000),
@@ -59,14 +64,14 @@ if (!function_exists('microscope_measure')) {
     }
 }
 
-if (!function_exists('microscope_log')) {
+if (! function_exists('microscope_log')) {
     /**
      * Quick logging helper
      */
     function microscope_log(string $message, string $level = 'info', array $context = []): void
     {
-        if (class_exists(\LaminasMicroscope\DebugBar\DebugBarHandler::class)) { 
-            $debugBar = \LaminasMicroscope\Registry::getDebugBar(); 
+        if (class_exists(DebugBarHandler::class)) {
+            $debugBar = Registry::getDebugBar();
             if ($debugBar && $debugBar->isEnabled()) {
                 $debugBar->addMessage($message, $level);
             }
@@ -74,22 +79,22 @@ if (!function_exists('microscope_log')) {
     }
 }
 
-if (!function_exists('microscope_memory')) {
+if (! function_exists('microscope_memory')) {
     /**
      * Get current memory usage
      */
     function microscope_memory(bool $realUsage = true): string
     {
-        return \LaminasMicroscope\Utility\FormatUtility::formatMemoryUsage($realUsage);
+        return FormatUtility::formatMemoryUsage($realUsage);
     }
 }
 
-if (!function_exists('microscope_peak_memory')) {
+if (! function_exists('microscope_peak_memory')) {
     /**
      * Get peak memory usage
      */
     function microscope_peak_memory(bool $realUsage = true): string
     {
-        return \LaminasMicroscope\Utility\FormatUtility::formatPeakMemoryUsage($realUsage);
+        return FormatUtility::formatPeakMemoryUsage($realUsage);
     }
 }

@@ -8,13 +8,16 @@ use LaminasMicroscope\Exception\MicroscopeException;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
+use function error_log;
+use function preg_match;
+
 /**
  * Centralized error handling utility for Laminas Microscope
  */
 class ErrorHandler
 {
     private static ?LoggerInterface $logger = null;
-    private static bool $debugMode = false;
+    private static bool $debugMode          = false;
 
     public static function setLogger(?LoggerInterface $logger): void
     {
@@ -32,15 +35,15 @@ class ErrorHandler
     public static function handle(Throwable $exception, string $context = '', bool $rethrow = false): void
     {
         $message = self::formatExceptionMessage($exception, $context);
-        
+
         // Log the error
         if (self::$logger) {
             self::$logger->error($message, [
                 'exception' => $exception,
-                'context' => $context,
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-                'trace' => self::$debugMode ? $exception->getTraceAsString() : null
+                'context'   => $context,
+                'file'      => $exception->getFile(),
+                'line'      => $exception->getLine(),
+                'trace'     => self::$debugMode ? $exception->getTraceAsString() : null,
             ]);
         } else {
             // Fallback to error_log if no logger available
@@ -95,14 +98,14 @@ class ErrorHandler
      */
     private static function formatExceptionMessage(Throwable $exception, string $context): string
     {
-        $message = get_class($exception) . ': ' . $exception->getMessage();
-        
+        $message = $exception::class . ': ' . $exception->getMessage();
+
         if ($context) {
             $message = "[{$context}] {$message}";
         }
-        
+
         $message .= " in {$exception->getFile()}:{$exception->getLine()}";
-        
+
         return $message;
     }
 

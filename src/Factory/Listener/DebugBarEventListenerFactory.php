@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Factory\Listener;
 
-use Psr\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use LaminasMicroscope\Listener\DebugBarEventListener;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 class DebugBarEventListenerFactory implements FactoryInterface
@@ -17,13 +17,13 @@ class DebugBarEventListenerFactory implements FactoryInterface
         if ($container->has(LoggerInterface::class)) {
             $logger = $container->get(LoggerInterface::class);
         }
-        
+
         // Event timestamps will be passed from Module.php
         $eventTimestamps = [];
-        
+
         return new DebugBarEventListener(
-            $container, 
-            $eventTimestamps, 
+            $container,
+            $eventTimestamps,
             $logger,
             'laminas-microscope/debugbar-assets'
         );

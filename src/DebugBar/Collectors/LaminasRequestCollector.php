@@ -4,11 +4,26 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
-use DebugBar\DataCollector\DataCollector; 
-use DebugBar\DataCollector\Renderable; 
-use Laminas\ServiceManager\ServiceManager; 
+use DebugBar\DataCollector\DataCollector;
+use DebugBar\DataCollector\Renderable;
+use Exception;
+use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
-use Exception; 
+
+use function function_exists;
+use function in_array;
+use function is_array;
+use function is_string;
+use function session_id;
+use function session_name;
+use function session_status;
+use function str_replace;
+use function strlen;
+use function strtolower;
+use function substr;
+use function ucwords;
+
+use const PHP_SESSION_ACTIVE;
 
 class LaminasRequestCollector extends DataCollector implements Renderable, CollectorInterface
 {
@@ -22,15 +37,15 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
     public function collect(): array
     {
         return [
-            'method' => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
-            'uri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-            'headers' => $this->getHeaders(),
-            'get' => $_GET,
-            'post' => $this->sanitizePostData($_POST),
-            'cookies' => $_COOKIE,
-            'session' => $this->getSessionData(),
-            'server' => $this->getServerData(),
-            'route' => $this->getRouteData(),
+            'method'   => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+            'uri'      => $_SERVER['REQUEST_URI'] ?? 'unknown',
+            'headers'  => $this->getHeaders(),
+            'get'      => $_GET,
+            'post'     => $this->sanitizePostData($_POST),
+            'cookies'  => $_COOKIE,
+            'session'  => $this->getSessionData(),
+            'server'   => $this->getServerData(),
+            'route'    => $this->getRouteData(),
             'response' => $this->getResponseData(),
         ];
     }
@@ -42,9 +57,18 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
 
     public function getWidgets(): array
     {
-        // Return empty array since we're using custom dashboard UI
-        // instead of PhpDebugBar's built-in widgets
-        return [];
+        return [
+            'request' => [
+                'icon'    => 'globe',
+                'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
+                'map'     => 'request',
+                'default' => '{}',
+            ],
+            'request:badge' => [
+                'map'     => 'request.status_code',
+                'default' => 0,
+            ],
+        ];
     }
 
     private function getHeaders(): array
@@ -85,7 +109,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         }
 
         return [
-            'id' => session_id(),
+            'id'   => session_id(),
             'name' => session_name(),
             'data' => $_SESSION ?? [],
         ];
@@ -94,12 +118,29 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
     private function getServerData(): array
     {
         $relevantKeys = [
-            'SERVER_SOFTWARE', 'REQUEST_METHOD', 'REQUEST_URI', 'QUERY_STRING',
-            'HTTP_HOST', 'HTTP_USER_AGENT', 'HTTP_ACCEPT', 'HTTP_ACCEPT_LANGUAGE',
-            'HTTP_ACCEPT_ENCODING', 'HTTP_CONNECTION', 'HTTPS', 'REMOTE_ADDR',
-            'REMOTE_HOST', 'REMOTE_PORT', 'SCRIPT_NAME', 'SCRIPT_FILENAME',
-            'SERVER_ADMIN', 'SERVER_PORT', 'SERVER_SIGNATURE', 'REQUEST_TIME',
-            'REQUEST_TIME_FLOAT', 'CONTENT_TYPE', 'CONTENT_LENGTH'
+            'SERVER_SOFTWARE',
+            'REQUEST_METHOD',
+            'REQUEST_URI',
+            'QUERY_STRING',
+            'HTTP_HOST',
+            'HTTP_USER_AGENT',
+            'HTTP_ACCEPT',
+            'HTTP_ACCEPT_LANGUAGE',
+            'HTTP_ACCEPT_ENCODING',
+            'HTTP_CONNECTION',
+            'HTTPS',
+            'REMOTE_ADDR',
+            'REMOTE_HOST',
+            'REMOTE_PORT',
+            'SCRIPT_NAME',
+            'SCRIPT_FILENAME',
+            'SERVER_ADMIN',
+            'SERVER_PORT',
+            'SERVER_SIGNATURE',
+            'REQUEST_TIME',
+            'REQUEST_TIME_FLOAT',
+            'CONTENT_TYPE',
+            'CONTENT_LENGTH',
         ];
 
         $serverData = [];
@@ -117,21 +158,21 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         try {
             if ($this->serviceManager->has('Application')) {
                 $application = $this->serviceManager->get('Application');
-                $mvcEvent = $application->getMvcEvent();
+                $mvcEvent    = $application->getMvcEvent();
 
                 if ($mvcEvent) {
                     $routeMatch = $mvcEvent->getRouteMatch();
                     if ($routeMatch) {
                         return [
                             'matched_route_name' => $routeMatch->getMatchedRouteName(),
-                            'controller' => $routeMatch->getParam('controller'),
-                            'action' => $routeMatch->getParam('action'),
-                            'params' => $routeMatch->getParams(),
+                            'controller'         => $routeMatch->getParam('controller'),
+                            'action'             => $routeMatch->getParam('action'),
+                            'params'             => $routeMatch->getParams(),
                         ];
                     }
                 }
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             return ['error' => 'Could not retrieve route data: ' . $e->getMessage()];
         }
 
@@ -143,7 +184,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         try {
             if ($this->serviceManager->has('Application')) {
                 $application = $this->serviceManager->get('Application');
-                $mvcEvent = $application->getMvcEvent();
+                $mvcEvent    = $application->getMvcEvent();
 
                 if ($mvcEvent) {
                     $response = $mvcEvent->getResponse();
@@ -154,15 +195,15 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                         }
 
                         return [
-                            'status_code' => $response->getStatusCode(),
-                            'reason_phrase' => $response->getReasonPhrase(),
-                            'headers' => $headers,
+                            'status_code'    => $response->getStatusCode(),
+                            'reason_phrase'  => $response->getReasonPhrase(),
+                            'headers'        => $headers,
                             'content_length' => strlen($response->getContent()),
                         ];
                     }
                 }
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             return ['error' => 'Could not retrieve response data: ' . $e->getMessage()];
         }
 

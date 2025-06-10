@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Utility;
 
+use function count;
+use function floor;
+use function log;
+use function max;
+use function memory_get_peak_usage;
+use function memory_get_usage;
+use function min;
+use function round;
+
 /**
  * Shared formatting utilities for Laminas Microscope
  */
@@ -34,10 +43,10 @@ class FormatUtility
 
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
         $bytes = max($size, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
+        $pow   = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow   = min($pow, count($units) - 1);
 
-        $bytes /= (1 << (10 * $pow));
+        $bytes /= 1 << (10 * $pow);
 
         return round($bytes, $precision) . ' ' . $units[$pow];
     }

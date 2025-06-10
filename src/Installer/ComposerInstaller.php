@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Installer;
 
-use Composer\Script\Event;
 use Composer\IO\IOInterface;
+use Composer\Script\Event;
+
+use function extension_loaded;
+use function file_put_contents;
+use function is_dir;
+use function mkdir;
+use function version_compare;
+
+use const PHP_VERSION;
 
 /**
  * Composer post-install/update scripts
@@ -68,7 +76,7 @@ class ComposerInstaller
         // Check extensions
         $extensions = ['json', 'mbstring'];
         foreach ($extensions as $ext) {
-            if (!extension_loaded($ext)) {
+            if (! extension_loaded($ext)) {
                 $io->writeError("⚠️  Required extension missing: {$ext}");
             }
         }
@@ -94,7 +102,7 @@ class ComposerInstaller
         ];
 
         foreach ($directories as $dir) {
-            if (!is_dir($dir)) {
+            if (! is_dir($dir)) {
                 if (mkdir($dir, 0755, true)) {
                     $io->write("📁 Created directory: {$dir}");
                 } else {

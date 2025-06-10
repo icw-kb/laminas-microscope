@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Config\Validator\Rule;
 
+use function array_key_exists;
+use function explode;
+use function is_array;
+
 /**
  * Validates that required fields are present in configuration
  */
@@ -20,17 +24,17 @@ class RequiredFieldRule implements ValidationRule
     public function validate(array $config): bool
     {
         $this->errors = [];
-        
+
         foreach ($this->requiredFields as $field) {
-            if (!$this->hasNestedKey($config, $field)) {
+            if (! $this->hasNestedKey($config, $field)) {
                 $this->errors[] = [
-                    'field' => $field,
+                    'field'   => $field,
                     'message' => "Required configuration field '{$field}' is missing",
-                    'type' => 'required_field'
+                    'type'    => 'required_field',
                 ];
             }
         }
-        
+
         return empty($this->errors);
     }
 
@@ -44,16 +48,16 @@ class RequiredFieldRule implements ValidationRule
      */
     private function hasNestedKey(array $array, string $key): bool
     {
-        $keys = explode('.', $key);
+        $keys    = explode('.', $key);
         $current = $array;
-        
+
         foreach ($keys as $k) {
-            if (!is_array($current) || !array_key_exists($k, $current)) {
+            if (! is_array($current) || ! array_key_exists($k, $current)) {
                 return false;
             }
             $current = $current[$k];
         }
-        
+
         return true;
     }
 }

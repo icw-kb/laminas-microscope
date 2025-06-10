@@ -6,6 +6,8 @@ namespace LaminasMicroscope\Exception;
 
 use Exception;
 
+use function json_encode;
+
 /**
  * Base exception for all Laminas Microscope exceptions
  */

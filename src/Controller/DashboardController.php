@@ -2,20 +2,34 @@
 
 declare(strict_types=1);
 
-namespace LaminasMicroscope\Controller; 
+namespace LaminasMicroscope\Controller;
 
-use Laminas\Mvc\Controller\AbstractActionController; 
-use Laminas\View\Model\ViewModel; 
-use LaminasMicroscope\Manager\ComponentManager;
-use LaminasMicroscope\Config\ConfigurationService;
-use Laminas\Http\Response; 
-use RuntimeException;
 use Exception;
-use LaminasMicroscope\Microscope\MicroscopeHandler;
+use Laminas\Http\Response;
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
 use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
+use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Microscope\Storage\ReportStorage;
-use DebugBar\JavascriptRenderer; 
+use RuntimeException;
+
+use function date;
+use function dirname;
+use function file_exists;
+use function file_get_contents;
+use function ini_get;
+use function is_writable;
+use function json_encode;
+use function memory_get_peak_usage;
+use function memory_get_usage;
+use function pathinfo;
+use function strpos;
+
+use const JSON_PRETTY_PRINT;
+use const PATHINFO_EXTENSION;
+use const PHP_VERSION;
 
 class DashboardController extends AbstractActionController
 {
@@ -32,10 +46,10 @@ class DashboardController extends AbstractActionController
         ?CacheManager $cacheManager = null,
         ?EnhancedPDOCollector $enhancedPDOCollector = null
     ) {
-        $this->componentManager = $componentManager;
-        $this->config = $config;
-        $this->reportStorage = $reportStorage;
-        $this->cacheManager = $cacheManager;
+        $this->componentManager     = $componentManager;
+        $this->config               = $config;
+        $this->reportStorage        = $reportStorage;
+        $this->cacheManager         = $cacheManager;
         $this->enhancedPDOCollector = $enhancedPDOCollector;
     }
 
@@ -46,9 +60,9 @@ class DashboardController extends AbstractActionController
     {
         $viewModel = new ViewModel([
             'componentManager' => $this->componentManager,
-            'config' => $this->config,
-            'recentReports' => $this->getRecentReports(),
-            'systemInfo' => $this->getSystemInfo(),
+            'config'           => $this->config,
+            'recentReports'    => $this->getRecentReports(),
+            'systemInfo'       => $this->getSystemInfo(),
         ]);
 
         $viewModel->setTemplate('laminas-microscope/index');
@@ -61,9 +75,9 @@ class DashboardController extends AbstractActionController
     public function apiAction()
     {
         $request = $this->getRequest();
-        $action = $this->params()->fromRoute('action', 'status');
+        $action  = $this->params()->fromRoute('action', 'status');
 
-        if (!$request->isPost() && !$request->isGet()) {
+        if (! $request->isPost() && ! $request->isGet()) {
             return $this->getResponse()->setStatusCode(405);
         }
 
@@ -71,19 +85,19 @@ class DashboardController extends AbstractActionController
             case 'status':
                 return $this->jsonResponse([
                     'success' => true,
-                    'data' => [
-                        'components' => [
-                            'whoops' => $this->componentManager->isEnabled('whoops'),
-                            'debug_bar' => $this->componentManager->isEnabled('debug_bar'),
+                    'data'    => [
+                        'components'  => [
+                            'whoops'     => $this->componentManager->isEnabled('whoops'),
+                            'debug_bar'  => $this->componentManager->isEnabled('debug_bar'),
                             'microscope' => $this->componentManager->isEnabled('microscope'),
                         ],
                         'environment' => $this->config->get('laminas_microscope.environment', 'unknown'),
-                        'debug_mode' => $this->componentManager->isEnabled(),
-                    ]
+                        'debug_mode'  => $this->componentManager->isEnabled(),
+                    ],
                 ]);
 
             case 'clear-reports':
-                if (!$request->isPost()) {
+                if (! $request->isPost()) {
                     return $this->getResponse()->setStatusCode(405);
                 }
 
@@ -93,13 +107,13 @@ class DashboardController extends AbstractActionController
                 } catch (Exception $e) {
                     return $this->jsonResponse([
                         'success' => false,
-                        'message' => $e->getMessage()
+                        'message' => $e->getMessage(),
                     ], 500);
                 }
 
             case 'export':
                 try {
-                    $data = $this->exportDebugData();
+                    $data     = $this->exportDebugData();
                     $response = $this->getResponse();
                     $response->getHeaders()->addHeaderLine('Content-Type', 'application/json');
                     $response->getHeaders()->addHeaderLine('Content-Disposition', 'attachment; filename="debug-export-' . date('Y-m-d-H-i-s') . '.json"');
@@ -108,14 +122,14 @@ class DashboardController extends AbstractActionController
                 } catch (Exception $e) {
                     return $this->jsonResponse([
                         'success' => false,
-                        'message' => $e->getMessage()
+                        'message' => $e->getMessage(),
                     ], 500);
                 }
 
             default:
                 return $this->jsonResponse([
                     'success' => false,
-                    'message' => 'Unknown action'
+                    'message' => 'Unknown action',
                 ], 404);
         }
     }
@@ -126,10 +140,9 @@ class DashboardController extends AbstractActionController
     public function assetsAction(): Response
     {
         $response = $this->getResponse();
-        $file = $this->params()->fromRoute('file');
+        $file     = $this->params()->fromRoute('file');
 
-
-        if (!$file) {
+        if (! $file) {
             $response->setStatusCode(404);
             return $response;
         }
@@ -139,14 +152,13 @@ class DashboardController extends AbstractActionController
         // from the application root (vendor/icw-kb/laminas-microscope/src/Controller)
         $assetPath = dirname(__DIR__, 5) . '/vendor/maximebf/debugbar/src/DebugBar/Resources/' . $file;
 
-
         // Basic security check: prevent directory traversal
-        if (strpos($file, '..') !== false || !file_exists($assetPath)) {
+        if (strpos($file, '..') !== false || ! file_exists($assetPath)) {
             $response->setStatusCode(404);
             return $response;
         }
 
-        $extension = pathinfo($assetPath, PATHINFO_EXTENSION);
+        $extension   = pathinfo($assetPath, PATHINFO_EXTENSION);
         $contentType = match ($extension) {
             'css' => 'text/css',
             'js' => 'application/javascript',
@@ -166,7 +178,6 @@ class DashboardController extends AbstractActionController
 
         $response->getHeaders()->addHeaderLine('Content-Type', $contentType);
         $response->setContent($content);
-
 
         return $response;
     }
@@ -192,14 +203,14 @@ class DashboardController extends AbstractActionController
     private function getSystemInfo(): array
     {
         return [
-            'php_version' => PHP_VERSION,
-            'memory_limit' => ini_get('memory_limit'),
+            'php_version'        => PHP_VERSION,
+            'memory_limit'       => ini_get('memory_limit'),
             'max_execution_time' => ini_get('max_execution_time'),
-            'current_memory' => memory_get_usage(true),
-            'peak_memory' => memory_get_peak_usage(true),
-            'environment' => $this->config->get('laminas_microscope.environment', 'unknown'),
-            'storage_path' => $this->config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'),
-            'storage_writable' => is_writable(dirname($this->config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'))),
+            'current_memory'     => memory_get_usage(true),
+            'peak_memory'        => memory_get_peak_usage(true),
+            'environment'        => $this->config->get('laminas_microscope.environment', 'unknown'),
+            'storage_path'       => $this->config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'),
+            'storage_writable'   => is_writable(dirname($this->config->get('laminas_microscope.storage.path', '/tmp/laminas-microscope'))),
         ];
     }
 
@@ -223,15 +234,15 @@ class DashboardController extends AbstractActionController
     private function exportDebugData(): array
     {
         return [
-            'export_date' => date('Y-m-d H:i:s'),
-            'system_info' => $this->getSystemInfo(),
+            'export_date'      => date('Y-m-d H:i:s'),
+            'system_info'      => $this->getSystemInfo(),
             'component_status' => [
-                'whoops' => $this->componentManager->isEnabled('whoops'),
-                'debug_bar' => $this->componentManager->isEnabled('debug_bar'),
+                'whoops'     => $this->componentManager->isEnabled('whoops'),
+                'debug_bar'  => $this->componentManager->isEnabled('debug_bar'),
                 'microscope' => $this->componentManager->isEnabled('microscope'),
             ],
-            'configuration' => $this->config->toArray(),
-            'recent_reports' => $this->getRecentReports(),
+            'configuration'    => $this->config->toArray(),
+            'recent_reports'   => $this->getRecentReports(),
         ];
     }
 
@@ -243,46 +254,46 @@ class DashboardController extends AbstractActionController
         try {
             // Use injected service or create fallback
             $reportStorage = $this->reportStorage ?? new ReportStorage($this->config);
-            
+
             $analytics = [
-                'query_analysis' => $reportStorage->getQueryAnalysis(),
-                'route_analysis' => $reportStorage->getRouteAnalysis(),
+                'query_analysis'   => $reportStorage->getQueryAnalysis(),
+                'route_analysis'   => $reportStorage->getRouteAnalysis(),
                 'performance_data' => $reportStorage->getPerformanceData(),
-                'summary' => $reportStorage->getSummary(),
+                'summary'          => $reportStorage->getSummary(),
             ];
-            
+
             return new ViewModel([
                 'analytics' => $analytics,
-                'config' => $this->config,
+                'config'    => $this->config,
             ]);
         } catch (Exception $e) {
             // Return empty analytics data on error
             $emptyAnalytics = [
-                'query_analysis' => [
-                    'total_queries' => 0,
-                    'slow_queries' => [],
-                    'duplicate_queries' => [],
+                'query_analysis'   => [
+                    'total_queries'       => 0,
+                    'slow_queries'        => [],
+                    'duplicate_queries'   => [],
                     'n_plus_one_patterns' => [],
                 ],
-                'route_analysis' => [
+                'route_analysis'   => [
                     'total_requests' => 0,
                     'popular_routes' => [],
-                    'slow_routes' => [],
+                    'slow_routes'    => [],
                 ],
                 'performance_data' => [
-                    'total_requests' => 0,
+                    'total_requests'        => 0,
                     'average_response_time' => 0,
                 ],
-                'summary' => [
+                'summary'          => [
                     'performance_score' => 100,
-                    'recommendations' => [],
+                    'recommendations'   => [],
                 ],
             ];
-            
+
             return new ViewModel([
                 'analytics' => $emptyAnalytics,
-                'config' => $this->config,
-                'error' => $e->getMessage(),
+                'config'    => $this->config,
+                'error'     => $e->getMessage(),
             ]);
         }
     }
@@ -293,28 +304,28 @@ class DashboardController extends AbstractActionController
     public function cacheAction(): ViewModel
     {
         $action = $this->params()->fromRoute('action', 'index');
-        
+
         try {
             // Use injected service or create fallback
             $cacheManager = $this->cacheManager ?? new CacheManager($this->config);
-            
+
             if ($action === 'clear' && $this->getRequest()->isPost()) {
                 $category = $this->params()->fromPost('category', 'default');
                 $cacheManager->flush($category);
                 $this->flashMessenger()->addSuccessMessage("Cache cleared for category: {$category}");
                 return $this->redirect()->toRoute('laminas-microscope/cache');
             }
-            
+
             return new ViewModel([
                 'cacheStats' => $cacheManager->getStats(),
-                'config' => $this->config,
+                'config'     => $this->config,
             ]);
         } catch (Exception $e) {
             // Return empty cache stats on error
             return new ViewModel([
                 'cacheStats' => ['default' => ['type' => 'FileAdapter', 'stats' => ['hits' => 0, 'misses' => 0, 'writes' => 0, 'deletes' => 0]]],
-                'config' => $this->config,
-                'error' => $e->getMessage(),
+                'config'     => $this->config,
+                'error'      => $e->getMessage(),
             ]);
         }
     }
@@ -330,44 +341,44 @@ class DashboardController extends AbstractActionController
             } else {
                 // Create basic performance data if service not available
                 $performanceData = [
-                    'performance_score' => 100,
-                    'nb_statements' => 0,
-                    'nb_slow_statements' => 0,
-                    'nb_duplicate_statements' => 0,
+                    'performance_score'        => 100,
+                    'nb_statements'            => 0,
+                    'nb_slow_statements'       => 0,
+                    'nb_duplicate_statements'  => 0,
                     'accumulated_duration_str' => '0ms',
-                    'analysis' => [
+                    'analysis'                 => [
                         'n_plus_one_patterns' => [],
-                        'query_types' => [],
+                        'query_types'         => [],
                     ],
-                    'recommendations' => [],
-                    'statements' => [],
+                    'recommendations'          => [],
+                    'statements'               => [],
                 ];
             }
-            
+
             return new ViewModel([
                 'performanceData' => $performanceData,
-                'config' => $this->config,
+                'config'          => $this->config,
             ]);
         } catch (Exception $e) {
             // Return empty performance data on error
             $emptyPerformanceData = [
-                'performance_score' => 100,
-                'nb_statements' => 0,
-                'nb_slow_statements' => 0,
-                'nb_duplicate_statements' => 0,
+                'performance_score'        => 100,
+                'nb_statements'            => 0,
+                'nb_slow_statements'       => 0,
+                'nb_duplicate_statements'  => 0,
                 'accumulated_duration_str' => '0ms',
-                'analysis' => [
+                'analysis'                 => [
                     'n_plus_one_patterns' => [],
-                    'query_types' => [],
+                    'query_types'         => [],
                 ],
-                'recommendations' => [],
-                'statements' => [],
+                'recommendations'          => [],
+                'statements'               => [],
             ];
-            
+
             return new ViewModel([
                 'performanceData' => $emptyPerformanceData,
-                'config' => $this->config,
-                'error' => $e->getMessage(),
+                'config'          => $this->config,
+                'error'           => $e->getMessage(),
             ]);
         }
     }
@@ -384,4 +395,3 @@ class DashboardController extends AbstractActionController
         return $response;
     }
 }
-

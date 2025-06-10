@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
-use DebugBar\DataCollector\DataCollector; 
-use DebugBar\DataCollector\Renderable; 
-use Laminas\ServiceManager\ServiceManager; 
-use Exception; 
+use DebugBar\DataCollector\AssetProvider;
+use DebugBar\DataCollector\DataCollector;
+use DebugBar\DataCollector\Renderable;
+use Exception;
 use Laminas\Db\Adapter\Adapter;
-use LaminasMicroscope\Utility\FormatUtility;
+use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
+use LaminasMicroscope\Utility\FormatUtility;
 
-class PDOCollector extends DataCollector implements Renderable, CollectorInterface
+use function array_filter;
+use function count;
+use function method_exists;
+use function preg_replace;
+use function strtolower;
+use function trim;
+
+class PDOCollector extends DataCollector implements Renderable, AssetProvider, CollectorInterface
 {
     private ServiceManager $serviceManager;
-    private array $queries = [];
+    private array $queries     = [];
     private array $connections = [];
-    private float $totalTime = 0;
+    private float $totalTime   = 0;
 
     public function __construct(ServiceManager $serviceManager)
     {
@@ -28,12 +36,14 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
     public function collect(): array
     {
         return [
-            'nb_statements' => count($this->queries),
-            'nb_failed_statements' => count(array_filter($this->queries, function($q) { return $q['is_success'] === false; })),
-            'accumulated_duration' => $this->totalTime,
+            'nb_statements'            => count($this->queries),
+            'nb_failed_statements'     => count(array_filter($this->queries, function ($q) {
+                return $q['is_success'] === false;
+            })),
+            'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000), // Convert ms to seconds
-            'statements' => $this->queries,
-            'connections' => $this->connections,
+            'statements'               => $this->queries,
+            'connections'              => $this->connections,
         ];
     }
 
@@ -44,9 +54,18 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
 
     public function getWidgets(): array
     {
-        // Return empty array since we're using custom dashboard UI
-        // instead of PhpDebugBar's built-in widgets
-        return [];
+        return [
+            'pdo' => [
+                'icon'    => 'database',
+                'widget'  => 'PhpDebugBar.Widgets.SQLQueriesWidget',
+                'map'     => 'pdo',
+                'default' => '[]',
+            ],
+            'pdo:badge' => [
+                'map'     => 'pdo.nb_statements',
+                'default' => 0,
+            ],
+        ];
     }
 
     private function setupQueryLogging(): void
@@ -56,7 +75,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
             if ($this->hasDatabaseConfiguration()) {
                 $this->hookIntoDbAdapters();
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             // Silently fail if no DB adapters are configured
         }
     }
@@ -65,7 +84,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
     {
         try {
             // Try to get common DB adapter service names
-            $adapterNames = [Adapter::class, 'db', 'dbAdapter']; 
+            $adapterNames = [Adapter::class, 'db', 'dbAdapter'];
 
             foreach ($adapterNames as $adapterName) {
                 // Use more careful service checking to avoid triggering factories
@@ -81,7 +100,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     continue;
                 }
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             // Continue silently if no adapters found
         }
     }
@@ -90,10 +109,10 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
     {
         try {
             if (method_exists($adapter, 'getPlatform')) {
-                $platform = $adapter->getPlatform();
+                $platform            = $adapter->getPlatform();
                 $this->connections[] = [
-                    'name' => get_class($adapter),
-                    'driver' => get_class($platform),
+                    'name'   => $adapter::class,
+                    'driver' => $platform::class,
                     'params' => $this->getConnectionParams($adapter),
                 ];
             }
@@ -105,7 +124,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     $this->collectFromProfiler($profiler);
                 }
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             // Continue silently
         }
     }
@@ -125,7 +144,7 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
                     }
                 }
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             // Continue silently
         }
 
@@ -138,16 +157,16 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
             $profiles = $profiler->getProfiles();
             foreach ($profiles as $profile) {
                 $this->addQuery([
-                    'sql' => $profile->getSql(),
-                    'params' => $profile->getParams() ?? [],
-                    'duration' => $profile->getElapsedTime() * 1000, // Convert to milliseconds
-                    'memory' => 0,
-                    'is_success' => true,
-                    'error_code' => null,
+                    'sql'           => $profile->getSql(),
+                    'params'        => $profile->getParams() ?? [],
+                    'duration'      => $profile->getElapsedTime() * 1000, // Convert to milliseconds
+                    'memory'        => 0,
+                    'is_success'    => true,
+                    'error_code'    => null,
                     'error_message' => null,
                 ]);
             }
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             // Continue silently
         }
     }
@@ -155,16 +174,16 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
     public function addQuery(array $query): void
     {
         $query['duration_str'] = FormatUtility::formatDuration($query['duration'] / 1000); // Convert ms to seconds
-        $query['memory_str'] = FormatUtility::formatBytes($query['memory']);
+        $query['memory_str']   = FormatUtility::formatBytes($query['memory']);
 
         // Detect slow queries
-        $slowThreshold = 100; // 100ms
+        $slowThreshold    = 100; // 100ms
         $query['is_slow'] = $query['duration'] > $slowThreshold;
 
         // Detect duplicate queries
         $query['is_duplicate'] = $this->isDuplicateQuery($query['sql']);
 
-        $this->queries[] = $query;
+        $this->queries[]  = $query;
         $this->totalTime += $query['duration'];
     }
 
@@ -199,18 +218,25 @@ class PDOCollector extends DataCollector implements Renderable, CollectorInterfa
             // Get the full config array to check for database configuration
             if ($this->serviceManager->has('config')) {
                 $config = $this->serviceManager->get('config');
-                
+
                 // Check for common database configuration keys
-                return isset($config['db']) || 
+                return isset($config['db']) ||
                        isset($config['database']) ||
                        isset($config['databases']) ||
                        isset($config['adapters']);
             }
-            
+
             return false;
         } catch (Exception $e) {
             return false;
         }
     }
 
+    public function getAssets(): array
+    {
+        return [
+            'css' => 'widgets/sqlqueries/widget.css',
+            'js'  => 'widgets/sqlqueries/widget.js',
+        ];
+    }
 }

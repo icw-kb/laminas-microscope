@@ -4,12 +4,26 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar\Collectors;
 
-use DebugBar\DataCollector\DataCollector; 
-use DebugBar\DataCollector\Renderable; 
-use Laminas\ServiceManager\ServiceManager; 
+use DebugBar\DataCollector\DataCollector;
+use DebugBar\DataCollector\Renderable;
+use Exception;
+use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
-use Exception; 
-use ReflectionClass; 
+use ReflectionClass;
+
+use function array_keys;
+use function count;
+use function date_default_timezone_get;
+use function dirname;
+use function error_reporting;
+use function ini_get;
+use function is_array;
+use function is_string;
+use function strpos;
+use function strtolower;
+
+use const PHP_SAPI;
+use const PHP_VERSION;
 
 class LaminasConfigCollector extends DataCollector implements Renderable, CollectorInterface
 {
@@ -24,15 +38,15 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     {
         $data = [
             'application_config' => $this->getApplicationConfig(),
-            'module_config' => $this->getModuleConfig(),
-            'service_manager' => $this->getServiceManagerConfig(),
-            'php_config' => $this->getPhpConfig(),
-            'environment' => $this->getEnvironmentData(),
+            'module_config'      => $this->getModuleConfig(),
+            'service_manager'    => $this->getServiceManagerConfig(),
+            'php_config'         => $this->getPhpConfig(),
+            'environment'        => $this->getEnvironmentData(),
         ];
 
         return [
             'config' => $data,
-            'count' => count($data),
+            'count'  => count($data),
         ];
     }
 
@@ -43,9 +57,18 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
 
     public function getWidgets(): array
     {
-        // Return empty array since we're using custom dashboard UI
-        // instead of PhpDebugBar's built-in widgets
-        return [];
+        return [
+            'config' => [
+                'icon'    => 'cog',
+                'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
+                'map'     => 'config',
+                'default' => '{}',
+            ],
+            'config:badge' => [
+                'map'     => 'config.count',
+                'default' => 0,
+            ],
+        ];
     }
 
     private function getApplicationConfig(): array
@@ -53,7 +76,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         try {
             $config = $this->serviceManager->get('config');
             return $this->sanitizeConfig($config);
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
@@ -67,13 +90,13 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
             $modules = [];
             foreach ($loadedModules as $name => $module) {
                 $modules[$name] = [
-                    'class' => get_class($module),
-                    'path' => $this->getModulePath($module),
+                    'class' => $module::class,
+                    'path'  => $this->getModulePath($module),
                 ];
             }
 
             return $modules;
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
@@ -83,12 +106,12 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         try {
             $config = $this->serviceManager->get('config');
             return [
-                'services' => array_keys($config['service_manager']['services'] ?? []),
-                'factories' => array_keys($config['service_manager']['factories'] ?? []),
+                'services'   => array_keys($config['service_manager']['services'] ?? []),
+                'factories'  => array_keys($config['service_manager']['factories'] ?? []),
                 'invokables' => array_keys($config['service_manager']['invokables'] ?? []),
-                'aliases' => $config['service_manager']['aliases'] ?? [],
+                'aliases'    => $config['service_manager']['aliases'] ?? [],
             ];
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
@@ -96,15 +119,15 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     private function getPhpConfig(): array
     {
         return [
-            'version' => PHP_VERSION,
-            'sapi' => PHP_SAPI,
-            'memory_limit' => ini_get('memory_limit'),
+            'version'            => PHP_VERSION,
+            'sapi'               => PHP_SAPI,
+            'memory_limit'       => ini_get('memory_limit'),
             'max_execution_time' => ini_get('max_execution_time'),
-            'error_reporting' => error_reporting(),
-            'display_errors' => ini_get('display_errors'),
-            'log_errors' => ini_get('log_errors'),
-            'error_log' => ini_get('error_log'),
-            'timezone' => date_default_timezone_get(),
+            'error_reporting'    => error_reporting(),
+            'display_errors'     => ini_get('display_errors'),
+            'log_errors'         => ini_get('log_errors'),
+            'error_log'          => ini_get('error_log'),
+            'timezone'           => date_default_timezone_get(),
         ];
     }
 
@@ -112,9 +135,9 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     {
         return [
             'APPLICATION_ENV' => $_ENV['APPLICATION_ENV'] ?? 'unknown',
-            'REQUEST_METHOD' => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
-            'REQUEST_URI' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-            'HTTP_HOST' => $_SERVER['HTTP_HOST'] ?? 'unknown',
+            'REQUEST_METHOD'  => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+            'REQUEST_URI'     => $_SERVER['REQUEST_URI'] ?? 'unknown',
+            'HTTP_HOST'       => $_SERVER['HTTP_HOST'] ?? 'unknown',
             'SERVER_SOFTWARE' => $_SERVER['SERVER_SOFTWARE'] ?? 'unknown',
         ];
     }
@@ -122,9 +145,9 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     private function getModulePath($module): string
     {
         try {
-            $reflection = new ReflectionClass($module); 
+            $reflection = new ReflectionClass($module);
             return dirname($reflection->getFileName());
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             return 'unknown';
         }
     }

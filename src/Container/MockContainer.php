@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Container;
 
-use Psr\Container\ContainerInterface; 
-use Psr\Container\NotFoundExceptionInterface; 
-use Exception; 
+use Exception;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Mock container for testing and fallback scenarios
@@ -17,8 +17,9 @@ class MockContainer implements ContainerInterface
 
     public function get(string $id)
     {
-        if (!$this->has($id)) {
-            throw new class("Service '{$id}' not found") extends Exception implements NotFoundExceptionInterface {}; 
+        if (! $this->has($id)) {
+            throw new class ("Service '{$id}' not found") extends Exception implements NotFoundExceptionInterface {
+            };
         }
 
         return $this->services[$id];

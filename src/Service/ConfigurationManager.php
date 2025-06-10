@@ -6,6 +6,10 @@ namespace LaminasMicroscope\Service;
 
 use LaminasMicroscope\Config\ConfigurationService;
 
+use function error_log;
+use function is_dir;
+use function mkdir;
+
 /**
  * Configuration Manager Service
  *
@@ -65,7 +69,7 @@ class ConfigurationManager
 
         // Check storage path is writable
         $storagePath = $this->configService->getStoragePath();
-        if (!is_dir($storagePath) && !mkdir($storagePath, 0755, true)) {
+        if (! is_dir($storagePath) && ! mkdir($storagePath, 0755, true)) {
             $errors[] = "Storage path '{$storagePath}' is not writable";
         }
 
@@ -91,26 +95,26 @@ class ConfigurationManager
     {
         return [
             'laminas_microscope' => [
-                'enabled' => true,
+                'enabled'     => true,
                 'environment' => 'development',
-                'debug_mode' => false,
-                'collectors' => ['time', 'memory', 'pdo'],
-                'storage' => [
-                    'path' => 'data/laminas-microscope',
-                    'retention_days' => 30,
-                    'max_file_size' => 50 * 1024 * 1024, // 50MB
+                'debug_mode'  => false,
+                'collectors'  => ['time', 'memory', 'pdo'],
+                'storage'     => [
+                    'path'               => 'data/laminas-microscope',
+                    'retention_days'     => 30,
+                    'max_file_size'      => 50 * 1024 * 1024, // 50MB
                     'allowed_extensions' => ['json', 'log', 'txt', 'xml'],
                 ],
-                'components' => [
-                    'whoops' => [
-                        'enabled' => true,
+                'components'  => [
+                    'whoops'     => [
+                        'enabled'            => true,
                         'show_in_production' => false,
                     ],
-                    'debug_bar' => [
+                    'debug_bar'  => [
                         'enabled' => true,
                     ],
                     'microscope' => [
-                        'enabled' => true,
+                        'enabled'      => true,
                         'auto_analyze' => false,
                     ],
                 ],
@@ -168,9 +172,6 @@ class ConfigurationManager
 
     /**
      * Load a configuration profile
-     *
-     * @param string $profileName
-     * @return bool
      */
     public function loadProfile(string $profileName): bool
     {
@@ -182,9 +183,6 @@ class ConfigurationManager
 
     /**
      * Switch the current environment
-     *
-     * @param string $environment
-     * @return bool
      */
     public function switchEnvironment(string $environment): bool
     {

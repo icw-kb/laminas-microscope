@@ -4,36 +4,49 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar;
 
-use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\Contracts\HandlerInterface;
-use LaminasMicroscope\Utility\FormatUtility;
-use DebugBar\StandardDebugBar;
-use DebugBar\DataCollector\TimeDataCollector;
 use DebugBar\DataCollector\MemoryCollector;
 use DebugBar\DataCollector\MessagesCollector;
 use DebugBar\DataCollector\PhpInfoCollector;
-use Laminas\Mvc\MvcEvent;
-use Laminas\Http\Response;
-use Laminas\View\Model\ViewModel;
-use Laminas\View\ViewManager;
-use Laminas\View\View;
-use Laminas\View\Resolver\TemplateMapResolver;
-use Laminas\View\Resolver\TemplatePathStack;
-use Laminas\EventManager\EventManagerInterface;
-use Exception;
-use Laminas\ServiceManager\ServiceManager;
-use Psr\Container\ContainerInterface;
-use Laminas\View\Renderer\RendererInterface;
+use DebugBar\DataCollector\TimeDataCollector;
+use DebugBar\DebugBar;
 use DebugBar\JavascriptRenderer;
+use DebugBar\StandardDebugBar;
+use Exception;
+use Laminas\Http\Response;
+use Laminas\Mvc\MvcEvent;
 use LaminasMicroscope\Collector\CollectorRegistry;
+use LaminasMicroscope\Config\ConfigurationService;
+use LaminasMicroscope\Contracts\HandlerInterface;
+use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
+use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
+use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\Registry;
+use LaminasMicroscope\Utility\FormatUtility;
+use Psr\Container\ContainerInterface;
+
+use function array_keys;
+use function array_merge;
+use function class_exists;
+use function error_log;
+use function memory_get_peak_usage;
+use function memory_get_usage;
+use function method_exists;
+use function preg_replace;
+use function round;
+use function stripos;
+use function strlen;
+use function strripos;
+use function strtolower;
+use function substr;
+use function trim;
 
 /**
  * Handler for DebugBar integration
  */
 class DebugBarHandler implements HandlerInterface
 {
-    private ?StandardDebugBar $debugBar = null;
-    private bool $initialized = false;
+    private ?DebugBar $debugBar = null;
+    private bool $initialized           = false;
     private ContainerInterface $container;
     private CollectorRegistry $collectorRegistry;
     private ?JavascriptRenderer $renderer = null;
@@ -43,7 +56,7 @@ class DebugBarHandler implements HandlerInterface
         ContainerInterface $container,
         CollectorRegistry $collectorRegistry
     ) {
-        $this->container = $container;
+        $this->container         = $container;
         $this->collectorRegistry = $collectorRegistry;
     }
 
@@ -52,21 +65,14 @@ class DebugBarHandler implements HandlerInterface
      */
     public function isEnabled(): bool
     {
-
         $microscopeEnabled = $this->configService->isEnabled(); // Check global enabled status
 
-        if (!$microscopeEnabled) {
+        if (! $microscopeEnabled) {
             return false;
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        $componentEnabled = (bool) ($config['enabled'] ?? false);
-
-
-        $finalEnabled = $componentEnabled; // Debug Bar is enabled if global is enabled AND component is enabled
-
-
-        return $finalEnabled;
+        return (bool) ($config['enabled'] ?? false);
     }
 
     /**
@@ -74,39 +80,37 @@ class DebugBarHandler implements HandlerInterface
      */
     public function initialize(): void
     {
-
-        $config = $this->configService->getComponentConfig('debug_bar');
+        $config         = $this->configService->getComponentConfig('debug_bar');
         $collectorsOnly = (bool) ($config['collectors_only'] ?? false);
 
-        if ($this->initialized || (!$this->isEnabled() && !$collectorsOnly)) {
+        if ($this->initialized || (! $this->isEnabled() && ! $collectorsOnly)) {
             return;
         }
 
-        $this->debugBar = new StandardDebugBar();
+        // Create DebugBar without default collectors to have full control
+        $this->debugBar = new \DebugBar\DebugBar();
         $this->setupCollectors();
 
-
-
-        if (!$collectorsOnly) {
+        if (! $collectorsOnly) {
             $this->renderer = $this->debugBar->getJavascriptRenderer();
-            $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources';
+            $baseUrl        = $config['base_url'] ?? '/_debug/debugbar/resources';
             if ($this->renderer && method_exists($this->renderer, 'setBaseUrl')) {
                 $this->renderer->setBaseUrl($baseUrl);
             }
         }
 
         $this->initialized = true;
-        if (class_exists(\LaminasMicroscope\Registry::class)) {
-            \LaminasMicroscope\Registry::setDebugBar($this);
+        if (class_exists(Registry::class)) {
+            Registry::setDebugBar($this);
         }
     }
 
     /**
      * Get the DebugBar instance
      */
-    public function getDebugBar(): ?StandardDebugBar
+    public function getDebugBar(): ?DebugBar
     {
-        if (!$this->initialized) {
+        if (! $this->initialized) {
             $this->initialize();
         }
 
@@ -118,7 +122,7 @@ class DebugBarHandler implements HandlerInterface
      */
     public function getRenderer(): ?JavascriptRenderer
     {
-        if (!$this->initialized) {
+        if (! $this->initialized) {
             $this->initialize();
         }
         return $this->renderer;
@@ -198,7 +202,7 @@ class DebugBarHandler implements HandlerInterface
     public function getData(): array
     {
         $debugBar = $this->getDebugBar();
-        if (!$debugBar) {
+        if (! $debugBar) {
             return [];
         }
 
@@ -211,12 +215,11 @@ class DebugBarHandler implements HandlerInterface
     public function renderHtml(): string
     {
         $renderer = $this->getRenderer();
-        if (!$renderer) {
+        if (! $renderer) {
             return '';
         }
 
-        $html = $renderer->renderHead() . $renderer->render();
-        return $html;
+        return $renderer->renderHead() . $renderer->render();
     }
 
     /**
@@ -225,23 +228,23 @@ class DebugBarHandler implements HandlerInterface
     public function getAssets(): array
     {
         $renderer = $this->getRenderer();
-        if (!$renderer) {
+        if (! $renderer) {
             return ['css' => [], 'js' => []];
         }
 
         $assets = [
             'css' => [],
-            'js' => [],
+            'js'  => [],
         ];
 
         try {
             $headOutput = $renderer->renderHead();
-            if (!empty($headOutput)) {
+            if (! empty($headOutput)) {
                 $assets['css'][] = 'embedded';
             }
 
             $jsOutput = $renderer->render();
-            if (!empty($jsOutput)) {
+            if (! empty($jsOutput)) {
                 $assets['js'][] = 'embedded';
             }
 
@@ -258,14 +261,13 @@ class DebugBarHandler implements HandlerInterface
             if (method_exists($renderer, 'getCssAssets')) {
                 $assets['css'] = array_merge($assets['css'], $renderer->getCssAssets());
             }
-            if (method_exists( $renderer, 'getJsAssets')) {
+            if (method_exists($renderer, 'getJsAssets')) {
                 $assets['js'] = array_merge($assets['js'], $renderer->getJsAssets());
             }
-
         } catch (Exception $e) {
             $assets = [
                 'css' => ['debugbar-embedded'],
-                'js' => ['debugbar-embedded'],
+                'js'  => ['debugbar-embedded'],
             ];
         }
 
@@ -277,21 +279,19 @@ class DebugBarHandler implements HandlerInterface
      */
     public function shouldDisplay(): bool
     {
-
         $config = $this->configService->getComponentConfig('debug_bar');
-        if (($config['collectors_only'] ?? false)) {
+        if ($config['collectors_only'] ?? false) {
             return false;
         }
 
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return false;
         }
 
         $environment = $this->configService->getEnvironment();
 
         if ($environment === 'production') {
-            $showInProduction = (bool) ($config['show_in_production'] ?? false);
-            return $showInProduction;
+            return (bool) ($config['show_in_production'] ?? false);
         }
 
         return true;
@@ -302,14 +302,13 @@ class DebugBarHandler implements HandlerInterface
      */
     private function setupCollectors(): void
     {
-        if (!$this->debugBar) {
+        if (! $this->debugBar) {
             return;
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        // Prioritize component-specific collectors over global ones
-        $collectors = $config['collectors'] ?? $this->configService->get('laminas_microscope.collectors', ['time', 'memory', 'messages']);
-
+        // Use component-specific collectors only
+        $collectors = $config['collectors'] ?? ['time', 'memory', 'messages'];
 
         foreach ($collectors as $collectorName) {
             $this->addCollector($collectorName);
@@ -321,18 +320,18 @@ class DebugBarHandler implements HandlerInterface
      */
     private function addCollector(string $name): void
     {
-        if (!$this->debugBar) {
+        if (! $this->debugBar) {
             return;
         }
         $existing = $this->collectorRegistry->get($name);
-        if ($existing && !$this->debugBar->hasCollector($existing->getName())) {
+        if ($existing && ! $this->debugBar->hasCollector($existing->getName())) {
             $this->debugBar->addCollector($existing);
             return;
         }
 
         switch ($name) {
             case 'time':
-                if (!$this->debugBar->hasCollector('time')) {
+                if (! $this->debugBar->hasCollector('time')) {
                     try {
                         $collector = new TimeDataCollector();
                         $this->debugBar->addCollector($collector);
@@ -349,7 +348,7 @@ class DebugBarHandler implements HandlerInterface
                 break;
 
             case 'memory':
-                if (!$this->debugBar->hasCollector('memory')) {
+                if (! $this->debugBar->hasCollector('memory')) {
                     try {
                         $collector = new MemoryCollector();
                         $this->debugBar->addCollector($collector);
@@ -366,7 +365,7 @@ class DebugBarHandler implements HandlerInterface
                 break;
 
             case 'messages':
-                if (!$this->debugBar->hasCollector('messages')) {
+                if (! $this->debugBar->hasCollector('messages')) {
                     try {
                         $collector = new MessagesCollector();
                         $this->debugBar->addCollector($collector);
@@ -385,7 +384,7 @@ class DebugBarHandler implements HandlerInterface
             case 'phpinfo':
             case 'php':
                 $customKey = 'microscope_php';
-                if (!$this->debugBar->hasCollector($customKey)) {
+                if (! $this->debugBar->hasCollector($customKey)) {
                     try {
                         $collector = new PhpInfoCollector();
                         $this->debugBar->addCollector($collector, $customKey);
@@ -403,8 +402,8 @@ class DebugBarHandler implements HandlerInterface
 
             case 'config':
                 try {
-                    $configCollector = $this->container->get(\LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector::class);
-                    if (!$this->debugBar->hasCollector($configCollector->getName())) {
+                    $configCollector = $this->container->get(LaminasConfigCollector::class);
+                    if ($configCollector && ! $this->debugBar->hasCollector($configCollector->getName())) {
                         $this->debugBar->addCollector($configCollector);
                         $this->collectorRegistry->register($configCollector);
                     }
@@ -415,8 +414,8 @@ class DebugBarHandler implements HandlerInterface
 
             case 'pdo':
                 try {
-                    $pdoCollector = $this->container->get(\LaminasMicroscope\DebugBar\Collectors\PDOCollector::class);
-                    if (!$this->debugBar->hasCollector($pdoCollector->getName())) {
+                    $pdoCollector = $this->container->get(PDOCollector::class);
+                    if ($pdoCollector && ! $this->debugBar->hasCollector($pdoCollector->getName())) {
                         $this->debugBar->addCollector($pdoCollector);
                         $this->collectorRegistry->register($pdoCollector);
                     }
@@ -429,8 +428,8 @@ class DebugBarHandler implements HandlerInterface
 
             case 'request':
                 try {
-                    $requestCollector = $this->container->get(\LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector::class);
-                    if (!$this->debugBar->hasCollector($requestCollector->getName())) {
+                    $requestCollector = $this->container->get(LaminasRequestCollector::class);
+                    if ($requestCollector && ! $this->debugBar->hasCollector($requestCollector->getName())) {
                         $this->debugBar->addCollector($requestCollector);
                         $this->collectorRegistry->register($requestCollector);
                     }
@@ -450,11 +449,10 @@ class DebugBarHandler implements HandlerInterface
     public function getCollectors(): array
     {
         $debugBar = $this->getDebugBar();
-        if (!$debugBar) {
+        if (! $debugBar) {
             return [];
         }
-        $collectors = array_keys($debugBar->getCollectors());
-        return $collectors;
+        return array_keys($debugBar->getCollectors());
     }
 
     /**
@@ -463,9 +461,11 @@ class DebugBarHandler implements HandlerInterface
     public function reset(): void
     {
         if ($this->debugBar) {
-            $this->debugBar = null;
-            $this->renderer = null;
+            $this->debugBar    = null;
+            $this->renderer    = null;
             $this->initialized = false;
+            // Clear registry to ensure fresh collectors on re-initialization
+            $this->collectorRegistry->clear();
         } else {
         }
     }
@@ -484,16 +484,14 @@ class DebugBarHandler implements HandlerInterface
     public function getMemoryUsage(): array
     {
         $current = memory_get_usage(true);
-        $peak = memory_get_peak_usage(true);
-        $usage = [
-            'current' => $current,
-            'peak' => $peak,
+        $peak    = memory_get_peak_usage(true);
+        return [
+            'current'           => $current,
+            'peak'              => $peak,
             'formatted_current' => FormatUtility::formatBytes($current),
-            'formatted_peak' => FormatUtility::formatBytes($peak),
+            'formatted_peak'    => FormatUtility::formatBytes($peak),
         ];
-        return $usage;
     }
-
 
     /**
      * Get the base URL for debug bar assets
@@ -501,18 +499,16 @@ class DebugBarHandler implements HandlerInterface
     public function getBaseUrl(): string
     {
         $renderer = $this->getRenderer();
-        if (!$renderer) {
+        if (! $renderer) {
             return '';
         }
 
         if (method_exists($renderer, 'getBaseUrl')) {
-             $baseUrl = $renderer->getBaseUrl();
-            return $baseUrl;
+             return $renderer->getBaseUrl();
         }
 
         $config = $this->configService->getComponentConfig('debug_bar');
-        $baseUrl = $config['base_url'] ?? '/_debug/debugbar/resources'; // Default to the asset route
-        return $baseUrl;
+        return $config['base_url'] ?? '/_debug/debugbar/resources';
     }
 
     /**
@@ -533,12 +529,11 @@ class DebugBarHandler implements HandlerInterface
     public function renderHead(): string
     {
         $renderer = $this->getRenderer();
-        if (!$renderer) {
+        if (! $renderer) {
             return '';
         }
 
-        $head = $renderer->renderHead();
-        return $head;
+        return $renderer->renderHead();
     }
 
     /**
@@ -547,12 +542,11 @@ class DebugBarHandler implements HandlerInterface
     public function renderContent(): string
     {
         $renderer = $this->getRenderer();
-        if (!$renderer) {
+        if (! $renderer) {
             return '';
         }
 
-        $content = $renderer->render();
-        return $content;
+        return $renderer->render();
     }
 
     /**
@@ -560,21 +554,19 @@ class DebugBarHandler implements HandlerInterface
      */
     public static function injectDebugBar(MvcEvent $e): void
     {
-
         $serviceManager = $e->getApplication()->getServiceManager();
-        $handler = $serviceManager->get(self::class);
+        $handler        = $serviceManager->get(self::class);
 
-        if (!$handler->shouldDisplay()) {
+        if (! $handler->shouldDisplay()) {
              return;
         }
 
         $response = $e->getResponse();
-        $result = $e->getResult();
+        $result   = $e->getResult();
 
-        if (!$response || !($response instanceof Response)) {
+        if (! $response || ! $response instanceof Response) {
              return;
         }
-
 
         // Also check if there is content to inject into
         $content = $response->getContent();
@@ -583,7 +575,7 @@ class DebugBarHandler implements HandlerInterface
         }
 
         $renderer = $handler->getRenderer();
-        if (!$renderer) {
+        if (! $renderer) {
              return;
         }
 
@@ -593,14 +585,13 @@ class DebugBarHandler implements HandlerInterface
         $headPos = stripos($content, '</head>');
         $bodyPos = strripos($content, '</body>');
 
-
         // Inject head content before </head>
         if ($headPos !== false) {
             $content = substr($content, 0, $headPos) . $headContent . substr($content, $headPos);
              // Adjust bodyPos if head content was injected before it
-             if ($bodyPos !== false && $bodyPos > $headPos) {
-                 $bodyPos += strlen($headContent);
-             }
+            if ($bodyPos !== false && $bodyPos > $headPos) {
+                $bodyPos += strlen($headContent);
+            }
         } else {
         }
 
@@ -611,7 +602,6 @@ class DebugBarHandler implements HandlerInterface
         }
 
         $response->setContent($content);
-
     }
 
     /**

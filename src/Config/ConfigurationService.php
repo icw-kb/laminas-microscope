@@ -7,6 +7,14 @@ namespace LaminasMicroscope\Config;
 use LaminasMicroscope\Config\Validator\ConfigurationValidatorFactory;
 use LaminasMicroscope\Exception\ConfigurationException;
 
+use function array_key_exists;
+use function array_map;
+use function array_merge_recursive;
+use function error_log;
+use function explode;
+use function implode;
+use function is_array;
+
 /**
  * Service for managing Laminas Microscope configuration
  */
@@ -26,11 +34,11 @@ class ConfigurationService
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        $keys = explode('.', $key);
+        $keys  = explode('.', $key);
         $value = $this->config;
 
         foreach ($keys as $k) {
-            if (!is_array($value) || !array_key_exists($k, $value)) {
+            if (! is_array($value) || ! array_key_exists($k, $value)) {
                 return $default;
             }
             $value = $value[$k];
@@ -44,11 +52,11 @@ class ConfigurationService
      */
     public function set(string $key, mixed $value): void
     {
-        $keys = explode('.', $key);
+        $keys    = explode('.', $key);
         $current = &$this->config;
 
         foreach ($keys as $k) {
-            if (!isset($current[$k]) || !is_array($current[$k])) {
+            if (! isset($current[$k]) || ! is_array($current[$k])) {
                 $current[$k] = [];
             }
             $current = &$current[$k];
@@ -62,11 +70,11 @@ class ConfigurationService
      */
     public function has(string $key): bool
     {
-        $keys = explode('.', $key);
+        $keys  = explode('.', $key);
         $value = $this->config;
 
         foreach ($keys as $k) {
-            if (!is_array($value) || !array_key_exists($k, $value)) {
+            if (! is_array($value) || ! array_key_exists($k, $value)) {
                 return false;
             }
             $value = $value[$k];
@@ -171,10 +179,10 @@ class ConfigurationService
     private function validateConfiguration(): void
     {
         $validator = ConfigurationValidatorFactory::create();
-        
-        if (!$validator->validate($this->config)) {
+
+        if (! $validator->validate($this->config)) {
             $this->validationErrors = $validator->getErrors();
-            
+
             // For now, we'll log errors but not throw exceptions to maintain backward compatibility
             // In a future version, we could make this stricter by throwing ConfigurationException
             foreach ($validator->getErrorMessages() as $error) {
@@ -204,7 +212,7 @@ class ConfigurationService
      */
     public function validateStrict(): void
     {
-        if (!$this->isValid()) {
+        if (! $this->isValid()) {
             $messages = array_map(fn($error) => $error['message'] ?? 'Unknown error', $this->validationErrors);
             throw new ConfigurationException(
                 'Configuration validation failed: ' . implode('; ', $messages),
