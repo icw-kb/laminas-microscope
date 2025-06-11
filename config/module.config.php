@@ -8,6 +8,7 @@ use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Controller\ConfigurationController;
 use LaminasMicroscope\Controller\DashboardController;
 use LaminasMicroscope\Controller\MicroscopeController;
+use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
 use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
 use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
@@ -16,6 +17,7 @@ use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\DebugBar\EventListener\QueryLogger;
 use LaminasMicroscope\Factory\AnalysisServiceFactory;
 use LaminasMicroscope\Factory\CacheManagerFactory;
+use LaminasMicroscope\Factory\CollectorFactoryFactory;
 use LaminasMicroscope\Factory\CollectorRegistryFactory;
 use LaminasMicroscope\Factory\ComponentManagerFactory;
 use LaminasMicroscope\Factory\ConfigurationManagerFactory;
@@ -183,6 +185,7 @@ return [
             ConfigurationManager::class => ConfigurationManagerFactory::class,
             AnalysisService::class      => AnalysisServiceFactory::class,
             CollectorRegistry::class    => CollectorRegistryFactory::class,
+            CollectorFactory::class     => CollectorFactoryFactory::class,
             WhoopsHandler::class        => WhoopsHandlerFactory::class,
             DebugBarHandler::class      => DebugBarHandlerFactory::class,
             MicroscopeHandler::class    => MicroscopeHandlerFactory::class,

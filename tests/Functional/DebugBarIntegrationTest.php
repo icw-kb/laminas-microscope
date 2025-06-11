@@ -6,6 +6,7 @@ namespace LaminasMicroscopeTest\Functional;
 
 use PHPUnit\Framework\TestCase;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
+use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\Config\ConfigurationService;
 
 class DebugBarIntegrationTest extends TestCase
@@ -14,6 +15,7 @@ class DebugBarIntegrationTest extends TestCase
     private ConfigurationService $configService;
     private object $container;
     private \LaminasMicroscope\Collector\CollectorRegistry $registry;
+    private CollectorFactory $collectorFactory;
 
     protected function setUp(): void
     {
@@ -34,7 +36,8 @@ class DebugBarIntegrationTest extends TestCase
         $this->configService = new ConfigurationService($config);
         $this->container = \TestHelper::createMockServiceManager();
         $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
-        $this->debugBar = new DebugBarHandler($this->configService, $this->container, $this->registry);
+        $this->collectorFactory = new CollectorFactory($this->container);
+        $this->debugBar = new DebugBarHandler($this->configService, $this->container, $this->registry, $this->collectorFactory);
     }
 
     protected function tearDown(): void
@@ -168,7 +171,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $disabledConfigService = new ConfigurationService($disabledConfig);
-        $disabledDebugBar = new DebugBarHandler($disabledConfigService, $this->container, $this->registry);
+        $disabledDebugBar = new DebugBarHandler($disabledConfigService, $this->container, $this->registry, $this->collectorFactory);
         
         $this->assertFalse($disabledDebugBar->isEnabled());
         
@@ -272,7 +275,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $prodConfigService = new ConfigurationService($prodConfig);
-        $prodDebugBar = new DebugBarHandler($prodConfigService, $this->container, $this->registry);
+        $prodDebugBar = new DebugBarHandler($prodConfigService, $this->container, $this->registry, $this->collectorFactory);
         
         $this->assertFalse($prodDebugBar->shouldDisplay());
         
@@ -291,7 +294,7 @@ class DebugBarIntegrationTest extends TestCase
         ]);
         
         $prodEnabledConfigService = new ConfigurationService($prodEnabledConfig);
-        $prodEnabledDebugBar = new DebugBarHandler($prodEnabledConfigService, $this->container, $this->registry);
+        $prodEnabledDebugBar = new DebugBarHandler($prodEnabledConfigService, $this->container, $this->registry, $this->collectorFactory);
         
         $this->assertTrue($prodEnabledDebugBar->shouldDisplay());
     }
@@ -334,31 +337,29 @@ class DebugBarIntegrationTest extends TestCase
             'laminas_microscope' => [
                 'enabled' => true,
                 'environment' => 'testing',
-                'collectors' => ['time', 'memory', 'messages', 'phpinfo'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
+                        'collectors' => ['time', 'memory', 'messages', 'phpinfo'],
                     ],
                 ],
             ],
         ]);
         
         $configService = new ConfigurationService($config);
-        $debugBar = new DebugBarHandler($configService, $this->container, $this->registry);
+        $debugBar = new DebugBarHandler($configService, $this->container, $this->registry, $this->collectorFactory);
         
         if (!$debugBar->isEnabled()) {
             $this->markTestSkipped('Debug bar is not enabled');
         }
 
         // Initialize the debug bar to trigger collector setup
+        $debugBar->initialize();
         $debugBarInstance = $debugBar->getDebugBar();
         $this->assertNotNull($debugBarInstance);
 
         $collectors = $debugBar->getCollectors();
         $this->assertIsArray($collectors);
-        
-        // Debug: Let's see what collectors actually exist
-        $this->addToAssertionCount(1); // Prevent risky test warning
         
         // The test should pass if no exception is thrown during initialization
         // and we have at least the basic collectors
@@ -366,18 +367,9 @@ class DebugBarIntegrationTest extends TestCase
         $this->assertContains('memory', $collectors);
         $this->assertContains('messages', $collectors);
         
-        // StandardDebugBar already includes a 'php' collector by default
-        // Our custom collector might not be added due to conflicts, but that's OK
-        // The important thing is that the app doesn't crash
-        $this->assertTrue(true, 'DebugBar initialized successfully with phpinfo config');
-        
-        // If microscope_php collector was successfully added, verify it
-        if (in_array('microscope_php', $collectors)) {
-            $this->assertContains('microscope_php', $collectors);
-        } else {
-            // It's OK if it wasn't added due to conflicts - at least we have the built-in 'php' collector
-            $this->assertContains('php', $collectors, 'Should have either microscope_php or built-in php collector');
-        }
+        // When 'phpinfo' is configured, the PhpInfoCollector is added
+        // It registers itself as 'php' (that's its getName() return value)
+        $this->assertContains('php', $collectors, 'PhpInfo collector should be registered as php');
     }
 
     public function testDebugBarHandlesPhpInfoCollectorGracefully(): void
@@ -387,22 +379,25 @@ class DebugBarIntegrationTest extends TestCase
             'laminas_microscope' => [
                 'enabled' => true,
                 'environment' => 'testing',
-                'collectors' => ['phpinfo'],
                 'components' => [
                     'debug_bar' => [
                         'enabled' => true,
+                        'collectors' => ['phpinfo'],
                     ],
                 ],
             ],
         ]);
         
         $configService = new ConfigurationService($config);
-        $debugBar = new DebugBarHandler($configService, $this->container, $this->registry);
+        $debugBar = new DebugBarHandler($configService, $this->container, $this->registry, $this->collectorFactory);
         
         if (!$debugBar->isEnabled()) {
             $this->markTestSkipped('Debug bar is not enabled');
         }
 
+        // Initialize the debug bar to trigger collector setup
+        $debugBar->initialize();
+        
         // This should not throw an exception even if there are collector conflicts
         $debugBarInstance = $debugBar->getDebugBar();
         $this->assertNotNull($debugBarInstance);
@@ -413,8 +408,8 @@ class DebugBarIntegrationTest extends TestCase
         // Should have at least some collectors (either built-in or custom)
         $this->assertGreaterThan(0, count($collectors));
         
-        // Should have either our custom collector or the built-in php collector
-        $hasPhpCollector = in_array('microscope_php', $collectors) || in_array('php', $collectors);
-        $this->assertTrue($hasPhpCollector, 'Should have some form of PHP info collector');
+        // When 'phpinfo' is configured, the PhpInfoCollector is added
+        // It registers itself as 'php' (that's its getName() return value)
+        $this->assertContains('php', $collectors, 'PhpInfo collector should be registered as php');
     }
 }

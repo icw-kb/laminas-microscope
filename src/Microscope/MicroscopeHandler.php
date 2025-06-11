@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\Microscope;
 
-use Exception;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Router\RouteMatch;
 use LaminasMicroscope\Collector\CollectorRegistry;
@@ -534,5 +533,4 @@ class MicroscopeHandler implements HandlerInterface
         }
         return $this->profileData['performance']['breakdown'] ?? [];
     }
-
 }

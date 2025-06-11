@@ -4,22 +4,15 @@ declare(strict_types=1);
 
 namespace LaminasMicroscope\DebugBar;
 
-use DebugBar\DataCollector\MemoryCollector;
-use DebugBar\DataCollector\MessagesCollector;
-use DebugBar\DataCollector\PhpInfoCollector;
-use DebugBar\DataCollector\TimeDataCollector;
 use DebugBar\DebugBar;
 use DebugBar\JavascriptRenderer;
-use DebugBar\StandardDebugBar;
 use Exception;
 use Laminas\Http\Response;
 use Laminas\Mvc\MvcEvent;
 use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Contracts\HandlerInterface;
-use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
-use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\Registry;
 use LaminasMicroscope\Utility\FormatUtility;
 use Psr\Container\ContainerInterface;
@@ -27,7 +20,6 @@ use Psr\Container\ContainerInterface;
 use function array_keys;
 use function array_merge;
 use function class_exists;
-use function error_log;
 use function memory_get_peak_usage;
 use function memory_get_usage;
 use function method_exists;
@@ -46,18 +38,21 @@ use function trim;
 class DebugBarHandler implements HandlerInterface
 {
     private ?DebugBar $debugBar = null;
-    private bool $initialized           = false;
+    private bool $initialized   = false;
     private ContainerInterface $container;
     private CollectorRegistry $collectorRegistry;
     private ?JavascriptRenderer $renderer = null;
+    private CollectorFactory $collectorFactory;
 
     public function __construct(
         private ConfigurationService $configService,
         ContainerInterface $container,
-        CollectorRegistry $collectorRegistry
+        CollectorRegistry $collectorRegistry,
+        CollectorFactory $collectorFactory
     ) {
         $this->container         = $container;
         $this->collectorRegistry = $collectorRegistry;
+        $this->collectorFactory  = $collectorFactory;
     }
 
     /**
@@ -88,7 +83,7 @@ class DebugBarHandler implements HandlerInterface
         }
 
         // Create DebugBar without default collectors to have full control
-        $this->debugBar = new \DebugBar\DebugBar();
+        $this->debugBar = new DebugBar();
         $this->setupCollectors();
 
         if (! $collectorsOnly) {
@@ -329,117 +324,24 @@ class DebugBarHandler implements HandlerInterface
             return;
         }
 
-        switch ($name) {
-            case 'time':
-                if (! $this->debugBar->hasCollector('time')) {
-                    try {
-                        $collector = new TimeDataCollector();
-                        $this->debugBar->addCollector($collector);
-                        $this->collectorRegistry->register($collector);
-                    } catch (Exception $e) {
-                        // Silently ignore if already exists
-                    }
-                } else {
-                    $collector = $this->debugBar->getCollector('time');
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
+        // Use CollectorFactory to create the collector
+        $collector = $this->collectorFactory->create($name);
 
-            case 'memory':
-                if (! $this->debugBar->hasCollector('memory')) {
-                    try {
-                        $collector = new MemoryCollector();
-                        $this->debugBar->addCollector($collector);
-                        $this->collectorRegistry->register($collector);
-                    } catch (Exception $e) {
-                        // Silently ignore if already exists
-                    }
-                } else {
-                    $collector = $this->debugBar->getCollector('memory');
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
+        if ($collector) {
+            // Check if collector already exists
+            $collectorName = $collector->getName();
+            if ($this->debugBar->hasCollector($collectorName)) {
+                // Collector already exists, just register it
+                $existingCollector = $this->debugBar->getCollector($collectorName);
+                if ($existingCollector) {
+                    $this->collectorRegistry->register($existingCollector);
                 }
-                break;
+                return;
+            }
 
-            case 'messages':
-                if (! $this->debugBar->hasCollector('messages')) {
-                    try {
-                        $collector = new MessagesCollector();
-                        $this->debugBar->addCollector($collector);
-                        $this->collectorRegistry->register($collector);
-                    } catch (Exception $e) {
-                        // Silently ignore if already exists
-                    }
-                } else {
-                    $collector = $this->debugBar->getCollector('messages');
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
-
-            case 'phpinfo':
-            case 'php':
-                $customKey = 'microscope_php';
-                if (! $this->debugBar->hasCollector($customKey)) {
-                    try {
-                        $collector = new PhpInfoCollector();
-                        $this->debugBar->addCollector($collector, $customKey);
-                        $this->collectorRegistry->register($collector);
-                    } catch (Exception $e) {
-                        // Silently ignore if there's still a conflict
-                    }
-                } else {
-                    $collector = $this->debugBar->getCollector($customKey);
-                    if ($collector) {
-                        $this->collectorRegistry->register($collector);
-                    }
-                }
-                break;
-
-            case 'config':
-                try {
-                    $configCollector = $this->container->get(LaminasConfigCollector::class);
-                    if ($configCollector && ! $this->debugBar->hasCollector($configCollector->getName())) {
-                        $this->debugBar->addCollector($configCollector);
-                        $this->collectorRegistry->register($configCollector);
-                    }
-                } catch (Exception $e) {
-                    // Silently ignore if service cannot be created
-                }
-                break;
-
-            case 'pdo':
-                try {
-                    $pdoCollector = $this->container->get(PDOCollector::class);
-                    if ($pdoCollector && ! $this->debugBar->hasCollector($pdoCollector->getName())) {
-                        $this->debugBar->addCollector($pdoCollector);
-                        $this->collectorRegistry->register($pdoCollector);
-                    }
-                } catch (Exception $e) {
-                    // Silently ignore if service cannot be created
-                    // This can happen if database configuration is missing
-                    error_log("LaminasMicroscope: PDO collector initialization failed - " . $e->getMessage());
-                }
-                break;
-
-            case 'request':
-                try {
-                    $requestCollector = $this->container->get(LaminasRequestCollector::class);
-                    if ($requestCollector && ! $this->debugBar->hasCollector($requestCollector->getName())) {
-                        $this->debugBar->addCollector($requestCollector);
-                        $this->collectorRegistry->register($requestCollector);
-                    }
-                } catch (Exception $e) {
-                    // Silently ignore if service cannot be created
-                }
-                break;
-
-            default:
-                break;
+            // Add new collector
+            $this->debugBar->addCollector($collector);
+            $this->collectorRegistry->register($collector);
         }
     }
 
