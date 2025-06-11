@@ -195,7 +195,23 @@ return [
             // Debug Bar Collectors
             EnhancedPDOCollector::class    => EnhancedPDOCollectorFactory::class,
             PDOCollector::class            => function (Laminas\ServiceManager\ServiceManager $container) {
-                return new PDOCollector($container);
+                // Check if database configuration exists before creating PDOCollector
+                $config      = $container->has('config') ? $container->get('config') : [];
+                $hasDbConfig = false;
+
+                if (isset($config['db']) && is_array($config['db'])) {
+                    $hasDbConfig = isset($config['db']['driver']) ||
+                                   isset($config['db']['dsn']) ||
+                                   isset($config['db']['username']);
+                }
+
+                $hasDbConfig = $hasDbConfig ||
+                              isset($config['database']) ||
+                              isset($config['databases']) ||
+                              isset($config['adapters']);
+
+                // Skip database setup if no configuration exists
+                return new PDOCollector($container, ! $hasDbConfig);
             },
             LaminasConfigCollector::class  => function (Laminas\ServiceManager\ServiceManager $container) {
                 return new LaminasConfigCollector($container);

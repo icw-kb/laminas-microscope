@@ -9,6 +9,7 @@ use Exception;
 use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Container\MockContainer;
+use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
 use LaminasMicroscope\Registry;
@@ -400,12 +401,20 @@ class ComponentManager
                     );
 
                 case 'debug_bar':
-                    // DebugBarHandler constructor signature now includes Container
+                    // DebugBarHandler constructor signature now includes Container and CollectorFactory
+                    $collectorFactory = null;
+                    if ($this->container && $this->container->has(CollectorFactory::class)) {
+                        $collectorFactory = $this->container->get(CollectorFactory::class);
+                    } else {
+                        // Create a basic CollectorFactory for testing scenarios
+                        $collectorFactory = new CollectorFactory($this->container ?? new MockContainer());
+                    }
                     return new $className(
                         $this->configService,
                         $this->container ?? new MockContainer(),
-                        $this->registry
-                    ); // Pass container and registry
+                        $this->registry,
+                        $collectorFactory
+                    ); // Pass container, registry, and collector factory
 
                 case 'whoops':
                     // WhoopsHandler constructor signature

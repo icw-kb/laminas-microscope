@@ -61,7 +61,7 @@ class ActualDisplayTest extends TestCase
         $serviceManager = new ServiceManager();
         $this->container->set(LaminasConfigCollector::class, new LaminasConfigCollector($serviceManager));
         $this->container->set(LaminasRequestCollector::class, new LaminasRequestCollector($serviceManager));
-        $this->container->set(PDOCollector::class, new PDOCollector($serviceManager));
+        $this->container->set(PDOCollector::class, new PDOCollector($serviceManager, true));
         
         $this->collectorFactory = new CollectorFactory($this->container);
     }

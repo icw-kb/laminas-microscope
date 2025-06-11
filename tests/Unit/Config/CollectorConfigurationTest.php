@@ -6,6 +6,7 @@ namespace LaminasMicroscopeTest\Unit\Config;
 
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
+use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\Microscope\MicroscopeHandler;
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Collector\CollectorRegistry;
@@ -19,6 +20,7 @@ class CollectorConfigurationTest extends BaseTestCase
     private ComponentManager|MockObject $componentManager;
     private ContainerInterface|MockObject $container;
     private CollectorRegistry $collectorRegistry;
+    private CollectorFactory|MockObject $collectorFactory;
     
     protected function setUp(): void
     {
@@ -28,6 +30,7 @@ class CollectorConfigurationTest extends BaseTestCase
         $this->componentManager = $this->createMock(ComponentManager::class);
         $this->container = $this->createMock(ContainerInterface::class);
         $this->collectorRegistry = new CollectorRegistry();
+        $this->collectorFactory = $this->createMock(CollectorFactory::class);
     }
     
     public function testDebugBarUsesComponentSpecificCollectors(): void
@@ -43,21 +46,32 @@ class CollectorConfigurationTest extends BaseTestCase
         $this->configService->method('isEnabled')
             ->willReturn(true);
             
-        // Mock PDO collector in container
+        // Mock collectors that should be created
+        $timeCollector = $this->createMock(\DebugBar\DataCollector\TimeDataCollector::class);
+        $timeCollector->method('getName')->willReturn('time');
+        
+        $memoryCollector = $this->createMock(\DebugBar\DataCollector\MemoryCollector::class);
+        $memoryCollector->method('getName')->willReturn('memory');
+        
         $pdoCollector = $this->createMock(\LaminasMicroscope\DebugBar\Collectors\PDOCollector::class);
         $pdoCollector->method('getName')->willReturn('pdo');
         
-        $this->container->method('has')
-            ->with('LaminasMicroscope\DebugBar\Collectors\PDOCollector')
-            ->willReturn(true);
-        $this->container->method('get')
-            ->with('LaminasMicroscope\DebugBar\Collectors\PDOCollector')
-            ->willReturn($pdoCollector);
+        // Mock CollectorFactory to return appropriate collectors
+        $this->collectorFactory->method('create')
+            ->willReturnCallback(function($name) use ($timeCollector, $memoryCollector, $pdoCollector) {
+                switch ($name) {
+                    case 'time': return $timeCollector;
+                    case 'memory': return $memoryCollector;
+                    case 'pdo': return $pdoCollector;
+                    default: return null;
+                }
+            });
             
         $handler = new DebugBarHandler(
             $this->configService,
             $this->container,
-            $this->collectorRegistry
+            $this->collectorRegistry,
+            $this->collectorFactory
         );
         
         $handler->initialize();
@@ -81,10 +95,32 @@ class CollectorConfigurationTest extends BaseTestCase
         $this->configService->method('isEnabled')
             ->willReturn(true);
             
+        // Mock default collectors (time, memory, messages)
+        $timeCollector = $this->createMock(\DebugBar\DataCollector\TimeDataCollector::class);
+        $timeCollector->method('getName')->willReturn('time');
+        
+        $memoryCollector = $this->createMock(\DebugBar\DataCollector\MemoryCollector::class);
+        $memoryCollector->method('getName')->willReturn('memory');
+        
+        $messagesCollector = $this->createMock(\DebugBar\DataCollector\MessagesCollector::class);
+        $messagesCollector->method('getName')->willReturn('messages');
+        
+        // Mock CollectorFactory to return default collectors
+        $this->collectorFactory->method('create')
+            ->willReturnCallback(function($name) use ($timeCollector, $memoryCollector, $messagesCollector) {
+                switch ($name) {
+                    case 'time': return $timeCollector;
+                    case 'memory': return $memoryCollector;
+                    case 'messages': return $messagesCollector;
+                    default: return null;
+                }
+            });
+            
         $handler = new DebugBarHandler(
             $this->configService,
             $this->container,
-            $this->collectorRegistry
+            $this->collectorRegistry,
+            $this->collectorFactory
         );
         
         $handler->initialize();
@@ -140,10 +176,21 @@ class CollectorConfigurationTest extends BaseTestCase
         $this->configService->method('isEnabled')
             ->willReturn(true);
             
+        // Mock time collector for this test
+        $timeCollector = $this->createMock(\DebugBar\DataCollector\TimeDataCollector::class);
+        $timeCollector->method('getName')->willReturn('time');
+        
+        // Mock CollectorFactory to return only time collector
+        $this->collectorFactory->method('create')
+            ->willReturnCallback(function($name) use ($timeCollector) {
+                return $name === 'time' ? $timeCollector : null;
+            });
+            
         $handler = new DebugBarHandler(
             $this->configService,
             $this->container,
-            $this->collectorRegistry
+            $this->collectorRegistry,
+            $this->collectorFactory
         );
         
         $handler->initialize();
