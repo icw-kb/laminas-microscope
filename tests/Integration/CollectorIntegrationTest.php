@@ -6,6 +6,7 @@ namespace LaminasMicroscopeTest\Integration;
 
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
+use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Container\MockContainer;
 use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
@@ -19,6 +20,7 @@ class CollectorIntegrationTest extends TestCase
     private ConfigurationService $configService;
     private CollectorRegistry $collectorRegistry;
     private MockContainer $container;
+    private CollectorFactory $collectorFactory;
     
     protected function setUp(): void
     {
@@ -59,12 +61,14 @@ class CollectorIntegrationTest extends TestCase
         $serviceManager = new ServiceManager();
         $this->container->set(LaminasConfigCollector::class, new LaminasConfigCollector($serviceManager));
         $this->container->set(LaminasRequestCollector::class, new LaminasRequestCollector($serviceManager));
-        $this->container->set(PDOCollector::class, new PDOCollector($serviceManager));
+        $this->container->set(PDOCollector::class, new PDOCollector($serviceManager, true));
+        
+        $this->collectorFactory = new CollectorFactory($this->container);
     }
     
     public function testDebugBarShowsConfiguredCollectors(): void
     {
-        $handler = new DebugBarHandler($this->configService, $this->container, $this->collectorRegistry);
+        $handler = new DebugBarHandler($this->configService, $this->container, $this->collectorRegistry, $this->collectorFactory);
         $handler->initialize();
         
         $debugBar = $handler->getDebugBar();
@@ -147,7 +151,7 @@ class CollectorIntegrationTest extends TestCase
     
     public function testActualCollectorInstances(): void
     {
-        $handler = new DebugBarHandler($this->configService, $this->container, $this->collectorRegistry);
+        $handler = new DebugBarHandler($this->configService, $this->container, $this->collectorRegistry, $this->collectorFactory);
         $handler->initialize();
         
         $debugBar = $handler->getDebugBar();

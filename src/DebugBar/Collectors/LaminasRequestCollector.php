@@ -58,7 +58,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
     public function getWidgets(): array
     {
         return [
-            'request' => [
+            'request'       => [
                 'icon'    => 'globe',
                 'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
                 'map'     => 'request',

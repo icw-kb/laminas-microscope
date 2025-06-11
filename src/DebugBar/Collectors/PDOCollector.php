@@ -15,6 +15,7 @@ use LaminasMicroscope\Utility\FormatUtility;
 
 use function array_filter;
 use function count;
+use function is_array;
 use function method_exists;
 use function preg_replace;
 use function strtolower;
@@ -27,10 +28,12 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
     private array $connections = [];
     private float $totalTime   = 0;
 
-    public function __construct(ServiceManager $serviceManager)
+    public function __construct(ServiceManager $serviceManager, bool $skipSetup = false)
     {
         $this->serviceManager = $serviceManager;
-        $this->setupQueryLogging();
+        if (! $skipSetup) {
+            $this->setupQueryLogging();
+        }
     }
 
     public function collect(): array
@@ -55,7 +58,7 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
     public function getWidgets(): array
     {
         return [
-            'pdo' => [
+            'pdo'       => [
                 'icon'    => 'database',
                 'widget'  => 'PhpDebugBar.Widgets.SQLQueriesWidget',
                 'map'     => 'pdo',
@@ -83,14 +86,20 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
     private function hookIntoDbAdapters(): void
     {
         try {
+            // First check if database configuration exists
+            if (! $this->hasDatabaseConfiguration()) {
+                return;
+            }
+
             // Try to get common DB adapter service names
             $adapterNames = [Adapter::class, 'db', 'dbAdapter'];
 
             foreach ($adapterNames as $adapterName) {
                 // Use more careful service checking to avoid triggering factories
                 try {
+                    // Double-check service availability before attempting to get it
                     if ($this->serviceManager->has($adapterName)) {
-                        // Check if we can safely get the service
+                        // Try to get the service but catch any configuration errors
                         $adapter = $this->serviceManager->get($adapterName);
                         $this->hookIntoAdapter($adapter);
                     }
@@ -219,9 +228,15 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             if ($this->serviceManager->has('config')) {
                 $config = $this->serviceManager->get('config');
 
-                // Check for common database configuration keys
-                return isset($config['db']) ||
-                       isset($config['database']) ||
+                // Check for common database configuration keys with specific db structure
+                if (isset($config['db']) && is_array($config['db'])) {
+                    // Check if db config has required fields like 'driver' or 'dsn'
+                    return isset($config['db']['driver']) ||
+                           isset($config['db']['dsn']) ||
+                           isset($config['db']['username']);
+                }
+
+                return isset($config['database']) ||
                        isset($config['databases']) ||
                        isset($config['adapters']);
             }
