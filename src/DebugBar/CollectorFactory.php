@@ -23,51 +23,12 @@ use function error_log;
 class CollectorFactory
 {
     private ContainerInterface $container;
+    private array $collectorMapping;
 
-    /**
-     * Collector configuration mapping
-     */
-    private const COLLECTOR_MAPPING = [
-        'time'     => [
-            'class'   => TimeDataCollector::class,
-            'factory' => 'direct',
-        ],
-        'memory'   => [
-            'class'   => MemoryCollector::class,
-            'factory' => 'direct',
-        ],
-        'messages' => [
-            'class'   => MessagesCollector::class,
-            'factory' => 'direct',
-        ],
-        'phpinfo'  => [
-            'class'   => PhpInfoCollector::class,
-            'factory' => 'direct',
-        ],
-        'php'      => [
-            'class'   => PhpInfoCollector::class,
-            'factory' => 'direct',
-        ],
-        'config'   => [
-            'class'        => LaminasConfigCollector::class,
-            'factory'      => 'service',
-            'service_name' => LaminasConfigCollector::class,
-        ],
-        'pdo'      => [
-            'class'        => PDOCollector::class,
-            'factory'      => 'service',
-            'service_name' => PDOCollector::class,
-        ],
-        'request'  => [
-            'class'        => LaminasRequestCollector::class,
-            'factory'      => 'service',
-            'service_name' => LaminasRequestCollector::class,
-        ],
-    ];
-
-    public function __construct(ContainerInterface $container)
+    public function __construct(ContainerInterface $container, array $collectorMapping = [])
     {
         $this->container = $container;
+        $this->collectorMapping = $collectorMapping;
     }
 
     /**
@@ -78,11 +39,11 @@ class CollectorFactory
      */
     public function create(string $name): ?DataCollectorInterface
     {
-        if (! isset(self::COLLECTOR_MAPPING[$name])) {
+        if (! isset($this->collectorMapping[$name])) {
             return null;
         }
 
-        $config = self::COLLECTOR_MAPPING[$name];
+        $config = $this->collectorMapping[$name];
 
         try {
             if ($config['factory'] === 'direct') {
@@ -114,7 +75,7 @@ class CollectorFactory
      */
     public function getCollectorConfig(string $name): ?array
     {
-        return self::COLLECTOR_MAPPING[$name] ?? null;
+        return $this->collectorMapping[$name] ?? null;
     }
 
     /**
@@ -124,7 +85,7 @@ class CollectorFactory
      */
     public function getAvailableCollectors(): array
     {
-        return array_keys(self::COLLECTOR_MAPPING);
+        return array_keys($this->collectorMapping);
     }
 
     /**

@@ -258,5 +258,42 @@ return [
                 'base_url' => '/_debug/debugbar/resources', // Updated base_url to match new route
             ],
         ],
+        'collector_mapping' => [
+            'time'     => [
+                'class'   => \DebugBar\DataCollector\TimeDataCollector::class,
+                'factory' => 'direct',
+            ],
+            'memory'   => [
+                'class'   => \DebugBar\DataCollector\MemoryCollector::class,
+                'factory' => 'direct',
+            ],
+            'messages' => [
+                'class'   => \DebugBar\DataCollector\MessagesCollector::class,
+                'factory' => 'direct',
+            ],
+            'phpinfo'  => [
+                'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                'factory' => 'direct',
+            ],
+            'php'      => [
+                'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                'factory' => 'direct',
+            ],
+            'config'   => [
+                'class'        => LaminasConfigCollector::class,
+                'factory'      => 'service',
+                'service_name' => LaminasConfigCollector::class,
+            ],
+            'pdo'      => [
+                'class'        => PDOCollector::class,
+                'factory'      => 'service',
+                'service_name' => PDOCollector::class,
+            ],
+            'request'  => [
+                'class'        => LaminasRequestCollector::class,
+                'factory'      => 'service',
+                'service_name' => LaminasRequestCollector::class,
+            ],
+        ],
     ],
 ];

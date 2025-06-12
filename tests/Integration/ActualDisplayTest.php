@@ -63,7 +63,8 @@ class ActualDisplayTest extends TestCase
         $this->container->set(LaminasRequestCollector::class, new LaminasRequestCollector($serviceManager));
         $this->container->set(PDOCollector::class, new PDOCollector($serviceManager, true));
         
-        $this->collectorFactory = new CollectorFactory($this->container);
+        $collectorMapping = $config['laminas_microscope']['collector_mapping'] ?? [];
+        $this->collectorFactory = new CollectorFactory($this->container, $collectorMapping);
     }
     
     public function testDebugBarWidgetOutput(): void

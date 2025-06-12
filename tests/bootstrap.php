@@ -65,6 +65,43 @@ class TestHelper
                         'auto_analyze' => false,
                     ],
                 ],
+                'collector_mapping' => [
+                    'time'     => [
+                        'class'   => \DebugBar\DataCollector\TimeDataCollector::class,
+                        'factory' => 'direct',
+                    ],
+                    'memory'   => [
+                        'class'   => \DebugBar\DataCollector\MemoryCollector::class,
+                        'factory' => 'direct',
+                    ],
+                    'messages' => [
+                        'class'   => \DebugBar\DataCollector\MessagesCollector::class,
+                        'factory' => 'direct',
+                    ],
+                    'phpinfo'  => [
+                        'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                        'factory' => 'direct',
+                    ],
+                    'php'      => [
+                        'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                        'factory' => 'direct',
+                    ],
+                    'config'   => [
+                        'class'        => \LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector::class,
+                        'factory'      => 'service',
+                        'service_name' => \LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector::class,
+                    ],
+                    'pdo'      => [
+                        'class'        => \LaminasMicroscope\DebugBar\Collectors\PDOCollector::class,
+                        'factory'      => 'service',
+                        'service_name' => \LaminasMicroscope\DebugBar\Collectors\PDOCollector::class,
+                    ],
+                    'request'  => [
+                        'class'        => \LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector::class,
+                        'factory'      => 'service',
+                        'service_name' => \LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector::class,
+                    ],
+                ],
             ],
         ], $config);
     }
@@ -98,12 +135,18 @@ class TestHelper
         array $config = [],
         ?object $container = null
     ): array {
-        $configService = new \LaminasMicroscope\Config\ConfigurationService(self::createMockConfig($config));
+        $fullConfig = self::createMockConfig($config);
+        $configService = new \LaminasMicroscope\Config\ConfigurationService($fullConfig);
         $registry = new \LaminasMicroscope\Collector\CollectorRegistry();
 
         if ($container === null) {
             $container = self::createMockServiceManager();
         }
+        
+        // Add CollectorFactory to the container
+        $collectorMapping = $fullConfig['laminas_microscope']['collector_mapping'] ?? [];
+        $collectorFactory = new \LaminasMicroscope\DebugBar\CollectorFactory($container, $collectorMapping);
+        $container->set(\LaminasMicroscope\DebugBar\CollectorFactory::class, $collectorFactory);
 
         $manager = new \LaminasMicroscope\Manager\ComponentManager($configService, $registry, $container);
 

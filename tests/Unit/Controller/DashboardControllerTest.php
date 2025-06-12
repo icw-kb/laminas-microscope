@@ -20,6 +20,7 @@ class DashboardControllerTest extends TestCase
                     'debug_bar' => [
                         'enabled' => false,
                         'collectors_only' => true,
+                        'collectors' => ['time', 'memory'],  // Add collectors to debug_bar config
                     ],
                 ],
             ],

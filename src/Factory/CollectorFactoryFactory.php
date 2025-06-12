@@ -15,6 +15,9 @@ class CollectorFactoryFactory implements FactoryInterface
         $requestedName,
         ?array $options = null
     ): CollectorFactory {
-        return new CollectorFactory($container);
+        $config = $container->get('config');
+        $collectorMapping = $config['laminas_microscope']['collector_mapping'] ?? [];
+        
+        return new CollectorFactory($container, $collectorMapping);
     }
 }
