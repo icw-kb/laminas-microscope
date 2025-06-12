@@ -73,4 +73,19 @@ abstract class BaseTestCase extends TestCase
     {
         return \TestHelper::createMockConfig($overrides);
     }
+
+    /**
+     * Create a CollectorFactory with default mapping
+     */
+    protected function createCollectorFactory($container = null): \LaminasMicroscope\DebugBar\CollectorFactory
+    {
+        if ($container === null) {
+            $container = \TestHelper::createMockServiceManager();
+        }
+        
+        $config = $this->getMockConfig();
+        $collectorMapping = $config['laminas_microscope']['collector_mapping'] ?? [];
+        
+        return new \LaminasMicroscope\DebugBar\CollectorFactory($container, $collectorMapping);
+    }
 }

@@ -10,18 +10,19 @@ use DebugBar\DataCollector\TimeDataCollector;
 use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
 use LaminasMicroscope\Exception\ConfigurationException;
-use PHPUnit\Framework\TestCase;
+use LaminasMicroscopeTest\Unit\BaseTestCase;
 use Psr\Container\ContainerInterface;
 
-class CollectorFactoryTest extends TestCase
+class CollectorFactoryTest extends BaseTestCase
 {
     private CollectorFactory $factory;
     private ContainerInterface $container;
 
     protected function setUp(): void
     {
+        parent::setUp();
         $this->container = $this->createMock(ContainerInterface::class);
-        $this->factory = new CollectorFactory($this->container);
+        $this->factory = $this->createCollectorFactory($this->container);
     }
 
     public function testCreateDirectCollector(): void

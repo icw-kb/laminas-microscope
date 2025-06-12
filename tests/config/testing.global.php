@@ -42,6 +42,43 @@ return [
                 ],
             ],
         ],
+        'collector_mapping' => [
+            'time'     => [
+                'class'   => \DebugBar\DataCollector\TimeDataCollector::class,
+                'factory' => 'direct',
+            ],
+            'memory'   => [
+                'class'   => \DebugBar\DataCollector\MemoryCollector::class,
+                'factory' => 'direct',
+            ],
+            'messages' => [
+                'class'   => \DebugBar\DataCollector\MessagesCollector::class,
+                'factory' => 'direct',
+            ],
+            'phpinfo'  => [
+                'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                'factory' => 'direct',
+            ],
+            'php'      => [
+                'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                'factory' => 'direct',
+            ],
+            'config'   => [
+                'class'        => \LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector::class,
+                'factory'      => 'service',
+                'service_name' => \LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector::class,
+            ],
+            'pdo'      => [
+                'class'        => \LaminasMicroscope\DebugBar\Collectors\PDOCollector::class,
+                'factory'      => 'service',
+                'service_name' => \LaminasMicroscope\DebugBar\Collectors\PDOCollector::class,
+            ],
+            'request'  => [
+                'class'        => \LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector::class,
+                'factory'      => 'service',
+                'service_name' => \LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector::class,
+            ],
+        ],
     ],
     'db' => [
         'driver' => 'Pdo_Sqlite',

@@ -35,7 +35,8 @@ class DebugBarHandlerTest extends TestCase
         $this->configService = new ConfigurationService($config);
         $this->container = \TestHelper::createMockServiceManager();
         $this->registry = new \LaminasMicroscope\Collector\CollectorRegistry();
-        $this->collectorFactory = new CollectorFactory($this->container);
+        $collectorMapping = $config['laminas_microscope']['collector_mapping'] ?? [];
+        $this->collectorFactory = new CollectorFactory($this->container, $collectorMapping);
         $this->handler = new DebugBarHandler($this->configService, $this->container, $this->registry, $this->collectorFactory);
     }
 
