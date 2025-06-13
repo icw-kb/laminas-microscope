@@ -1,9 +1,15 @@
 <?php
 /**
  * Shared navigation partial for all debug pages
+ * 
+ * Expected variables:
+ * - $config: ConfigurationService instance
+ * - $currentPage: string indicating current page (optional)
  */
-$currentRoute = $this->url('', [], ['name' => $this->getHelperPluginManager()->get('routeMatch')->getMatchedRouteName()], true);
-$isMainDashboard = str_ends_with($currentRoute, '/_debug');
+
+// Determine current page from SERVER variables if not provided
+$currentPage = $currentPage ?? $_SERVER['REQUEST_URI'] ?? '';
+$isMainDashboard = ($currentPage === '/_debug' || str_ends_with($currentPage, '/_debug'));
 ?>
 
 <nav class="col-md-2 d-none d-md-block bg-light sidebar">
@@ -15,17 +21,17 @@ $isMainDashboard = str_ends_with($currentRoute, '/_debug');
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= str_contains($currentRoute, '/analytics') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/analytics') ?>">
+                <a class="nav-link <?= str_contains($currentPage, '/analytics') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/analytics') ?>">
                     <i class="fas fa-chart-line"></i> Analytics
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= str_contains($currentRoute, '/performance') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/performance') ?>">
+                <a class="nav-link <?= str_contains($currentPage, '/performance') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/performance') ?>">
                     <i class="fas fa-rocket"></i> Performance
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= str_contains($currentRoute, '/cache') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/cache') ?>">
+                <a class="nav-link <?= str_contains($currentPage, '/cache') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/cache') ?>">
                     <i class="fas fa-memory"></i> Cache
                 </a>
             </li>
@@ -38,11 +44,11 @@ $isMainDashboard = str_ends_with($currentRoute, '/_debug');
             <?php 
             // Get appropriate collectors based on current page
             $collectorNames = [];
-            if (str_contains($currentRoute, '/cache')) {
+            if (str_contains($currentPage, '/cache')) {
                 $collectorNames = $config->get('laminas_microscope.components.debug_bar.collectors', ['time', 'memory', 'config']);
-            } elseif (str_contains($currentRoute, '/analytics')) {
+            } elseif (str_contains($currentPage, '/analytics')) {
                 $collectorNames = $config->get('laminas_microscope.components.microscope.collectors', ['time', 'memory', 'pdo', 'exceptions']);
-            } elseif (str_contains($currentRoute, '/performance')) {
+            } elseif (str_contains($currentPage, '/performance')) {
                 $collectorNames = $config->get('laminas_microscope.components.microscope.collectors', ['time', 'memory', 'pdo']);
             } else {
                 // Main dashboard - use microscope collectors
@@ -71,12 +77,12 @@ $isMainDashboard = str_ends_with($currentRoute, '/_debug');
             
             <hr class="my-2">
             <li class="nav-item">
-                <a class="nav-link <?= str_contains($currentRoute, '/microscope') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/microscope') ?>">
+                <a class="nav-link <?= str_contains($currentPage, '/microscope') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/microscope') ?>">
                     <i class="fas fa-microscope"></i> Microscope
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?= str_contains($currentRoute, '/config') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/config') ?>">
+                <a class="nav-link <?= str_contains($currentPage, '/config') ? 'active' : '' ?>" href="<?= $this->url('laminas-microscope/config') ?>">
                     <i class="fas fa-cogs"></i> Configuration
                 </a>
             </li>
