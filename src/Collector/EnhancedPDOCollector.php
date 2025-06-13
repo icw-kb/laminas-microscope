@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LaminasMicroscope\DebugBar\Collectors;
+namespace LaminasMicroscope\Collector;
 
 use DebugBar\DataCollector\DataCollector;
 use DebugBar\DataCollector\Renderable;

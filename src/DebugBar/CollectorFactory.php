@@ -5,14 +5,7 @@ declare(strict_types=1);
 namespace LaminasMicroscope\DebugBar;
 
 use DebugBar\DataCollector\DataCollectorInterface;
-use DebugBar\DataCollector\MemoryCollector;
-use DebugBar\DataCollector\MessagesCollector;
-use DebugBar\DataCollector\PhpInfoCollector;
-use DebugBar\DataCollector\TimeDataCollector;
 use Exception;
-use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
-use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
 use LaminasMicroscope\Exception\ConfigurationException;
 use Psr\Container\ContainerInterface;
 
@@ -27,7 +20,7 @@ class CollectorFactory
 
     public function __construct(ContainerInterface $container, array $collectorMapping = [])
     {
-        $this->container = $container;
+        $this->container        = $container;
         $this->collectorMapping = $collectorMapping;
     }
 

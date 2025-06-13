@@ -7,7 +7,7 @@ namespace LaminasMicroscope\DebugBar\EventListener;
 use Laminas\EventManager\AbstractListenerAggregate;
 use Laminas\EventManager\Event;
 use Laminas\EventManager\EventManagerInterface;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\Collector\PDOCollector;
 
 use function memory_get_usage;
 use function microtime;

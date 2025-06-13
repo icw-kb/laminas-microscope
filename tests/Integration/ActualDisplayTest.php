@@ -9,9 +9,9 @@ use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Container\MockContainer;
-use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
-use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\Collector\LaminasConfigCollector;
+use LaminasMicroscope\Collector\LaminasRequestCollector;
+use LaminasMicroscope\Collector\PDOCollector;
 use PHPUnit\Framework\TestCase;
 use Laminas\ServiceManager\ServiceManager;
 

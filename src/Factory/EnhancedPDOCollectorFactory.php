@@ -6,8 +6,8 @@ namespace LaminasMicroscope\Factory;
 
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use LaminasMicroscope\Cache\CacheManager;
+use LaminasMicroscope\Collector\EnhancedPDOCollector;
 use LaminasMicroscope\Config\ConfigurationService;
-use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
 use Psr\Container\ContainerInterface;
 
 class EnhancedPDOCollectorFactory implements FactoryInterface

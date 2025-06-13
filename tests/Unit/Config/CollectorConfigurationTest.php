@@ -53,7 +53,7 @@ class CollectorConfigurationTest extends BaseTestCase
         $memoryCollector = $this->createMock(\DebugBar\DataCollector\MemoryCollector::class);
         $memoryCollector->method('getName')->willReturn('memory');
         
-        $pdoCollector = $this->createMock(\LaminasMicroscope\DebugBar\Collectors\PDOCollector::class);
+        $pdoCollector = $this->createMock(\LaminasMicroscope\Collector\PDOCollector::class);
         $pdoCollector->method('getName')->willReturn('pdo');
         
         // Mock CollectorFactory to return appropriate collectors

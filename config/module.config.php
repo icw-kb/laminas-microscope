@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 
+use DebugBar\DataCollector\MemoryCollector;
+use DebugBar\DataCollector\MessagesCollector;
+use DebugBar\DataCollector\PhpInfoCollector;
+use DebugBar\DataCollector\TimeDataCollector;
 use LaminasMicroscope\Cache\CacheManager;
 use LaminasMicroscope\Collector\CollectorRegistry;
+use LaminasMicroscope\Collector\EnhancedPDOCollector;
+use LaminasMicroscope\Collector\LaminasConfigCollector;
+use LaminasMicroscope\Collector\LaminasRequestCollector;
+use LaminasMicroscope\Collector\PDOCollector;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Controller\ConfigurationController;
 use LaminasMicroscope\Controller\DashboardController;
 use LaminasMicroscope\Controller\MicroscopeController;
 use LaminasMicroscope\DebugBar\CollectorFactory;
-use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
-use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
-use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\DebugBar\EventListener\QueryLogger;
 use LaminasMicroscope\Factory\AnalysisServiceFactory;
@@ -251,7 +255,7 @@ return [
     ],
     // Add default configuration for laminas_microscope key
     'laminas_microscope' => [
-        'components' => [
+        'components'        => [
             'debug_bar' => [
                 // Add the base_url configuration option
                 // This should match the route defined above
@@ -260,23 +264,23 @@ return [
         ],
         'collector_mapping' => [
             'time'     => [
-                'class'   => \DebugBar\DataCollector\TimeDataCollector::class,
+                'class'   => TimeDataCollector::class,
                 'factory' => 'direct',
             ],
             'memory'   => [
-                'class'   => \DebugBar\DataCollector\MemoryCollector::class,
+                'class'   => MemoryCollector::class,
                 'factory' => 'direct',
             ],
             'messages' => [
-                'class'   => \DebugBar\DataCollector\MessagesCollector::class,
+                'class'   => MessagesCollector::class,
                 'factory' => 'direct',
             ],
             'phpinfo'  => [
-                'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                'class'   => PhpInfoCollector::class,
                 'factory' => 'direct',
             ],
             'php'      => [
-                'class'   => \DebugBar\DataCollector\PhpInfoCollector::class,
+                'class'   => PhpInfoCollector::class,
                 'factory' => 'direct',
             ],
             'config'   => [

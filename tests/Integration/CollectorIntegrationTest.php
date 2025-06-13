@@ -9,9 +9,9 @@ use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Container\MockContainer;
-use LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector;
-use LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\Collector\LaminasConfigCollector;
+use LaminasMicroscope\Collector\LaminasRequestCollector;
+use LaminasMicroscope\Collector\PDOCollector;
 use PHPUnit\Framework\TestCase;
 use Laminas\ServiceManager\ServiceManager;
 
@@ -172,13 +172,13 @@ class CollectorIntegrationTest extends TestCase
         );
         
         $this->assertInstanceOf(
-            'LaminasMicroscope\DebugBar\Collectors\LaminasConfigCollector',
+            'LaminasMicroscope\Collector\LaminasConfigCollector',
             $collectors['config'] ?? null,
             'Config collector should be LaminasConfigCollector'
         );
         
         $this->assertInstanceOf(
-            'LaminasMicroscope\DebugBar\Collectors\LaminasRequestCollector',
+            'LaminasMicroscope\Collector\LaminasRequestCollector',
             $collectors['request'] ?? null,
             'Request collector should be LaminasRequestCollector'
         );
