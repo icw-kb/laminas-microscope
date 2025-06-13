@@ -14,47 +14,7 @@ $data = $debugBar ? $debugBar->getData() : [];
 ?>
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-            <div class="position-sticky pt-3">
-                <ul class="nav flex-column nav-pills" id="collector-tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="tab-dashboard" data-bs-toggle="pill" data-bs-target="#pane-dashboard" type="button" role="tab">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </button>
-                    </li>
-                    
-                    <!-- Phase 3 Features -->
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/analytics') ?>">
-                            <i class="fas fa-chart-line"></i> Analytics
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/performance') ?>">
-                            <i class="fas fa-rocket"></i> Performance
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/cache') ?>">
-                            <i class="fas fa-memory"></i> Cache
-                        </a>
-                    </li>
-                    
-                    <hr class="my-2">
-                    <li class="nav-item">
-                        <small class="text-muted px-3">COLLECTORS</small>
-                    </li>
-                    
-                    <?php foreach ($collectorNames as $collector): ?>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-<?= $collector ?>" data-bs-toggle="pill" data-bs-target="#pane-<?= $collector ?>" type="button" role="tab">
-                                <?= ucfirst($collector) ?>
-                            </button>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        </nav>
+        <?= $this->partial('laminas-microscope/partials/navigation', ['config' => $config]) ?>
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">
                 <h1 class="h2">Microscope</h1>

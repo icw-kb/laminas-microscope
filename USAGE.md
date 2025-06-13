@@ -112,9 +112,9 @@ $debugBar->stopMeasure('user_save');
 $debugBar->stopMeasure('user_process');
 ```
 
-## 🔬 Microscope Analysis
+## 🔬 Performance Analysis
 
-Access the Microscope at `/_debug/microscope` for detailed application analysis.
+Access detailed application analysis at `/_debug` via the Analytics and Performance tabs.
 
 ### 🎯 Overview Tab
 
@@ -445,7 +445,7 @@ Export analysis data for team review:
 
 ```bash
 # Via web interface
-# Visit /_debug/microscope and click "Export Data"
+# Visit /_debug and use the export functionality
 
 # Programmatically
 $microscope = $container->get('LaminasMicroscope\Microscope\MicroscopeHandler');

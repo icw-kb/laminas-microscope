@@ -1,0 +1,95 @@
+<?php
+/**
+ * Shared navigation partial for all debug pages
+ * 
+ * Expected variables:
+ * - $config: ConfigurationService instance
+ * - $currentPage: string indicating current page (optional)
+ */
+
+// Determine current page from SERVER variables if not provided
+$currentPage = $currentPage ?? $_SERVER['REQUEST_URI'] ?? '';
+$isMainDashboard = ($currentPage === '/_debug' || str_ends_with($currentPage, '/_debug'));
+?>
+
+<nav class="col-md-2 d-none d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column <?= $isMainDashboard ? 'nav-pills' : '' ?>" <?= $isMainDashboard ? 'id="collector-tabs" role="tablist"' : '' ?>>
+            <?php if ($isMainDashboard): ?>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-dashboard" data-bs-toggle="pill" data-bs-target="#pane-dashboard" type="button" role="tab">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                </li>
+            <?php else: ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="/_debug">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+            <?php endif; ?>
+            
+            <li class="nav-item" <?= $isMainDashboard ? 'role="presentation"' : '' ?>>
+                <a class="nav-link <?= str_contains($currentPage, '/analytics') ? 'active' : '' ?>" href="/_debug/analytics">
+                    <i class="fas fa-chart-line"></i> Analytics
+                </a>
+            </li>
+            <li class="nav-item" <?= $isMainDashboard ? 'role="presentation"' : '' ?>>
+                <a class="nav-link <?= str_contains($currentPage, '/performance') ? 'active' : '' ?>" href="/_debug/performance">
+                    <i class="fas fa-rocket"></i> Performance
+                </a>
+            </li>
+            <li class="nav-item" <?= $isMainDashboard ? 'role="presentation"' : '' ?>>
+                <a class="nav-link <?= str_contains($currentPage, '/cache') ? 'active' : '' ?>" href="/_debug/cache">
+                    <i class="fas fa-memory"></i> Cache
+                </a>
+            </li>
+            
+            <hr class="my-2">
+            <li class="nav-item">
+                <small class="text-muted px-3">COLLECTORS</small>
+            </li>
+            
+            <?php 
+            // Get appropriate collectors based on current page
+            $collectorNames = [];
+            if (str_contains($currentPage, '/cache')) {
+                $collectorNames = $config->get('laminas_microscope.components.debug_bar.collectors', ['time', 'memory', 'config']);
+            } elseif (str_contains($currentPage, '/analytics')) {
+                $collectorNames = $config->get('laminas_microscope.components.microscope.collectors', ['time', 'memory', 'pdo', 'exceptions']);
+            } elseif (str_contains($currentPage, '/performance')) {
+                $collectorNames = $config->get('laminas_microscope.components.microscope.collectors', ['time', 'memory', 'pdo']);
+            } else {
+                // Main dashboard - use microscope collectors
+                $collectorNames = $config->get('laminas_microscope.components.microscope.collectors', ['time', 'memory', 'messages']);
+            }
+            
+            // Ensure we have default collectors
+            if (empty($collectorNames)) {
+                $collectorNames = ['time', 'memory', 'config'];
+            }
+            ?>
+            
+            <?php foreach ($collectorNames as $collector): ?>
+                <li class="nav-item" <?= $isMainDashboard ? 'role="presentation"' : '' ?>>
+                    <?php if ($isMainDashboard): ?>
+                        <button class="nav-link" id="tab-<?= $collector ?>" data-bs-toggle="pill" data-bs-target="#pane-<?= $collector ?>" type="button" role="tab">
+                            <i class="fas fa-cog"></i> <?= ucfirst($collector) ?>
+                        </button>
+                    <?php else: ?>
+                        <a class="nav-link" href="/_debug#pane-<?= $collector ?>">
+                            <i class="fas fa-cog"></i> <?= ucfirst($collector) ?>
+                        </a>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+            
+            <hr class="my-2">
+            <li class="nav-item">
+                <a class="nav-link <?= str_contains($currentPage, '/config') ? 'active' : '' ?>" href="/_debug/config">
+                    <i class="fas fa-cogs"></i> Configuration
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>

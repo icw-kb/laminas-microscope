@@ -7,70 +7,7 @@ $this->headScript()->appendFile('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/di
 
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-            <div class="position-sticky pt-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/analytics') ?>">
-                            <i class="fas fa-chart-line"></i> Analytics
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/performance') ?>">
-                            <i class="fas fa-rocket"></i> Performance
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="<?= $this->url('laminas-microscope/cache') ?>">
-                            <i class="fas fa-memory"></i> Cache
-                        </a>
-                    </li>
-                    
-                    <hr class="my-2">
-                    <li class="nav-item">
-                        <small class="text-muted px-3">COLLECTORS</small>
-                    </li>
-                    
-                    <?php 
-                    // Get cache-specific collectors 
-                    $collectorNames = $config->get(
-                        'laminas_microscope.components.debug_bar.collectors',
-                        $config->get('laminas_microscope.collectors', [])
-                    );
-                    
-                    // Add default cache-relevant collectors if none configured
-                    if (empty($collectorNames)) {
-                        $collectorNames = ['time', 'memory', 'config'];
-                    }
-                    ?>
-                    
-                    <?php foreach ($collectorNames as $collector): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?= $this->url('laminas-microscope') ?>#pane-<?= $collector ?>">
-                                <i class="fas fa-cog"></i> <?= ucfirst($collector) ?>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                    
-                    <hr class="my-2">
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/microscope') ?>">
-                            <i class="fas fa-microscope"></i> Microscope
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= $this->url('laminas-microscope/config') ?>">
-                            <i class="fas fa-cogs"></i> Configuration
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
+        <?= $this->partial('laminas-microscope/partials/navigation', ['config' => $config]) ?>
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 mb-3 border-bottom">

@@ -119,7 +119,6 @@ Located in `src/Collector/`:
 
 Located in `src/Controller/`:
 - **DashboardController**: Main debug dashboard at `/_debug`
-- **MicroscopeController**: Microscope analysis interface
 - **ConfigurationController**: Configuration management interface
 
 ## Configuration System
@@ -136,7 +135,6 @@ Located in `src/Controller/`:
 
 ### Debug Routes
 - `/_debug` - Main dashboard
-- `/_debug/microscope` - Analysis interface
 - `/_debug/config` - Configuration management
 - `/_debug/debugbar/resources` - Debug bar assets
 
