@@ -10,7 +10,7 @@ use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Manager\ComponentManager;
 use LaminasMicroscope\Microscope\Storage\ReportStorage;
 use LaminasMicroscope\Cache\CacheManager;
-use LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector;
+use LaminasMicroscope\Collector\EnhancedPDOCollector;
 use Laminas\ServiceManager\ServiceManager;
 
 /**

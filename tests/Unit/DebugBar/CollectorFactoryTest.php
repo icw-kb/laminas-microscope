@@ -8,7 +8,7 @@ use DebugBar\DataCollector\DataCollectorInterface;
 use DebugBar\DataCollector\MemoryCollector;
 use DebugBar\DataCollector\TimeDataCollector;
 use LaminasMicroscope\DebugBar\CollectorFactory;
-use LaminasMicroscope\DebugBar\Collectors\PDOCollector;
+use LaminasMicroscope\Collector\PDOCollector;
 use LaminasMicroscope\Exception\ConfigurationException;
 use LaminasMicroscopeTest\Unit\BaseTestCase;
 use Psr\Container\ContainerInterface;

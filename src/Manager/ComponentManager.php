@@ -407,7 +407,7 @@ class ComponentManager
                         $collectorFactory = $this->container->get(CollectorFactory::class);
                     } else {
                         // Create a basic CollectorFactory for testing scenarios
-                        $config = $this->configService->getAll();
+                        $config           = $this->configService->getAll();
                         $collectorMapping = $config['laminas_microscope']['collector_mapping'] ?? [];
                         $collectorFactory = new CollectorFactory($this->container ?? new MockContainer(), $collectorMapping);
                     }

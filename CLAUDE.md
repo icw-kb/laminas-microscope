@@ -109,10 +109,11 @@ The Module class (`src/Module.php`) integrates with Laminas MVC events:
 
 ### Debug Bar Collectors
 
-Located in `src/DebugBar/Collectors/`:
+Located in `src/Collector/`:
 - **PDOCollector**: Database query logging and analysis
 - **LaminasConfigCollector**: Configuration data collection
 - **LaminasRequestCollector**: HTTP request/response data
+- **EnhancedPDOCollector**: Advanced database query analysis with performance metrics
 
 ### Controller Structure
 
@@ -191,7 +192,7 @@ Debug information is gathered via collectors that implement the DebugBar collect
 ## Common Development Tasks
 
 ### Adding a New Collector
-1. Create collector class in `src/DebugBar/Collectors/`
+1. Create collector class in `src/Collector/`
 2. Implement `DataCollector` and `Renderable` interfaces
 3. Register in service manager in `config/module.config.php`
 4. Add to default collector list in component configuration

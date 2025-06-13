@@ -146,7 +146,7 @@ class DashboardControllerServiceFallbackTest extends BaseTestCase
      */
     public function testPerformanceActionWithoutEnhancedPDOCollectorService(): void
     {
-        $this->assertFalse($this->serviceManager->has('LaminasMicroscope\DebugBar\Collectors\EnhancedPDOCollector'));
+        $this->assertFalse($this->serviceManager->has('LaminasMicroscope\Collector\EnhancedPDOCollector'));
         
         $result = $this->controller->performanceAction();
         
