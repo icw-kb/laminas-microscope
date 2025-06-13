@@ -200,9 +200,9 @@ laminas_microscope:
 
 #### Manual Analysis
 
-Access the Microscope interface at `/_debug/microscope` to:
+Access the main debug interface at `/_debug` to:
 
-- **Run analysis** on demand
+- **Run analysis** on demand via the Analytics and Performance tabs
 - **View query reports** with performance metrics
 - **Analyze routes** and their performance
 - **Review detected issues** with suggestions

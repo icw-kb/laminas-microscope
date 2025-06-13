@@ -15,7 +15,6 @@ use LaminasMicroscope\Collector\PDOCollector;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Controller\ConfigurationController;
 use LaminasMicroscope\Controller\DashboardController;
-use LaminasMicroscope\Controller\MicroscopeController;
 use LaminasMicroscope\DebugBar\CollectorFactory;
 use LaminasMicroscope\DebugBar\DebugBarHandler;
 use LaminasMicroscope\DebugBar\EventListener\QueryLogger;
@@ -29,7 +28,6 @@ use LaminasMicroscope\Factory\ConfigurationManagerFactory;
 use LaminasMicroscope\Factory\ConfigurationServiceFactory;
 use LaminasMicroscope\Factory\Controller\ConfigurationControllerFactory;
 use LaminasMicroscope\Factory\Controller\DashboardControllerFactory;
-use LaminasMicroscope\Factory\Controller\MicroscopeControllerFactory;
 use LaminasMicroscope\Factory\DebugBarHandlerFactory;
 use LaminasMicroscope\Factory\EnhancedPDOCollectorFactory;
 use LaminasMicroscope\Factory\Listener\DebugBarEventListenerFactory;
@@ -62,20 +60,6 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes'  => [
-                    'microscope'     => [
-                        'type'    => 'Segment',
-                        'options' => [
-                            'route'       => '/microscope[/:action[/:id]]',
-                            'defaults'    => [
-                                'controller' => MicroscopeController::class,
-                                'action'     => 'index',
-                            ],
-                            'constraints' => [
-                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
-                                'id'     => '[0-9a-zA-Z-]+',
-                            ],
-                        ],
-                    ],
                     'config'         => [
                         'type'    => 'Segment',
                         'options' => [
@@ -95,19 +79,6 @@ return [
                             'route'       => '/api[/:action]',
                             'defaults'    => [
                                 'controller' => DashboardController::class,
-                                'action'     => 'api',
-                            ],
-                            'constraints' => [
-                                'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
-                            ],
-                        ],
-                    ],
-                    'microscope-api' => [
-                        'type'    => 'Segment',
-                        'options' => [
-                            'route'       => '/microscope/api[/:action]',
-                            'defaults'    => [
-                                'controller' => MicroscopeController::class,
                                 'action'     => 'api',
                             ],
                             'constraints' => [
@@ -177,7 +148,6 @@ return [
     ],
     'controllers'     => [
         'factories' => [
-            MicroscopeController::class    => MicroscopeControllerFactory::class,
             DashboardController::class     => DashboardControllerFactory::class,
             ConfigurationController::class => ConfigurationControllerFactory::class,
         ],

@@ -86,11 +86,6 @@ $isMainDashboard = ($currentPage === '/_debug' || str_ends_with($currentPage, '/
             
             <hr class="my-2">
             <li class="nav-item">
-                <a class="nav-link <?= str_contains($currentPage, '/microscope') ? 'active' : '' ?>" href="/_debug/microscope">
-                    <i class="fas fa-microscope"></i> Microscope
-                </a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link <?= str_contains($currentPage, '/config') ? 'active' : '' ?>" href="/_debug/config">
                     <i class="fas fa-cogs"></i> Configuration
                 </a>

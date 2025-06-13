@@ -317,9 +317,9 @@ Trigger an error to see the Whoops error page:
 throw new \Exception('Testing Whoops integration');
 ```
 
-### 4. Test Microscope
+### 4. Test Interface
 
-Visit `/_debug/microscope` to access the analysis interface.
+Visit `/_debug` to access the main debug interface with Analytics and Performance tabs.
 
 ## 🚨 Troubleshooting
 
