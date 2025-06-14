@@ -61,8 +61,9 @@ class FinalObjectTest extends TestCase
         $this->assertStringNotContainsString('[object Object]', $fullHtml, 'HTML output should not contain [object Object]');
         $this->assertStringNotContainsString('<dd class="phpdebugbar-widgets-value">[object Object]</dd>', $fullHtml, 'Should not contain the specific pattern reported');
 
-        // Verify objects are properly formatted
-        $this->assertStringContainsString('"value":', $json, 'Complex objects should be wrapped in value property');
+        // Verify objects are properly formatted as readable strings
+        $this->assertStringContainsString('"Object(', $json, 'Complex objects should be converted to Object(...) strings');
+        $this->assertStringNotContainsString('"value":', $json, 'Objects should no longer use nested value property (causes [object Object])');
 
         // Clean up
         unset($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'], $_SERVER['HTTP_HOST']);

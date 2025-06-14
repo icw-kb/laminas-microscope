@@ -143,9 +143,13 @@ class ObjectFormattingTest extends TestCase
         $json = json_encode($data);
         $this->assertNotFalse($json, 'Should handle circular references without memory issues');
         
-        // DebugBar's DataFormatter should handle circular references properly
-        // It uses object IDs like {#1226} to represent circular references
-        $this->assertMatchesRegularExpression('/\{#\d+\}/', $json, 'Should contain DebugBar circular reference markers');
+        // Circular references should be handled gracefully and converted to safe strings
+        // Should contain some indication of circular reference handling
+        $this->assertTrue(
+            strpos($json, '[CIRCULAR REFERENCE]') !== false || 
+            strpos($json, '[Object]') !== false,
+            'Should contain safe circular reference markers'
+        );
     }
 
     public function testDeepNestingHandling(): void
@@ -171,10 +175,12 @@ class ObjectFormattingTest extends TestCase
         $json = json_encode($data);
         $this->assertNotFalse($json, 'Should handle deep nesting without memory issues');
         
-        // For deep nesting, DebugBar should either format properly or we should see our depth limit
+        // For deep nesting, should see either depth limits or safe object handling
         $this->assertTrue(
-            strpos($json, 'MAX DEPTH REACHED') !== false || strpos($json, '{#') !== false,
-            'Should handle deep nesting with either depth limits or DebugBar formatting'
+            strpos($json, 'MAX DEPTH REACHED') !== false || 
+            strpos($json, '[Object]') !== false ||
+            strpos($json, '[MAX DEPTH REACHED]') !== false,
+            'Should handle deep nesting with either depth limits or safe object markers'
         );
     }
 
@@ -253,8 +259,8 @@ class ObjectFormattingTest extends TestCase
         // Should not contain [object Object]
         $this->assertStringNotContainsString('[object Object]', $json);
         
-        // Should contain value properties for complex objects
-        $this->assertStringContainsString('"value":', $json, 'Complex objects should be wrapped in value property');
+        // Should contain clean object placeholders instead of complex structures
+        $this->assertStringContainsString('"[Object]"', $json, 'Complex objects should be converted to clean placeholders');
         
         // Should not contain empty objects
         $this->assertStringNotContainsString('{}', $json);

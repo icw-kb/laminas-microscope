@@ -27,6 +27,7 @@ use function floor;
 use function in_array;
 use function is_array;
 use function is_object;
+use function is_string;
 use function max;
 use function md5;
 use function method_exists;
@@ -45,6 +46,8 @@ use const PREG_SET_ORDER;
 
 class EnhancedPDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use FormatsArrayTrait;
+
     private ServiceManager $serviceManager;
     private ?CacheManager $cacheManager;
     private QueryAnalyzer $queryAnalyzer;
@@ -78,7 +81,7 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
     {
         $analysis = $this->analyzeQueries();
 
-        return [
+        $data = [
             'nb_statements'            => count($this->queries),
             'nb_failed_statements'     => count(array_filter($this->queries, fn($q) => $q['is_success'] === false)),
             'nb_slow_statements'       => count(array_filter($this->queries, fn($q) => $q['is_slow'] ?? false)),
@@ -92,6 +95,8 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             'performance_score'        => $this->calculatePerformanceScore(),
             'recommendations'          => $this->formatArray($this->generateRecommendations($analysis)),
         ];
+
+        return $this->formatForJavaScript($data);
     }
 
     public function getName(): string
@@ -713,7 +718,7 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             try {
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
-                
+
                 // For SQLQueriesWidget, ensure we return a string representation
                 if (is_string($result) && trim($result) !== '') {
                     return $result;
@@ -742,7 +747,7 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
 
                 try {
                     $result = $this->getDataFormatter()->formatVar($value);
-                    
+
                     // For SQLQueriesWidget, ensure we return a string representation
                     if (is_string($result) && trim($result) !== '') {
                         $formatted[$key] = $result;

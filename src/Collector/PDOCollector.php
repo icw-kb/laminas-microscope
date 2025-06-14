@@ -18,6 +18,7 @@ use function array_filter;
 use function count;
 use function is_array;
 use function is_object;
+use function is_string;
 use function method_exists;
 use function preg_replace;
 use function spl_object_id;
@@ -26,6 +27,8 @@ use function trim;
 
 class PDOCollector extends DataCollector implements Renderable, AssetProvider, CollectorInterface
 {
+    use FormatsArrayTrait;
+
     private ServiceManager $serviceManager;
     private array $queries     = [];
     private array $connections = [];
@@ -41,7 +44,7 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
 
     public function collect(): array
     {
-        return [
+        $data = [
             'nb_statements'            => count($this->queries),
             'nb_failed_statements'     => count(array_filter($this->queries, function ($q) {
                 return $q['is_success'] === false;
@@ -51,6 +54,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             'statements'               => $this->formatArray($this->queries),
             'connections'              => $this->formatArray($this->connections),
         ];
+
+        return $this->formatForJavaScript($data);
     }
 
     public function getName(): string
@@ -286,7 +291,12 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             try {
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
-                return $result;
+
+                // Return formatted result directly
+                if (is_string($result)) {
+                    return $result;
+                }
+                return '[OBJECT: ' . $data::class . ']';
             } catch (Throwable $e) {
                 unset($visited[$objectId]);
                 return '[OBJECT: ' . $data::class . ']';
@@ -308,7 +318,13 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
                 $visited[$objectId] = true;
 
                 try {
-                    $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+                    $result = $this->getDataFormatter()->formatVar($value);
+                    // Use formatted result directly
+                    if (is_string($result)) {
+                        $formatted[$key] = $result;
+                    } else {
+                        $formatted[$key] = '[OBJECT: ' . $value::class . ']';
+                    }
                 } catch (Throwable $e) {
                     $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                 }
