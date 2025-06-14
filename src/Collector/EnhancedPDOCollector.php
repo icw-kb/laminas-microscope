@@ -24,6 +24,8 @@ use function arsort;
 use function count;
 use function floor;
 use function in_array;
+use function is_array;
+use function is_object;
 use function max;
 use function md5;
 use function method_exists;
@@ -82,11 +84,11 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             'nb_duplicate_statements'  => count(array_filter($this->queries, fn($q) => $q['is_duplicate'] ?? false)),
             'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000),
-            'statements'               => $this->queries,
-            'connections'              => $this->connections,
-            'analysis'                 => $analysis,
+            'statements'               => $this->formatArray($this->queries),
+            'connections'              => $this->formatArray($this->connections),
+            'analysis'                 => $this->formatArray($analysis),
             'performance_score'        => $this->calculatePerformanceScore(),
-            'recommendations'          => $this->generateRecommendations($analysis),
+            'recommendations'          => $this->formatArray($this->generateRecommendations($analysis)),
         ];
     }
 
@@ -679,5 +681,40 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
         } catch (Exception $e) {
             // Continue silently
         }
+    }
+
+    /**
+     * Format data recursively, converting objects to strings
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    private function formatArray($data)
+    {
+        if (is_object($data)) {
+            // Format objects using the DataFormatter
+            return $this->getDataFormatter()->formatVar($data);
+        }
+
+        if (! is_array($data)) {
+            // Return scalar values as-is
+            return $data;
+        }
+
+        $formatted = [];
+        foreach ($data as $key => $value) {
+            if (is_object($value)) {
+                // Use the DataFormatter to properly format objects
+                $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+            } elseif (is_array($value)) {
+                // Recursively format nested arrays
+                $formatted[$key] = $this->formatArray($value);
+            } else {
+                // Keep scalar values as-is
+                $formatted[$key] = $value;
+            }
+        }
+
+        return $formatted;
     }
 }

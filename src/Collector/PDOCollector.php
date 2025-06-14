@@ -16,6 +16,7 @@ use LaminasMicroscope\Utility\FormatUtility;
 use function array_filter;
 use function count;
 use function is_array;
+use function is_object;
 use function method_exists;
 use function preg_replace;
 use function strtolower;
@@ -45,8 +46,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             })),
             'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000), // Convert ms to seconds
-            'statements'               => $this->queries,
-            'connections'              => $this->connections,
+            'statements'               => $this->formatArray($this->queries),
+            'connections'              => $this->formatArray($this->connections),
         ];
     }
 
@@ -253,5 +254,40 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             'css' => 'widgets/sqlqueries/widget.css',
             'js'  => 'widgets/sqlqueries/widget.js',
         ];
+    }
+
+    /**
+     * Format data recursively, converting objects to strings
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    private function formatArray($data)
+    {
+        if (is_object($data)) {
+            // Format objects using the DataFormatter
+            return $this->getDataFormatter()->formatVar($data);
+        }
+
+        if (! is_array($data)) {
+            // Return scalar values as-is
+            return $data;
+        }
+
+        $formatted = [];
+        foreach ($data as $key => $value) {
+            if (is_object($value)) {
+                // Use the DataFormatter to properly format objects
+                $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+            } elseif (is_array($value)) {
+                // Recursively format nested arrays
+                $formatted[$key] = $this->formatArray($value);
+            } else {
+                // Keep scalar values as-is
+                $formatted[$key] = $value;
+            }
+        }
+
+        return $formatted;
     }
 }

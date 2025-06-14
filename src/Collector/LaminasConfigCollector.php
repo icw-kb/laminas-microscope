@@ -18,6 +18,7 @@ use function dirname;
 use function error_reporting;
 use function ini_get;
 use function is_array;
+use function is_object;
 use function is_string;
 use function strpos;
 use function strtolower;
@@ -37,11 +38,11 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     public function collect(): array
     {
         $data = [
-            'application_config' => $this->getApplicationConfig(),
-            'module_config'      => $this->getModuleConfig(),
-            'service_manager'    => $this->getServiceManagerConfig(),
-            'php_config'         => $this->getPhpConfig(),
-            'environment'        => $this->getEnvironmentData(),
+            'application_config' => $this->formatArray($this->getApplicationConfig()),
+            'module_config'      => $this->formatArray($this->getModuleConfig()),
+            'service_manager'    => $this->formatArray($this->getServiceManagerConfig()),
+            'php_config'         => $this->formatArray($this->getPhpConfig()),
+            'environment'        => $this->formatArray($this->getEnvironmentData()),
         ];
 
         return [
@@ -142,6 +143,9 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         ];
     }
 
+    /**
+     * @param object $module
+     */
     private function getModulePath($module): string
     {
         try {
@@ -165,6 +169,9 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         foreach ($array as $key => $value) {
             if (is_array($value)) {
                 $array[$key] = $this->recursiveSanitize($value, $sensitiveKeys);
+            } elseif (is_object($value)) {
+                // Convert objects to arrays first, then sanitize
+                $array[$key] = $this->recursiveSanitize((array) $value, $sensitiveKeys);
             } elseif (is_string($key) && $this->isSensitiveKey($key, $sensitiveKeys)) {
                 $array[$key] = '*** HIDDEN ***';
             }
@@ -182,5 +189,40 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
             }
         }
         return false;
+    }
+
+    /**
+     * Format data recursively, converting objects to strings
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    private function formatArray($data)
+    {
+        if (is_object($data)) {
+            // Format objects using the DataFormatter
+            return $this->getDataFormatter()->formatVar($data);
+        }
+
+        if (! is_array($data)) {
+            // Return scalar values as-is
+            return $data;
+        }
+
+        $formatted = [];
+        foreach ($data as $key => $value) {
+            if (is_object($value)) {
+                // Use the DataFormatter to properly format objects
+                $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+            } elseif (is_array($value)) {
+                // Recursively format nested arrays
+                $formatted[$key] = $this->formatArray($value);
+            } else {
+                // Keep scalar values as-is
+                $formatted[$key] = $value;
+            }
+        }
+
+        return $formatted;
     }
 }
