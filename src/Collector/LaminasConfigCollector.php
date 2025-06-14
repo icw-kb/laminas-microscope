@@ -47,11 +47,11 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
 
         // Flatten the data for KVListWidget - it expects key-value pairs with string values
         $flatData = $this->flattenForWidget($data);
+        
+        // Add count to the flat data
+        $flatData['_count'] = count($data);
 
-        return [
-            'config' => $flatData,
-            'count'  => count($data),
-        ];
+        return $flatData;
     }
 
     public function getName(): string
@@ -69,7 +69,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
                 'default' => '{}',
             ],
             'config:badge' => [
-                'map'     => 'config.count',
+                'map'     => 'config._count',
                 'default' => 0,
             ],
         ];
