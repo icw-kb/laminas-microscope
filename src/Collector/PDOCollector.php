@@ -39,6 +39,7 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
 
     public function collect(): array
     {
+        // Ensure all primitive values are properly typed for JavaScript consumption
         return [
             'nb_statements'            => count($this->queries),
             'nb_failed_statements'     => count(array_filter($this->queries, function ($q) {
@@ -46,8 +47,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             })),
             'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000), // Convert ms to seconds
-            'statements'               => $this->queries,
-            'connections'              => $this->connections,
+            'statements'               => $this->formatStatements($this->queries),
+            'connections'              => $this->formatConnections($this->connections),
         ];
     }
 
@@ -259,5 +260,45 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             'css' => 'widgets/sqlqueries/widget.css',
             'js'  => 'widgets/sqlqueries/widget.js',
         ];
+    }
+    
+    /**
+     * Format statements to ensure all values are proper types for JavaScript
+     */
+    private function formatStatements(array $statements): array
+    {
+        $formatted = [];
+        foreach ($statements as $statement) {
+            $formatted[] = [
+                'sql' => (string) ($statement['sql'] ?? ''),
+                'params' => is_array($statement['params'] ?? []) ? $statement['params'] : [], // Already formatted by addQuery
+                'duration' => (float) ($statement['duration'] ?? 0),
+                'duration_str' => (string) ($statement['duration_str'] ?? ''),
+                'memory' => (int) ($statement['memory'] ?? 0),
+                'memory_str' => (string) ($statement['memory_str'] ?? ''),
+                'is_success' => (bool) ($statement['is_success'] ?? true),
+                'is_slow' => (bool) ($statement['is_slow'] ?? false),
+                'is_duplicate' => (bool) ($statement['is_duplicate'] ?? false),
+                'error_code' => $statement['error_code'],
+                'error_message' => $statement['error_message'] ? (string) $statement['error_message'] : '',
+            ];
+        }
+        return $formatted;
+    }
+    
+    /**
+     * Format connections to ensure all values are proper types for JavaScript
+     */
+    private function formatConnections(array $connections): array
+    {
+        $formatted = [];
+        foreach ($connections as $name => $connection) {
+            if (is_array($connection)) {
+                $formatted[$name] = $this->formatArray($connection);
+            } else {
+                $formatted[$name] = (string) $connection;
+            }
+        }
+        return $formatted;
     }
 }

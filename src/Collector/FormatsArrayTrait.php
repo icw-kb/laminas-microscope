@@ -26,6 +26,36 @@ trait FormatsArrayTrait
     }
     
     /**
+     * Format data to be completely JavaScript-safe
+     * Ensures no values will cause text.replace() errors in widgets
+     */
+    private function formatForJavaScript($data): mixed
+    {
+        if (is_array($data)) {
+            $result = [];
+            foreach ($data as $key => $value) {
+                $result[$key] = $this->formatForJavaScript($value);
+            }
+            return $result;
+        }
+        
+        if (is_null($data)) {
+            return null; // null is safe in JavaScript
+        }
+        
+        if (is_bool($data)) {
+            return $data; // booleans are safe in JavaScript
+        }
+        
+        if (is_numeric($data)) {
+            return $data; // numbers are safe in JavaScript
+        }
+        
+        // For everything else, ensure it's a string
+        return $this->formatSingleValue($data);
+    }
+    
+    /**
      * Format only leaf values that are objects, preserving array structure
      */
     private function formatLeafValues($data): mixed
@@ -97,6 +127,15 @@ trait FormatsArrayTrait
      */
     private function formatSingleValue($data): mixed
     {
+        // Handle null and primitives safely
+        if ($data === null || is_bool($data) || is_int($data) || is_float($data)) {
+            return $data;
+        }
+        
+        if (is_string($data)) {
+            return $data;
+        }
+        
         if (is_object($data)) {
             // Handle special object types
             if ($data instanceof \DateTime || $data instanceof \DateTimeImmutable) {
@@ -127,6 +166,12 @@ trait FormatsArrayTrait
             return 'Resource(' . get_resource_type($data) . ')';
         }
         
-        return $data;
+        // Fallback for any other type - convert to string safely
+        if (is_scalar($data) || $data === null) {
+            return $data;
+        }
+        
+        // For non-scalar, non-object types, convert to string representation
+        return '[' . gettype($data) . ']';
     }
 }

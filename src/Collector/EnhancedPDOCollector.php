@@ -83,11 +83,11 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             'nb_duplicate_statements'  => count(array_filter($this->queries, fn($q) => $q['is_duplicate'] ?? false)),
             'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000),
-            'statements'               => $this->queries,
-            'connections'              => $this->connections,
-            'analysis'                 => $analysis,
+            'statements'               => $this->formatStatements($this->queries),
+            'connections'              => $this->formatConnections($this->connections),
+            'analysis'                 => $this->formatAnalysis($analysis),
             'performance_score'        => $this->calculatePerformanceScore(),
-            'recommendations'          => $this->generateRecommendations($analysis),
+            'recommendations'          => $this->formatRecommendations($this->generateRecommendations($analysis)),
         ];
     }
 
@@ -685,5 +685,68 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
         } catch (Exception $e) {
             // Continue silently
         }
+    }
+    
+    /**
+     * Format statements to ensure all values are proper types for JavaScript
+     */
+    private function formatStatements(array $statements): array
+    {
+        $formatted = [];
+        foreach ($statements as $statement) {
+            $formatted[] = [
+                'sql' => (string) ($statement['sql'] ?? ''),
+                'params' => is_array($statement['params'] ?? []) ? $statement['params'] : [], // Already formatted by addQuery
+                'duration' => (float) ($statement['duration'] ?? 0),
+                'duration_str' => (string) ($statement['duration_str'] ?? ''),
+                'memory' => (int) ($statement['memory'] ?? 0),
+                'memory_str' => (string) ($statement['memory_str'] ?? ''),
+                'is_success' => (bool) ($statement['is_success'] ?? true),
+                'is_slow' => (bool) ($statement['is_slow'] ?? false),
+                'is_very_slow' => (bool) ($statement['is_very_slow'] ?? false),
+                'is_duplicate' => (bool) ($statement['is_duplicate'] ?? false),
+                'error_code' => $statement['error_code'],
+                'error_message' => $statement['error_message'] ? (string) $statement['error_message'] : '',
+                'timestamp' => (int) ($statement['timestamp'] ?? 0),
+                'microtime' => (float) ($statement['microtime'] ?? 0),
+                // Include enhanced fields if they exist
+                'complexity_score' => isset($statement['complexity_score']) ? (int) $statement['complexity_score'] : null,
+                'optimization_suggestions' => isset($statement['optimization_suggestions']) ? (array) $statement['optimization_suggestions'] : [],
+                'affected_tables' => isset($statement['affected_tables']) ? (array) $statement['affected_tables'] : [],
+            ];
+        }
+        return $formatted;
+    }
+    
+    /**
+     * Format connections to ensure all values are proper types for JavaScript
+     */
+    private function formatConnections(array $connections): array
+    {
+        $formatted = [];
+        foreach ($connections as $name => $connection) {
+            if (is_array($connection)) {
+                $formatted[$name] = $this->formatArray($connection);
+            } else {
+                $formatted[$name] = (string) $connection;
+            }
+        }
+        return $formatted;
+    }
+    
+    /**
+     * Format analysis data to ensure all values are proper types for JavaScript
+     */
+    private function formatAnalysis(array $analysis): array
+    {
+        return $this->formatArray($analysis);
+    }
+    
+    /**
+     * Format recommendations to ensure all values are proper types for JavaScript
+     */
+    private function formatRecommendations(array $recommendations): array
+    {
+        return $this->formatArray($recommendations);
     }
 }
