@@ -12,12 +12,15 @@ use Laminas\Db\Adapter\Adapter;
 use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
 use LaminasMicroscope\Utility\FormatUtility;
+use Throwable;
 
 use function array_filter;
 use function count;
 use function is_array;
+use function is_object;
 use function method_exists;
 use function preg_replace;
+use function spl_object_id;
 use function strtolower;
 use function trim;
 
@@ -45,8 +48,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             })),
             'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000), // Convert ms to seconds
-            'statements'               => $this->queries,
-            'connections'              => $this->connections,
+            'statements'               => $this->formatArray($this->queries),
+            'connections'              => $this->formatArray($this->connections),
         ];
     }
 
@@ -253,5 +256,70 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             'css' => 'widgets/sqlqueries/widget.css',
             'js'  => 'widgets/sqlqueries/widget.js',
         ];
+    }
+
+    /**
+     * Format data recursively for SQLQueriesWidget compatibility
+     * Note: PDOCollector uses SQLQueriesWidget, not VariableListWidget
+     *
+     * @param mixed $data
+     * @param int $depth Current recursion depth
+     * @param int $maxDepth Maximum recursion depth
+     * @param array $visited Already visited objects to prevent circular references
+     * @return mixed
+     */
+    private function formatArray($data, int $depth = 0, int $maxDepth = 10, array &$visited = [])
+    {
+        // Prevent infinite recursion
+        if ($depth > $maxDepth) {
+            return '[MAX DEPTH REACHED]';
+        }
+
+        if (is_object($data)) {
+            // Check for circular references
+            $objectId = spl_object_id($data);
+            if (isset($visited[$objectId])) {
+                return '[CIRCULAR REFERENCE]';
+            }
+            $visited[$objectId] = true;
+
+            try {
+                $result = $this->getDataFormatter()->formatVar($data);
+                unset($visited[$objectId]);
+                return $result;
+            } catch (Throwable $e) {
+                unset($visited[$objectId]);
+                return '[OBJECT: ' . $data::class . ']';
+            }
+        }
+
+        if (! is_array($data)) {
+            return $data;
+        }
+
+        $formatted = [];
+        foreach ($data as $key => $value) {
+            if (is_object($value)) {
+                $objectId = spl_object_id($value);
+                if (isset($visited[$objectId])) {
+                    $formatted[$key] = '[CIRCULAR REFERENCE]';
+                    continue;
+                }
+                $visited[$objectId] = true;
+
+                try {
+                    $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+                } catch (Throwable $e) {
+                    $formatted[$key] = '[OBJECT: ' . $value::class . ']';
+                }
+                unset($visited[$objectId]);
+            } elseif (is_array($value)) {
+                $formatted[$key] = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
+            } else {
+                $formatted[$key] = $value;
+            }
+        }
+
+        return $formatted;
     }
 }

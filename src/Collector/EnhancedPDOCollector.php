@@ -13,6 +13,7 @@ use LaminasMicroscope\Analyzer\QueryAnalyzer;
 use LaminasMicroscope\Cache\CacheManager;
 use LaminasMicroscope\Collector\CollectorInterface;
 use LaminasMicroscope\Utility\FormatUtility;
+use Throwable;
 
 use function array_column;
 use function array_filter;
@@ -24,6 +25,8 @@ use function arsort;
 use function count;
 use function floor;
 use function in_array;
+use function is_array;
+use function is_object;
 use function max;
 use function md5;
 use function method_exists;
@@ -31,6 +34,7 @@ use function microtime;
 use function preg_match;
 use function preg_match_all;
 use function preg_replace;
+use function spl_object_id;
 use function strtolower;
 use function strtoupper;
 use function time;
@@ -82,11 +86,11 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             'nb_duplicate_statements'  => count(array_filter($this->queries, fn($q) => $q['is_duplicate'] ?? false)),
             'accumulated_duration'     => $this->totalTime,
             'accumulated_duration_str' => FormatUtility::formatDuration($this->totalTime / 1000),
-            'statements'               => $this->queries,
-            'connections'              => $this->connections,
-            'analysis'                 => $analysis,
+            'statements'               => $this->formatArray($this->queries),
+            'connections'              => $this->formatArray($this->connections),
+            'analysis'                 => $this->formatArray($analysis),
             'performance_score'        => $this->calculatePerformanceScore(),
-            'recommendations'          => $this->generateRecommendations($analysis),
+            'recommendations'          => $this->formatArray($this->generateRecommendations($analysis)),
         ];
     }
 
@@ -679,5 +683,83 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
         } catch (Exception $e) {
             // Continue silently
         }
+    }
+
+    /**
+     * Format data recursively for SQLQueriesWidget compatibility
+     * Note: EnhancedPDOCollector uses SQLQueriesWidget, not VariableListWidget
+     *
+     * @param mixed $data
+     * @param int $depth Current recursion depth
+     * @param int $maxDepth Maximum recursion depth
+     * @param array $visited Already visited objects to prevent circular references
+     * @return mixed
+     */
+    private function formatArray($data, int $depth = 0, int $maxDepth = 10, array &$visited = [])
+    {
+        // Prevent infinite recursion
+        if ($depth > $maxDepth) {
+            return '[MAX DEPTH REACHED]';
+        }
+
+        if (is_object($data)) {
+            // Check for circular references
+            $objectId = spl_object_id($data);
+            if (isset($visited[$objectId])) {
+                return '[CIRCULAR REFERENCE]';
+            }
+            $visited[$objectId] = true;
+
+            try {
+                $result = $this->getDataFormatter()->formatVar($data);
+                unset($visited[$objectId]);
+                
+                // For SQLQueriesWidget, ensure we return a string representation
+                if (is_string($result) && trim($result) !== '') {
+                    return $result;
+                } else {
+                    return '[OBJECT: ' . $data::class . ']';
+                }
+            } catch (Throwable $e) {
+                unset($visited[$objectId]);
+                return '[OBJECT: ' . $data::class . ']';
+            }
+        }
+
+        if (! is_array($data)) {
+            return $data;
+        }
+
+        $formatted = [];
+        foreach ($data as $key => $value) {
+            if (is_object($value)) {
+                $objectId = spl_object_id($value);
+                if (isset($visited[$objectId])) {
+                    $formatted[$key] = '[CIRCULAR REFERENCE]';
+                    continue;
+                }
+                $visited[$objectId] = true;
+
+                try {
+                    $result = $this->getDataFormatter()->formatVar($value);
+                    
+                    // For SQLQueriesWidget, ensure we return a string representation
+                    if (is_string($result) && trim($result) !== '') {
+                        $formatted[$key] = $result;
+                    } else {
+                        $formatted[$key] = '[OBJECT: ' . $value::class . ']';
+                    }
+                } catch (Throwable $e) {
+                    $formatted[$key] = '[OBJECT: ' . $value::class . ']';
+                }
+                unset($visited[$objectId]);
+            } elseif (is_array($value)) {
+                $formatted[$key] = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
+            } else {
+                $formatted[$key] = $value;
+            }
+        }
+
+        return $formatted;
     }
 }

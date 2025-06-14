@@ -27,6 +27,7 @@ return [
                     'memory',
                     'pdo',
                     'request',
+                    'session',
                     'config',
                 ],
             ],
