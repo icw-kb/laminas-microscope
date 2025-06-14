@@ -27,6 +27,7 @@ use const PHP_VERSION;
 
 class LaminasConfigCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use FormatsArrayTrait;
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -75,7 +76,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     {
         try {
             $config = $this->serviceManager->get('config');
-            return $this->sanitizeConfig($config);
+            return $this->formatArray($this->sanitizeConfig($config));
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }

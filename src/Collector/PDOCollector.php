@@ -23,6 +23,7 @@ use function trim;
 
 class PDOCollector extends DataCollector implements Renderable, AssetProvider, CollectorInterface
 {
+    use FormatsArrayTrait;
     private ServiceManager $serviceManager;
     private array $queries     = [];
     private array $connections = [];
@@ -182,6 +183,11 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
 
     public function addQuery(array $query): void
     {
+        // Format parameters to prevent [object Object] display
+        if (isset($query['params']) && is_array($query['params'])) {
+            $query['params'] = $this->formatArray($query['params']);
+        }
+        
         $query['duration_str'] = FormatUtility::formatDuration($query['duration'] / 1000); // Convert ms to seconds
         $query['memory_str']   = FormatUtility::formatBytes($query['memory']);
 

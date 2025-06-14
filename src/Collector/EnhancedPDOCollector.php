@@ -41,6 +41,7 @@ use const PREG_SET_ORDER;
 
 class EnhancedPDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use FormatsArrayTrait;
     private ServiceManager $serviceManager;
     private ?CacheManager $cacheManager;
     private QueryAnalyzer $queryAnalyzer;
@@ -115,6 +116,11 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
     {
         $startTime = microtime(true);
 
+        // Format parameters to prevent [object Object] display
+        if (isset($query['params']) && is_array($query['params'])) {
+            $query['params'] = $this->formatArray($query['params']);
+        }
+        
         // Basic query processing
         $query['duration_str'] = FormatUtility::formatDuration($query['duration'] / 1000);
         $query['memory_str']   = FormatUtility::formatBytes($query['memory'] ?? 0);

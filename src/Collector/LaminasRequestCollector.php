@@ -27,6 +27,7 @@ use const PHP_SESSION_ACTIVE;
 
 class LaminasRequestCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use FormatsArrayTrait;
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -36,7 +37,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
 
     public function collect(): array
     {
-        return [
+        return $this->formatArray([
             'method'   => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
             'uri'      => $_SERVER['REQUEST_URI'] ?? 'unknown',
             'headers'  => $this->getHeaders(),
@@ -47,7 +48,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
             'server'   => $this->getServerData(),
             'route'    => $this->getRouteData(),
             'response' => $this->getResponseData(),
-        ];
+        ]);
     }
 
     public function getName(): string
@@ -111,7 +112,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         return [
             'id'   => session_id(),
             'name' => session_name(),
-            'data' => $_SESSION ?? [],
+            'data' => $this->formatArray($_SESSION ?? []),
         ];
     }
 
@@ -167,7 +168,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                             'matched_route_name' => $routeMatch->getMatchedRouteName(),
                             'controller'         => $routeMatch->getParam('controller'),
                             'action'             => $routeMatch->getParam('action'),
-                            'params'             => $routeMatch->getParams(),
+                            'params'             => $this->formatArray($routeMatch->getParams()),
                         ];
                     }
                 }
