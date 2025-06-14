@@ -200,7 +200,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                             'matched_route_name' => $routeMatch->getMatchedRouteName(),
                             'controller'         => $routeMatch->getParam('controller'),
                             'action'             => $routeMatch->getParam('action'),
-                            'params'             => $routeMatch->getParams(),
+                            'params'             => $this->formatArray($routeMatch->getParams()),
                         ];
                     }
                 }
@@ -230,7 +230,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                         return [
                             'status_code'    => $response->getStatusCode(),
                             'reason_phrase'  => $response->getReasonPhrase(),
-                            'headers'        => $headers,
+                            'headers'        => $this->formatArray($headers),
                             'content_length' => strlen($response->getContent()),
                         ];
                     }
@@ -244,14 +244,21 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
     }
 
     /**
-     * Format array data recursively, converting objects to strings
+     * Format data recursively, converting objects to strings
      *
      * @param mixed $data
+     * @return mixed
      */
-    private function formatArray($data): array
+    private function formatArray($data)
     {
+        if (is_object($data)) {
+            // Format objects using the DataFormatter
+            return $this->getDataFormatter()->formatVar($data);
+        }
+
         if (! is_array($data)) {
-            return [];
+            // Return scalar values as-is
+            return $data;
         }
 
         $formatted = [];

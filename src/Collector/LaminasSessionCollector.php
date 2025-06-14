@@ -113,23 +113,47 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
         ];
     }
 
-    private function formatSessionData(array $data): array
+    /**
+     * @param array $data
+     * @return mixed
+     */
+    private function formatSessionData(array $data)
     {
         return $this->formatArray($data);
     }
 
-    private function formatArray(array $data): array
+    /**
+     * Format array data recursively, converting objects to strings
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    private function formatArray($data)
     {
+        if (is_object($data)) {
+            // Format objects using the DataFormatter
+            return $this->getDataFormatter()->formatVar($data);
+        }
+
+        if (! is_array($data)) {
+            // Return scalar values as-is
+            return $data;
+        }
+
         $formatted = [];
         foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $formatted[$key] = $this->formatArray($value);
-            } elseif (is_object($value)) {
+            if (is_object($value)) {
+                // Use the DataFormatter to properly format objects
                 $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+            } elseif (is_array($value)) {
+                // Recursively format nested arrays
+                $formatted[$key] = $this->formatArray($value);
             } else {
+                // Keep scalar values as-is
                 $formatted[$key] = $value;
             }
         }
+
         return $formatted;
     }
 
@@ -184,4 +208,3 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
         return $config;
     }
 }
-
