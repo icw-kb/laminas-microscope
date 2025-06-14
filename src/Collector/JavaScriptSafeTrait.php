@@ -51,7 +51,7 @@ trait JavaScriptSafeTrait
     private function ensureString($value): string
     {
         if (is_string($value)) {
-            return $value;
+            return $this->cleanDebugOutput($value);
         }
         
         if (is_null($value)) {
@@ -104,7 +104,7 @@ trait JavaScriptSafeTrait
                 }
             }
             
-            if ($maxDepth > 3 || strlen($value) > 200) {
+            if ($maxDepth >= 2 || strlen($value) > 100) {
                 return '[Object]'; // Complex nested structure
             }
         }
@@ -168,7 +168,7 @@ trait JavaScriptSafeTrait
                 }
             }
             
-            if ($maxDepth > 3 || strlen($value) > 200) {
+            if ($maxDepth >= 2 || strlen($value) > 100) {
                 return '[Object]'; // Complex nested structure after cleaning
             }
         }

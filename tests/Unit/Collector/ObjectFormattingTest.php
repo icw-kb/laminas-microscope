@@ -259,8 +259,8 @@ class ObjectFormattingTest extends TestCase
         // Should not contain [object Object]
         $this->assertStringNotContainsString('[object Object]', $json);
         
-        // Should contain value properties for complex objects
-        $this->assertStringContainsString('"value":', $json, 'Complex objects should be wrapped in value property');
+        // Should contain clean object placeholders instead of complex structures
+        $this->assertStringContainsString('"[Object]"', $json, 'Complex objects should be converted to clean placeholders');
         
         // Should not contain empty objects
         $this->assertStringNotContainsString('{}', $json);

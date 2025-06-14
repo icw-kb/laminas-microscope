@@ -239,16 +239,16 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
                 
-                // Always wrap objects in value property for VariableListWidget
+                // For VariableListWidget, return flat strings, not nested objects
                 // Ensure we have a non-empty string result
                 if (is_string($result) && trim($result) !== '') {
-                    return ['value' => $result];
+                    return $result;
                 } else {
-                    return ['value' => '[OBJECT: ' . $data::class . ']'];
+                    return '[OBJECT: ' . $data::class . ']';
                 }
             } catch (Throwable $e) {
                 unset($visited[$objectId]);
-                return ['value' => '[OBJECT: ' . $data::class . ']'];
+                return '[OBJECT: ' . $data::class . ']';
             }
         }
 
@@ -271,27 +271,27 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
                 try {
                     $result = $this->getDataFormatter()->formatVar($value);
                     
-                    // Always wrap objects in value property for VariableListWidget
+                    // For VariableListWidget, return flat strings, not nested objects
                     if (is_string($result) && trim($result) !== '') {
-                        $formatted[$key] = ['value' => $result];
+                        $formatted[$key] = $result;
                     } else {
-                        $formatted[$key] = ['value' => '[OBJECT: ' . $value::class . ']'];
+                        $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                     }
                 } catch (Throwable $e) {
-                    $formatted[$key] = ['value' => '[OBJECT: ' . $value::class . ']'];
+                    $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                 }
                 unset($visited[$objectId]);
             } elseif (is_array($value)) {
                 // For nested arrays, check if they should be displayed as a single value or as a list
                 $nestedFormatted = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
-                // If the array is associative and has many items, wrap it as a value object
+                // If the array is associative and has many items, convert to string
                 if (count($value) > 5 && $this->isAssociativeArray($value)) {
                     $jsonResult = json_encode($nestedFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     // Ensure JSON encoding succeeded
                     if ($jsonResult !== false) {
-                        $formatted[$key] = ['value' => $jsonResult];
+                        $formatted[$key] = $jsonResult;
                     } else {
-                        $formatted[$key] = ['value' => '[COMPLEX ARRAY: ' . count($value) . ' items]'];
+                        $formatted[$key] = '[COMPLEX ARRAY: ' . count($value) . ' items]';
                     }
                 } else {
                     $formatted[$key] = $nestedFormatted;
