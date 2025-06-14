@@ -58,12 +58,11 @@ class ObjectDisplayTest extends TestCase
         $jsonData = json_encode($data);
         $this->assertStringNotContainsString('[object Object]', $jsonData);
         
-        // Verify object is properly formatted
-        $this->assertArrayHasKey('route', $data);
-        $this->assertArrayHasKey('params', $data['route']);
-        $this->assertArrayHasKey('object', $data['route']['params']);
-        $this->assertIsString($data['route']['params']['object']);
-        $this->assertStringContainsString('Object(stdClass)', $data['route']['params']['object']);
+        // Verify object is properly formatted in flattened structure
+        $this->assertArrayHasKey('route.matched_route_name', $data);
+        $this->assertArrayHasKey('route.params.object', $data);
+        $this->assertIsString($data['route.params.object']);
+        $this->assertStringContainsString('Object(stdClass)', $data['route.params.object']);
     }
     
     public function testConfigCollectorHandlesObjectsCorrectly(): void
@@ -89,13 +88,15 @@ class ObjectDisplayTest extends TestCase
         $jsonData = json_encode($data);
         $this->assertStringNotContainsString('[object Object]', $jsonData);
         
-        // Verify DateTime is properly formatted
-        $this->assertIsString($data['config']['application_config']['test']['datetime']);
-        $this->assertEquals('2023-01-01 12:00:00', $data['config']['application_config']['test']['datetime']);
+        // Verify DateTime is properly formatted in flattened structure
+        $this->assertArrayHasKey('application_config.test.datetime', $data['config']);
+        $this->assertIsString($data['config']['application_config.test.datetime']);
+        $this->assertEquals('2023-01-01 12:00:00', $data['config']['application_config.test.datetime']);
         
         // Verify stdClass is properly formatted
-        $this->assertIsString($data['config']['application_config']['test']['object']);
-        $this->assertStringContainsString('Object(stdClass)', $data['config']['application_config']['test']['object']);
+        $this->assertArrayHasKey('application_config.test.object', $data['config']);
+        $this->assertIsString($data['config']['application_config.test.object']);
+        $this->assertStringContainsString('Object(stdClass)', $data['config']['application_config.test.object']);
     }
     
     public function testPDOCollectorHandlesObjectParameters(): void

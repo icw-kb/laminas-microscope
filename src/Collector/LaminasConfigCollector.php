@@ -45,8 +45,11 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
             'environment'        => $this->getEnvironmentData(),
         ];
 
+        // Flatten the data for KVListWidget - it expects key-value pairs with string values
+        $flatData = $this->flattenForWidget($data);
+
         return [
-            'config' => $data,
+            'config' => $flatData,
             'count'  => count($data),
         ];
     }
@@ -183,5 +186,42 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
             }
         }
         return false;
+    }
+    
+    /**
+     * Flatten nested config data for KVListWidget display
+     * KVListWidget expects flat key-value pairs with string values
+     */
+    private function flattenForWidget(array $data, string $prefix = ''): array
+    {
+        $result = [];
+        
+        foreach ($data as $key => $value) {
+            $fullKey = $prefix ? $prefix . '.' . $key : $key;
+            
+            if (is_array($value)) {
+                // For arrays, show count and flatten important items
+                if (empty($value)) {
+                    $result[$fullKey] = '(empty array)';
+                } elseif (isset($value['error'])) {
+                    // Show errors directly
+                    $result[$fullKey] = $value['error'];
+                } elseif (count($value) <= 10) {
+                    // Small arrays - flatten them
+                    $flattened = $this->flattenForWidget($value, $fullKey);
+                    $result = array_merge($result, $flattened);
+                } else {
+                    // Large arrays - show summary
+                    $result[$fullKey] = '(' . count($value) . ' items) ' . json_encode(array_slice($value, 0, 3, true)) . '...';
+                }
+            } else {
+                // Convert ALL non-array values to strings using our formatting
+                $formatted = $this->formatSingleValue($value);
+                // Ensure it's definitely a string
+                $result[$fullKey] = (string) $formatted;
+            }
+        }
+        
+        return $result;
     }
 }

@@ -37,7 +37,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
 
     public function collect(): array
     {
-        return $this->formatLeafValues([
+        $data = [
             'method'   => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
             'uri'      => $_SERVER['REQUEST_URI'] ?? 'unknown',
             'headers'  => $this->getHeaders(),
@@ -48,7 +48,10 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
             'server'   => $this->getServerData(),
             'route'    => $this->getRouteData(),
             'response' => $this->getResponseData(),
-        ]);
+        ];
+        
+        // Flatten for KVListWidget - it expects key-value pairs with string values
+        return $this->flattenForWidget($data);
     }
 
     public function getName(): string
@@ -209,5 +212,41 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         }
 
         return ['status' => 'No response data available'];
+    }
+    
+    /**
+     * Flatten nested request data for KVListWidget display
+     * KVListWidget expects flat key-value pairs with string values
+     */
+    private function flattenForWidget(array $data, string $prefix = ''): array
+    {
+        $result = [];
+        
+        foreach ($data as $key => $value) {
+            $fullKey = $prefix ? $prefix . '.' . $key : $key;
+            
+            if (is_array($value)) {
+                if (empty($value)) {
+                    $result[$fullKey] = '(empty)';
+                } elseif (isset($value['error'])) {
+                    $result[$fullKey] = $value['error'];
+                } elseif (isset($value['status'])) {
+                    $result[$fullKey] = $value['status'];
+                } elseif (count($value) <= 8) {
+                    // Small arrays - flatten them
+                    $flattened = $this->flattenForWidget($value, $fullKey);
+                    $result = array_merge($result, $flattened);
+                } else {
+                    // Large arrays - show summary
+                    $result[$fullKey] = '(' . count($value) . ' items)';
+                }
+            } else {
+                // Convert ALL non-array values to strings
+                $formatted = $this->formatSingleValue($value);
+                $result[$fullKey] = (string) $formatted;
+            }
+        }
+        
+        return $result;
     }
 }
