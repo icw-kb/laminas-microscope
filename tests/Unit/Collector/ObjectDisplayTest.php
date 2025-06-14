@@ -62,8 +62,8 @@ class ObjectDisplayTest extends TestCase
         $this->assertArrayHasKey('route', $data);
         $this->assertArrayHasKey('params', $data['route']);
         $this->assertArrayHasKey('object', $data['route']['params']);
-        $this->assertArrayHasKey('value', $data['route']['params']['object']);
-        $this->assertStringContainsString('Object(stdClass)', $data['route']['params']['object']['value']);
+        $this->assertIsString($data['route']['params']['object']);
+        $this->assertStringContainsString('Object(stdClass)', $data['route']['params']['object']);
     }
     
     public function testConfigCollectorHandlesObjectsCorrectly(): void
@@ -94,8 +94,8 @@ class ObjectDisplayTest extends TestCase
         $this->assertEquals('2023-01-01 12:00:00', $data['config']['application_config']['test']['datetime']);
         
         // Verify stdClass is properly formatted
-        $this->assertArrayHasKey('value', $data['config']['application_config']['test']['object']);
-        $this->assertStringContainsString('Object(stdClass)', $data['config']['application_config']['test']['object']['value']);
+        $this->assertIsString($data['config']['application_config']['test']['object']);
+        $this->assertStringContainsString('Object(stdClass)', $data['config']['application_config']['test']['object']);
     }
     
     public function testPDOCollectorHandlesObjectParameters(): void
@@ -128,8 +128,8 @@ class ObjectDisplayTest extends TestCase
         
         // Verify objects in params are properly formatted
         $statement = $data['statements'][0];
-        $this->assertArrayHasKey('value', $statement['params'][0]);
-        $this->assertStringContainsString('Object(stdClass)', $statement['params'][0]['value']);
+        $this->assertIsString($statement['params'][0]);
+        $this->assertStringContainsString('Object(stdClass)', $statement['params'][0]);
         $this->assertEquals('2023-01-01 00:00:00', $statement['params'][1]);
     }
     

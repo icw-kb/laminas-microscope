@@ -61,7 +61,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         return [
             'config'       => [
                 'icon'    => 'cog',
-                'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
+                'widget'  => 'PhpDebugBar.Widgets.KVListWidget',
                 'map'     => 'config',
                 'default' => '{}',
             ],

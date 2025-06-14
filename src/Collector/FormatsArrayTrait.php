@@ -41,16 +41,16 @@ trait FormatsArrayTrait
                 return $this->formatArray($data->toArray(), $depth + 1);
             }
             
-            // For VariableListWidget compatibility, wrap objects in value property
+            // Convert object to string representation
             $className = get_class($data);
             
             // Try to serialize the object properties
             $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if ($encoded === false || $encoded === '{}') {
-                return ['value' => 'Object(' . $className . ')'];
+                return 'Object(' . $className . ')';
             }
             
-            return ['value' => 'Object(' . $className . '): ' . $encoded];
+            return 'Object(' . $className . '): ' . $encoded;
         }
         
         if (is_resource($data)) {
