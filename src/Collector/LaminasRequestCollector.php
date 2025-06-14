@@ -10,20 +10,22 @@ use Exception;
 use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
 
+use function file_get_contents;
 use function function_exists;
 use function in_array;
 use function is_array;
+use function is_object;
 use function is_string;
-use function session_id;
-use function session_name;
-use function session_status;
+use function json_decode;
+use function json_last_error;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 use function ucwords;
 
-use const PHP_SESSION_ACTIVE;
+use const JSON_ERROR_NONE;
 
 class LaminasRequestCollector extends DataCollector implements Renderable, CollectorInterface
 {
@@ -36,18 +38,32 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
 
     public function collect(): array
     {
-        return [
-            'method'   => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
-            'uri'      => $_SERVER['REQUEST_URI'] ?? 'unknown',
-            'headers'  => $this->getHeaders(),
-            'get'      => $_GET,
-            'post'     => $this->sanitizePostData($_POST),
-            'cookies'  => $_COOKIE,
-            'session'  => $this->getSessionData(),
-            'server'   => $this->getServerData(),
-            'route'    => $this->getRouteData(),
-            'response' => $this->getResponseData(),
+        $data = [
+            'request'    => [
+                'method'   => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+                'uri'      => $_SERVER['REQUEST_URI'] ?? 'unknown',
+                'protocol' => $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1',
+                'scheme'   => ! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http',
+                'host'     => $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'unknown',
+            ],
+            'headers'    => $this->formatArray($this->getHeaders()),
+            'parameters' => [
+                'GET'   => $this->formatArray($_GET),
+                'POST'  => $this->formatArray($this->sanitizePostData($_POST)),
+                'route' => $this->formatArray($this->getRouteData()),
+            ],
+            'cookies'    => $this->formatArray($_COOKIE),
+            'server'     => $this->formatArray($this->getServerData()),
+            'response'   => $this->formatArray($this->getResponseData()),
         ];
+
+        // Add request body for non-POST requests
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && ! empty($contentType)) {
+            $data['body'] = $this->getRequestBody();
+        }
+
+        return $data;
     }
 
     public function getName(): string
@@ -65,7 +81,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
                 'default' => '{}',
             ],
             'request:badge' => [
-                'map'     => 'request.status_code',
+                'map'     => 'request.response.status_code',
                 'default' => 0,
             ],
         ];
@@ -102,16 +118,33 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         return $post;
     }
 
-    private function getSessionData(): array
+    private function getRequestBody(): array
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            return ['status' => 'No active session'];
+        $input = file_get_contents('php://input');
+        if (empty($input)) {
+            return ['empty' => true];
         }
 
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+        // Try to parse JSON
+        if (strpos($contentType, 'application/json') !== false) {
+            $decoded = json_decode($input, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return [
+                    'type'   => 'json',
+                    'parsed' => $this->formatArray($decoded),
+                    'raw'    => $input,
+                ];
+            }
+        }
+
+        // Return raw for other content types
         return [
-            'id'   => session_id(),
-            'name' => session_name(),
-            'data' => $_SESSION ?? [],
+            'type'         => 'raw',
+            'content_type' => $contentType,
+            'size'         => strlen($input) . ' bytes',
+            'preview'      => substr($input, 0, 1000) . (strlen($input) > 1000 ? '...' : ''),
         ];
     }
 
@@ -208,5 +241,33 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
         }
 
         return ['status' => 'No response data available'];
+    }
+
+    /**
+     * Format array data recursively, converting objects to strings
+     *
+     * @param mixed $data
+     */
+    private function formatArray($data): array
+    {
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $formatted = [];
+        foreach ($data as $key => $value) {
+            if (is_object($value)) {
+                // Use the DataFormatter to properly format objects
+                $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+            } elseif (is_array($value)) {
+                // Recursively format nested arrays
+                $formatted[$key] = $this->formatArray($value);
+            } else {
+                // Keep scalar values as-is
+                $formatted[$key] = $value;
+            }
+        }
+
+        return $formatted;
     }
 }

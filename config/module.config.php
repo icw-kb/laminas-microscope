@@ -11,6 +11,7 @@ use LaminasMicroscope\Collector\CollectorRegistry;
 use LaminasMicroscope\Collector\EnhancedPDOCollector;
 use LaminasMicroscope\Collector\LaminasConfigCollector;
 use LaminasMicroscope\Collector\LaminasRequestCollector;
+use LaminasMicroscope\Collector\LaminasSessionCollector;
 use LaminasMicroscope\Collector\PDOCollector;
 use LaminasMicroscope\Config\ConfigurationService;
 use LaminasMicroscope\Controller\ConfigurationController;
@@ -60,7 +61,7 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes'  => [
-                    'config'         => [
+                    'config'      => [
                         'type'    => 'Segment',
                         'options' => [
                             'route'       => '/config[/:action]',
@@ -73,7 +74,7 @@ return [
                             ],
                         ],
                     ],
-                    'api'            => [
+                    'api'         => [
                         'type'    => 'Segment',
                         'options' => [
                             'route'       => '/api[/:action]',
@@ -86,7 +87,7 @@ return [
                             ],
                         ],
                     ],
-                    'analytics'      => [
+                    'analytics'   => [
                         'type'    => 'Segment',
                         'options' => [
                             'route'       => '/analytics[/:action[/:id]]',
@@ -100,7 +101,7 @@ return [
                             ],
                         ],
                     ],
-                    'cache'          => [
+                    'cache'       => [
                         'type'    => 'Segment',
                         'options' => [
                             'route'       => '/cache[/:action]',
@@ -113,7 +114,7 @@ return [
                             ],
                         ],
                     ],
-                    'performance'    => [
+                    'performance' => [
                         'type'    => 'Segment',
                         'options' => [
                             'route'       => '/performance[/:action]',
@@ -193,6 +194,9 @@ return [
             LaminasRequestCollector::class => function (Laminas\ServiceManager\ServiceManager $container) {
                 return new LaminasRequestCollector($container);
             },
+            LaminasSessionCollector::class => function (Laminas\ServiceManager\ServiceManager $container) {
+                return new LaminasSessionCollector($container);
+            },
             QueryLogger::class             => function (Laminas\ServiceManager\ServiceManager $container) {
                 $pdoCollector = $container->get(PDOCollector::class);
                 return new QueryLogger($pdoCollector);
@@ -267,6 +271,11 @@ return [
                 'class'        => LaminasRequestCollector::class,
                 'factory'      => 'service',
                 'service_name' => LaminasRequestCollector::class,
+            ],
+            'session'  => [
+                'class'        => LaminasSessionCollector::class,
+                'factory'      => 'service',
+                'service_name' => LaminasSessionCollector::class,
             ],
         ],
     ],
