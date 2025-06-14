@@ -76,7 +76,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     {
         try {
             $config = $this->serviceManager->get('config');
-            return $this->formatArray($this->sanitizeConfig($config));
+            return $this->formatLeafValues($this->sanitizeConfig($config));
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
