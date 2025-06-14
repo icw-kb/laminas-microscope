@@ -40,6 +40,7 @@ use const PHP_SESSION_NONE;
 
 class LaminasSessionCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use JavaScriptSafeTrait;
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -71,7 +72,7 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
             $data['configuration'] = $this->getSessionConfiguration();
         }
 
-        return $data;
+        return $this->makeJavaScriptSafe($data);
     }
 
     public function getName(): string

@@ -34,6 +34,7 @@ use const PHP_VERSION;
 
 class LaminasConfigCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use JavaScriptSafeTrait;
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -52,7 +53,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         ];
 
         return [
-            'config' => $data,
+            'config' => $this->makeJavaScriptSafe($data),
             'count'  => count($data),
         ];
     }

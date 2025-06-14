@@ -37,6 +37,7 @@ use const JSON_UNESCAPED_SLASHES;
 
 class LaminasRequestCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use JavaScriptSafeTrait;
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -71,7 +72,7 @@ class LaminasRequestCollector extends DataCollector implements Renderable, Colle
             $data['body'] = $this->getRequestBody();
         }
 
-        return $data;
+        return $this->makeJavaScriptSafe($data);
     }
 
     public function getName(): string

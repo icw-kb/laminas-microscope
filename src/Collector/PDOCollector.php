@@ -26,6 +26,7 @@ use function trim;
 
 class PDOCollector extends DataCollector implements Renderable, AssetProvider, CollectorInterface
 {
+    use JavaScriptSafeTrait;
     private ServiceManager $serviceManager;
     private array $queries     = [];
     private array $connections = [];
@@ -41,7 +42,7 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
 
     public function collect(): array
     {
-        return [
+        $data = [
             'nb_statements'            => count($this->queries),
             'nb_failed_statements'     => count(array_filter($this->queries, function ($q) {
                 return $q['is_success'] === false;
@@ -51,6 +52,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             'statements'               => $this->formatArray($this->queries),
             'connections'              => $this->formatArray($this->connections),
         ];
+        
+        return $this->makeJavaScriptSafe($data);
     }
 
     public function getName(): string

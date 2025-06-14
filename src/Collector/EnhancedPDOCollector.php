@@ -45,6 +45,7 @@ use const PREG_SET_ORDER;
 
 class EnhancedPDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
+    use JavaScriptSafeTrait;
     private ServiceManager $serviceManager;
     private ?CacheManager $cacheManager;
     private QueryAnalyzer $queryAnalyzer;
@@ -78,7 +79,7 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
     {
         $analysis = $this->analyzeQueries();
 
-        return [
+        $data = [
             'nb_statements'            => count($this->queries),
             'nb_failed_statements'     => count(array_filter($this->queries, fn($q) => $q['is_success'] === false)),
             'nb_slow_statements'       => count(array_filter($this->queries, fn($q) => $q['is_slow'] ?? false)),
@@ -92,6 +93,8 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             'performance_score'        => $this->calculatePerformanceScore(),
             'recommendations'          => $this->formatArray($this->generateRecommendations($analysis)),
         ];
+        
+        return $this->makeJavaScriptSafe($data);
     }
 
     public function getName(): string
