@@ -10,7 +10,6 @@ use Exception;
 use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
 use ReflectionClass;
-use Throwable;
 
 use function array_keys;
 use function count;
@@ -19,22 +18,16 @@ use function dirname;
 use function error_reporting;
 use function ini_get;
 use function is_array;
-use function is_object;
 use function is_string;
-use function json_encode;
-use function range;
-use function spl_object_id;
 use function strpos;
 use function strtolower;
 
-use const JSON_PRETTY_PRINT;
-use const JSON_UNESCAPED_SLASHES;
 use const PHP_SAPI;
 use const PHP_VERSION;
 
 class LaminasConfigCollector extends DataCollector implements Renderable, CollectorInterface
 {
-    use JavaScriptSafeTrait;
+    use FormatsArrayTrait;
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -45,15 +38,18 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     public function collect(): array
     {
         $data = [
-            'application_config' => $this->formatArray($this->getApplicationConfig()),
-            'module_config'      => $this->formatArray($this->getModuleConfig()),
-            'service_manager'    => $this->formatArray($this->getServiceManagerConfig()),
-            'php_config'         => $this->formatArray($this->getPhpConfig()),
-            'environment'        => $this->formatArray($this->getEnvironmentData()),
+            'application_config' => $this->getApplicationConfig(),
+            'module_config'      => $this->getModuleConfig(),
+            'service_manager'    => $this->getServiceManagerConfig(),
+            'php_config'         => $this->getPhpConfig(),
+            'environment'        => $this->getEnvironmentData(),
         ];
 
+        // Flatten the data for KVListWidget - it expects key-value pairs with string values
+        $flatData = $this->flattenForWidget($data);
+
         return [
-            'config' => $this->makeJavaScriptSafe($data),
+            'config' => $flatData,
             'count'  => count($data),
         ];
     }
@@ -68,7 +64,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         return [
             'config'       => [
                 'icon'    => 'cog',
-                'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
+                'widget'  => 'PhpDebugBar.Widgets.KVListWidget',
                 'map'     => 'config',
                 'default' => '{}',
             ],
@@ -83,7 +79,7 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     {
         try {
             $config = $this->serviceManager->get('config');
-            return $this->sanitizeConfig($config);
+            return $this->formatLeafValues($this->sanitizeConfig($config));
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
@@ -150,9 +146,6 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         ];
     }
 
-    /**
-     * @param object $module
-     */
     private function getModulePath($module): string
     {
         try {
@@ -171,31 +164,17 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         return $this->recursiveSanitize($config, $sensitiveKeys);
     }
 
-    private function recursiveSanitize($data, array $sensitiveKeys, int $depth = 0, int $maxDepth = 10): array
+    private function recursiveSanitize(array $array, array $sensitiveKeys): array
     {
-        // Prevent infinite recursion
-        if ($depth > $maxDepth) {
-            return ['[MAX DEPTH REACHED]'];
-        }
-
-        // Ensure we have an array to work with
-        if (! is_array($data)) {
-            return (array) $data;
-        }
-
-        $result = [];
-        foreach ($data as $key => $value) {
+        foreach ($array as $key => $value) {
             if (is_array($value)) {
-                $result[$key] = $this->recursiveSanitize($value, $sensitiveKeys, $depth + 1, $maxDepth);
+                $array[$key] = $this->recursiveSanitize($value, $sensitiveKeys);
             } elseif (is_string($key) && $this->isSensitiveKey($key, $sensitiveKeys)) {
-                $result[$key] = '*** HIDDEN ***';
-            } else {
-                // Let formatArray() handle objects and other data types
-                $result[$key] = $value;
+                $array[$key] = '*** HIDDEN ***';
             }
         }
 
-        return $result;
+        return $array;
     }
 
     private function isSensitiveKey(string $key, array $sensitiveKeys): bool
@@ -208,108 +187,41 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         }
         return false;
     }
-
+    
     /**
-     * Format data recursively for VariableListWidget compatibility
-     * Ensures all values are either primitives, arrays, or objects with a 'value' property
-     *
-     * @param mixed $data
-     * @param int $depth Current recursion depth
-     * @param int $maxDepth Maximum recursion depth
-     * @param array $visited Already visited objects to prevent circular references
-     * @return mixed
+     * Flatten nested config data for KVListWidget display
+     * KVListWidget expects flat key-value pairs with string values
      */
-    private function formatArray($data, int $depth = 0, int $maxDepth = 10, array &$visited = [])
+    private function flattenForWidget(array $data, string $prefix = ''): array
     {
-        // Prevent infinite recursion
-        if ($depth > $maxDepth) {
-            return ['value' => '[MAX DEPTH REACHED]'];
-        }
-
-        if (is_object($data)) {
-            // Check for circular references
-            $objectId = spl_object_id($data);
-            if (isset($visited[$objectId])) {
-                return ['value' => '[CIRCULAR REFERENCE]'];
-            }
-            $visited[$objectId] = true;
-
-            // Format objects using the DataFormatter but wrap in value object
-            try {
-                $result = $this->getDataFormatter()->formatVar($data);
-                unset($visited[$objectId]);
-                
-                // For VariableListWidget, return flat strings, not nested objects
-                // Ensure we have a non-empty string result
-                if (is_string($result) && trim($result) !== '') {
-                    return $result;
-                } else {
-                    return '[OBJECT: ' . $data::class . ']';
-                }
-            } catch (Throwable $e) {
-                unset($visited[$objectId]);
-                return '[OBJECT: ' . $data::class . ']';
-            }
-        }
-
-        if (! is_array($data)) {
-            // Return scalar values as-is (VariableListWidget handles these correctly)
-            return $data;
-        }
-
-        $formatted = [];
+        $result = [];
+        
         foreach ($data as $key => $value) {
-            if (is_object($value)) {
-                // Check for circular references
-                $objectId = spl_object_id($value);
-                if (isset($visited[$objectId])) {
-                    $formatted[$key] = ['value' => '[CIRCULAR REFERENCE]'];
-                    continue;
-                }
-                $visited[$objectId] = true;
-
-                try {
-                    $result = $this->getDataFormatter()->formatVar($value);
-                    
-                    // For VariableListWidget, return flat strings, not nested objects
-                    if (is_string($result) && trim($result) !== '') {
-                        $formatted[$key] = $result;
-                    } else {
-                        $formatted[$key] = '[OBJECT: ' . $value::class . ']';
-                    }
-                } catch (Throwable $e) {
-                    $formatted[$key] = '[OBJECT: ' . $value::class . ']';
-                }
-                unset($visited[$objectId]);
-            } elseif (is_array($value)) {
-                // For nested arrays, check if they should be displayed as a single value or as a list
-                $nestedFormatted = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
-                // If the array is associative and has many items, convert to string
-                if (count($value) > 5 && $this->isAssociativeArray($value)) {
-                    $jsonResult = json_encode($nestedFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                    // Ensure JSON encoding succeeded
-                    if ($jsonResult !== false) {
-                        $formatted[$key] = $jsonResult;
-                    } else {
-                        $formatted[$key] = '[COMPLEX ARRAY: ' . count($value) . ' items]';
-                    }
+            $fullKey = $prefix ? $prefix . '.' . $key : $key;
+            
+            if (is_array($value)) {
+                // For arrays, show count and flatten important items
+                if (empty($value)) {
+                    $result[$fullKey] = '(empty array)';
+                } elseif (isset($value['error'])) {
+                    // Show errors directly
+                    $result[$fullKey] = $value['error'];
+                } elseif (count($value) <= 10) {
+                    // Small arrays - flatten them
+                    $flattened = $this->flattenForWidget($value, $fullKey);
+                    $result = array_merge($result, $flattened);
                 } else {
-                    $formatted[$key] = $nestedFormatted;
+                    // Large arrays - show summary
+                    $result[$fullKey] = '(' . count($value) . ' items) ' . json_encode(array_slice($value, 0, 3, true)) . '...';
                 }
             } else {
-                // Keep scalar values as-is
-                $formatted[$key] = $value;
+                // Convert ALL non-array values to strings using our formatting
+                $formatted = $this->formatSingleValue($value);
+                // Ensure it's definitely a string
+                $result[$fullKey] = (string) $formatted;
             }
         }
-
-        return $formatted;
-    }
-
-    /**
-     * Check if an array is associative (has string keys)
-     */
-    private function isAssociativeArray(array $array): bool
-    {
-        return array_keys($array) !== range(0, count($array) - 1);
+        
+        return $result;
     }
 }

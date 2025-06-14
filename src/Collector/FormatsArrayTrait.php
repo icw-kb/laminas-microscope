@@ -1,0 +1,186 @@
+<?php
+
+declare(strict_types=1);
+
+namespace LaminasMicroscope\Collector;
+
+use function get_class;
+use function get_resource_type;
+use function gettype;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_null;
+use function is_numeric;
+use function is_object;
+use function is_resource;
+use function is_scalar;
+use function is_string;
+use function json_encode;
+use function method_exists;
+
+use const JSON_UNESCAPED_SLASHES;
+use const JSON_UNESCAPED_UNICODE;
+
+trait FormatsArrayTrait
+{
+    /**
+     * Format array for proper display in debug bar
+     * Converts objects to string representations to avoid [object Object] display
+     */
+    private function formatArray($data, int $depth = 0): mixed
+    {
+        return $this->formatArrayRecursive($data, $depth);
+    }
+    
+    /**
+     * Format data to be completely JavaScript-safe
+     * Ensures no values will cause text.replace() errors in widgets
+     */
+    private function formatForJavaScript($data): mixed
+    {
+        if (is_array($data)) {
+            $result = [];
+            foreach ($data as $key => $value) {
+                $result[$key] = $this->formatForJavaScript($value);
+            }
+            return $result;
+        }
+        
+        if (is_null($data)) {
+            return null; // null is safe in JavaScript
+        }
+        
+        if (is_bool($data)) {
+            return $data; // booleans are safe in JavaScript
+        }
+        
+        if (is_numeric($data)) {
+            return $data; // numbers are safe in JavaScript
+        }
+        
+        // For everything else, ensure it's a string
+        return $this->formatSingleValue($data);
+    }
+    
+    /**
+     * Format only leaf values that are objects, preserving array structure
+     */
+    private function formatLeafValues($data): mixed
+    {
+        if (is_array($data)) {
+            $result = [];
+            foreach ($data as $key => $value) {
+                $result[$key] = $this->formatLeafValues($value);
+            }
+            return $result;
+        }
+        
+        return $this->formatSingleValue($data);
+    }
+    
+    /**
+     * Recursive formatting with depth protection
+     */
+    private function formatArrayRecursive($data, int $depth = 0): mixed
+    {
+        // Prevent infinite recursion
+        if ($depth > 10) {
+            return '[Max depth reached]';
+        }
+
+        if (is_object($data)) {
+            // Handle special object types
+            if ($data instanceof \DateTime || $data instanceof \DateTimeImmutable) {
+                return $data->format('Y-m-d H:i:s');
+            }
+            
+            if (method_exists($data, '__toString')) {
+                return (string) $data;
+            }
+            
+            if (method_exists($data, 'toArray')) {
+                return $this->formatArray($data->toArray(), $depth + 1);
+            }
+            
+            // Convert object to string representation
+            $className = get_class($data);
+            
+            // Try to serialize the object properties
+            $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($encoded === false || $encoded === '{}') {
+                return 'Object(' . $className . ')';
+            }
+            
+            return 'Object(' . $className . '): ' . $encoded;
+        }
+        
+        if (is_resource($data)) {
+            return 'Resource(' . get_resource_type($data) . ')';
+        }
+        
+        if (is_array($data)) {
+            $result = [];
+            foreach ($data as $key => $value) {
+                $result[$key] = $this->formatArrayRecursive($value, $depth + 1);
+            }
+            return $result;
+        }
+        
+        return $this->formatSingleValue($data);
+    }
+    
+    /**
+     * Format a single value (object, resource, etc.)
+     */
+    private function formatSingleValue($data): mixed
+    {
+        // Handle null and primitives safely
+        if ($data === null || is_bool($data) || is_int($data) || is_float($data)) {
+            return $data;
+        }
+        
+        if (is_string($data)) {
+            return $data;
+        }
+        
+        if (is_object($data)) {
+            // Handle special object types
+            if ($data instanceof \DateTime || $data instanceof \DateTimeImmutable) {
+                return $data->format('Y-m-d H:i:s');
+            }
+            
+            if (method_exists($data, '__toString')) {
+                return (string) $data;
+            }
+            
+            if (method_exists($data, 'toArray')) {
+                return $this->formatLeafValues($data->toArray());
+            }
+            
+            // Convert object to string representation
+            $className = get_class($data);
+            
+            // Try to serialize the object properties
+            $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($encoded === false || $encoded === '{}') {
+                return 'Object(' . $className . ')';
+            }
+            
+            return 'Object(' . $className . '): ' . $encoded;
+        }
+        
+        if (is_resource($data)) {
+            return 'Resource(' . get_resource_type($data) . ')';
+        }
+        
+        // Fallback for any other type - convert to string safely
+        if (is_scalar($data) || $data === null) {
+            return $data;
+        }
+        
+        // For non-scalar, non-object types, convert to string representation
+        return '[' . gettype($data) . ']';
+    }
+}

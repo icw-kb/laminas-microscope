@@ -31,6 +31,7 @@ use function session_save_path;
 use function session_status;
 use function spl_object_id;
 use function strlen;
+use function trim;
 
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_SLASHES;
@@ -41,6 +42,7 @@ use const PHP_SESSION_NONE;
 class LaminasSessionCollector extends DataCollector implements Renderable, CollectorInterface
 {
     use JavaScriptSafeTrait;
+
     private ServiceManager $serviceManager;
 
     public function __construct(ServiceManager $serviceManager)
@@ -159,11 +161,11 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
             try {
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
-                
+
                 // For VariableListWidget, return flat strings, not nested objects
                 // Ensure we have a non-empty string result
                 if (is_string($result) && trim($result) !== '') {
-                    return $result;
+                    return $this->cleanDebugOutput($result);
                 } else {
                     return '[OBJECT: ' . $data::class . ']';
                 }
@@ -190,10 +192,10 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
 
                 try {
                     $result = $this->getDataFormatter()->formatVar($value);
-                    
+
                     // For VariableListWidget, return flat strings, not nested objects
                     if (is_string($result) && trim($result) !== '') {
-                        $formatted[$key] = $result;
+                        $formatted[$key] = $this->cleanDebugOutput($result);
                     } else {
                         $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                     }
