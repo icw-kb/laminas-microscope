@@ -713,7 +713,13 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             try {
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
-                return $result;
+                
+                // For SQLQueriesWidget, ensure we return a string representation
+                if (is_string($result) && trim($result) !== '') {
+                    return $result;
+                } else {
+                    return '[OBJECT: ' . $data::class . ']';
+                }
             } catch (Throwable $e) {
                 unset($visited[$objectId]);
                 return '[OBJECT: ' . $data::class . ']';
@@ -735,7 +741,14 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
                 $visited[$objectId] = true;
 
                 try {
-                    $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+                    $result = $this->getDataFormatter()->formatVar($value);
+                    
+                    // For SQLQueriesWidget, ensure we return a string representation
+                    if (is_string($result) && trim($result) !== '') {
+                        $formatted[$key] = $result;
+                    } else {
+                        $formatted[$key] = '[OBJECT: ' . $value::class . ']';
+                    }
                 } catch (Throwable $e) {
                     $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                 }

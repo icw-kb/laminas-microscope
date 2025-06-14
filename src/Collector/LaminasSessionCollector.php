@@ -158,8 +158,14 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
             try {
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
-                // Ensure complex objects are wrapped in value property for VariableListWidget
-                return is_string($result) ? ['value' => $result] : $result;
+                
+                // Always wrap objects in value property for VariableListWidget
+                // Ensure we have a non-empty string result
+                if (is_string($result) && trim($result) !== '') {
+                    return ['value' => $result];
+                } else {
+                    return ['value' => '[OBJECT: ' . $data::class . ']'];
+                }
             } catch (Throwable $e) {
                 unset($visited[$objectId]);
                 return ['value' => '[OBJECT: ' . $data::class . ']'];
@@ -183,8 +189,13 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
 
                 try {
                     $result = $this->getDataFormatter()->formatVar($value);
-                    // Wrap complex objects in value property for VariableListWidget compatibility
-                    $formatted[$key] = is_string($result) ? ['value' => $result] : $result;
+                    
+                    // Always wrap objects in value property for VariableListWidget
+                    if (is_string($result) && trim($result) !== '') {
+                        $formatted[$key] = ['value' => $result];
+                    } else {
+                        $formatted[$key] = ['value' => '[OBJECT: ' . $value::class . ']'];
+                    }
                 } catch (Throwable $e) {
                     $formatted[$key] = ['value' => '[OBJECT: ' . $value::class . ']'];
                 }
@@ -194,7 +205,13 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
                 $nestedFormatted = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
                 // If the array is associative and has many items, wrap it as a value object
                 if (count($value) > 5 && $this->isAssociativeArray($value)) {
-                    $formatted[$key] = ['value' => json_encode($nestedFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)];
+                    $jsonResult = json_encode($nestedFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                    // Ensure JSON encoding succeeded
+                    if ($jsonResult !== false) {
+                        $formatted[$key] = ['value' => $jsonResult];
+                    } else {
+                        $formatted[$key] = ['value' => '[COMPLEX ARRAY: ' . count($value) . ' items]'];
+                    }
                 } else {
                     $formatted[$key] = $nestedFormatted;
                 }
