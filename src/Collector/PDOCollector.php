@@ -12,10 +12,10 @@ use Laminas\Db\Adapter\Adapter;
 use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
 use LaminasMicroscope\Utility\FormatUtility;
+use Throwable;
 
 use function array_filter;
 use function count;
-use function get_class;
 use function is_array;
 use function is_object;
 use function method_exists;
@@ -259,7 +259,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
     }
 
     /**
-     * Format data recursively, converting objects to strings with depth limit
+     * Format data recursively for SQLQueriesWidget compatibility
+     * Note: PDOCollector uses SQLQueriesWidget, not VariableListWidget
      *
      * @param mixed $data
      * @param int $depth Current recursion depth
@@ -286,9 +287,9 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
                 return $result;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 unset($visited[$objectId]);
-                return '[OBJECT: ' . get_class($data) . ']';
+                return '[OBJECT: ' . $data::class . ']';
             }
         }
 
@@ -308,8 +309,8 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
 
                 try {
                     $formatted[$key] = $this->getDataFormatter()->formatVar($value);
-                } catch (\Throwable $e) {
-                    $formatted[$key] = '[OBJECT: ' . get_class($value) . ']';
+                } catch (Throwable $e) {
+                    $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                 }
                 unset($visited[$objectId]);
             } elseif (is_array($value)) {

@@ -8,13 +8,17 @@ use DebugBar\DataCollector\DataCollector;
 use DebugBar\DataCollector\Renderable;
 use Laminas\ServiceManager\ServiceManager;
 use LaminasMicroscope\Collector\CollectorInterface;
+use Throwable;
 
+use function array_keys;
 use function array_merge;
 use function count;
-use function get_class;
 use function ini_get;
 use function is_array;
 use function is_object;
+use function is_string;
+use function json_encode;
+use function range;
 use function round;
 use function serialize;
 use function session_cache_expire;
@@ -28,6 +32,8 @@ use function session_status;
 use function spl_object_id;
 use function strlen;
 
+use const JSON_PRETTY_PRINT;
+use const JSON_UNESCAPED_SLASHES;
 use const PHP_SESSION_ACTIVE;
 use const PHP_SESSION_DISABLED;
 use const PHP_SESSION_NONE;
@@ -125,7 +131,8 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
     }
 
     /**
-     * Format data recursively, converting objects to strings with depth limit
+     * Format data recursively for VariableListWidget compatibility
+     * Ensures all values are either primitives, arrays, or objects with a 'value' property
      *
      * @param mixed $data
      * @param int $depth Current recursion depth
@@ -137,28 +144,30 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
     {
         // Prevent infinite recursion
         if ($depth > $maxDepth) {
-            return '[MAX DEPTH REACHED]';
+            return ['value' => '[MAX DEPTH REACHED]'];
         }
 
         if (is_object($data)) {
             // Check for circular references
             $objectId = spl_object_id($data);
             if (isset($visited[$objectId])) {
-                return '[CIRCULAR REFERENCE]';
+                return ['value' => '[CIRCULAR REFERENCE]'];
             }
             $visited[$objectId] = true;
 
             try {
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
-                return $result;
-            } catch (\Throwable $e) {
+                // Ensure complex objects are wrapped in value property for VariableListWidget
+                return is_string($result) ? ['value' => $result] : $result;
+            } catch (Throwable $e) {
                 unset($visited[$objectId]);
-                return '[OBJECT: ' . get_class($data) . ']';
+                return ['value' => '[OBJECT: ' . $data::class . ']'];
             }
         }
 
         if (! is_array($data)) {
+            // Return scalar values as-is (VariableListWidget handles these correctly)
             return $data;
         }
 
@@ -167,25 +176,42 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
             if (is_object($value)) {
                 $objectId = spl_object_id($value);
                 if (isset($visited[$objectId])) {
-                    $formatted[$key] = '[CIRCULAR REFERENCE]';
+                    $formatted[$key] = ['value' => '[CIRCULAR REFERENCE]'];
                     continue;
                 }
                 $visited[$objectId] = true;
 
                 try {
-                    $formatted[$key] = $this->getDataFormatter()->formatVar($value);
-                } catch (\Throwable $e) {
-                    $formatted[$key] = '[OBJECT: ' . get_class($value) . ']';
+                    $result = $this->getDataFormatter()->formatVar($value);
+                    // Wrap complex objects in value property for VariableListWidget compatibility
+                    $formatted[$key] = is_string($result) ? ['value' => $result] : $result;
+                } catch (Throwable $e) {
+                    $formatted[$key] = ['value' => '[OBJECT: ' . $value::class . ']'];
                 }
                 unset($visited[$objectId]);
             } elseif (is_array($value)) {
-                $formatted[$key] = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
+                // For nested arrays, check if they should be displayed as a single value or as a list
+                $nestedFormatted = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
+                // If the array is associative and has many items, wrap it as a value object
+                if (count($value) > 5 && $this->isAssociativeArray($value)) {
+                    $formatted[$key] = ['value' => json_encode($nestedFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)];
+                } else {
+                    $formatted[$key] = $nestedFormatted;
+                }
             } else {
                 $formatted[$key] = $value;
             }
         }
 
         return $formatted;
+    }
+
+    /**
+     * Check if an array is associative (has string keys)
+     */
+    private function isAssociativeArray(array $array): bool
+    {
+        return array_keys($array) !== range(0, count($array) - 1);
     }
 
     private function calculateSessionSize(array $data): string
