@@ -46,7 +46,7 @@ use const PREG_SET_ORDER;
 
 class EnhancedPDOCollector extends DataCollector implements Renderable, CollectorInterface
 {
-    use JavaScriptSafeTrait;
+    use FormatsArrayTrait;
 
     private ServiceManager $serviceManager;
     private ?CacheManager $cacheManager;
@@ -96,7 +96,7 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
             'recommendations'          => $this->formatArray($this->generateRecommendations($analysis)),
         ];
 
-        return $this->makeJavaScriptSafe($data);
+        return $this->formatForJavaScript($data);
     }
 
     public function getName(): string
@@ -719,9 +719,9 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
 
-                // For SQLQueriesWidget, ensure we return a clean string representation
+                // For SQLQueriesWidget, ensure we return a string representation
                 if (is_string($result) && trim($result) !== '') {
-                    return $this->cleanDebugOutput($result);
+                    return $result;
                 } else {
                     return '[OBJECT: ' . $data::class . ']';
                 }
@@ -748,9 +748,9 @@ class EnhancedPDOCollector extends DataCollector implements Renderable, Collecto
                 try {
                     $result = $this->getDataFormatter()->formatVar($value);
 
-                    // For SQLQueriesWidget, ensure we return a clean string representation
+                    // For SQLQueriesWidget, ensure we return a string representation
                     if (is_string($result) && trim($result) !== '') {
-                        $formatted[$key] = $this->cleanDebugOutput($result);
+                        $formatted[$key] = $result;
                     } else {
                         $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                     }

@@ -27,7 +27,7 @@ use function trim;
 
 class PDOCollector extends DataCollector implements Renderable, AssetProvider, CollectorInterface
 {
-    use JavaScriptSafeTrait;
+    use FormatsArrayTrait;
 
     private ServiceManager $serviceManager;
     private array $queries     = [];
@@ -55,7 +55,7 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
             'connections'              => $this->formatArray($this->connections),
         ];
 
-        return $this->makeJavaScriptSafe($data);
+        return $this->formatForJavaScript($data);
     }
 
     public function getName(): string
@@ -292,9 +292,9 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
                 $result = $this->getDataFormatter()->formatVar($data);
                 unset($visited[$objectId]);
 
-                // Clean DebugBar formatting for JavaScript safety
+                // Return formatted result directly
                 if (is_string($result)) {
-                    return $this->cleanDebugOutput($result);
+                    return $result;
                 }
                 return '[OBJECT: ' . $data::class . ']';
             } catch (Throwable $e) {
@@ -319,9 +319,9 @@ class PDOCollector extends DataCollector implements Renderable, AssetProvider, C
 
                 try {
                     $result = $this->getDataFormatter()->formatVar($value);
-                    // Clean DebugBar formatting for JavaScript safety
+                    // Use formatted result directly
                     if (is_string($result)) {
-                        $formatted[$key] = $this->cleanDebugOutput($result);
+                        $formatted[$key] = $result;
                     } else {
                         $formatted[$key] = '[OBJECT: ' . $value::class . ']';
                     }

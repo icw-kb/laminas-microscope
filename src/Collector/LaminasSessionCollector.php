@@ -41,7 +41,7 @@ use const PHP_SESSION_NONE;
 
 class LaminasSessionCollector extends DataCollector implements Renderable, CollectorInterface
 {
-    use JavaScriptSafeTrait;
+    use FormatsArrayTrait;
 
     private ServiceManager $serviceManager;
 
@@ -74,7 +74,8 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
             $data['configuration'] = $this->getSessionConfiguration();
         }
 
-        return $this->makeJavaScriptSafe($data);
+        // Flatten for KVListWidget - it expects key-value pairs with string values
+        return $this->flattenForWidget($data);
     }
 
     public function getName(): string
@@ -87,7 +88,7 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
         return [
             'session'       => [
                 'icon'    => 'archive',
-                'widget'  => 'PhpDebugBar.Widgets.VariableListWidget',
+                'widget'  => 'PhpDebugBar.Widgets.KVListWidget',
                 'map'     => 'session',
                 'default' => '{}',
             ],
@@ -130,108 +131,39 @@ class LaminasSessionCollector extends DataCollector implements Renderable, Colle
      */
     private function formatSessionData(array $data)
     {
-        return $this->formatArray($data);
+        return $this->formatLeafValues($data);
     }
 
     /**
-     * Format data recursively for VariableListWidget compatibility
-     * Ensures all values are either primitives, arrays, or objects with a 'value' property
-     *
-     * @param mixed $data
-     * @param int $depth Current recursion depth
-     * @param int $maxDepth Maximum recursion depth
-     * @param array $visited Already visited objects to prevent circular references
-     * @return mixed
+     * Flatten nested session data for KVListWidget display
+     * KVListWidget expects flat key-value pairs with string values
      */
-    private function formatArray($data, int $depth = 0, int $maxDepth = 10, array &$visited = [])
+    private function flattenForWidget(array $data, string $prefix = ''): array
     {
-        // Prevent infinite recursion
-        if ($depth > $maxDepth) {
-            return ['value' => '[MAX DEPTH REACHED]'];
-        }
+        $result = [];
 
-        if (is_object($data)) {
-            // Check for circular references
-            $objectId = spl_object_id($data);
-            if (isset($visited[$objectId])) {
-                return ['value' => '[CIRCULAR REFERENCE]'];
-            }
-            $visited[$objectId] = true;
-
-            try {
-                $result = $this->getDataFormatter()->formatVar($data);
-                unset($visited[$objectId]);
-
-                // For VariableListWidget, return flat strings, not nested objects
-                // Ensure we have a non-empty string result
-                if (is_string($result) && trim($result) !== '') {
-                    return $this->cleanDebugOutput($result);
-                } else {
-                    return '[OBJECT: ' . $data::class . ']';
-                }
-            } catch (Throwable $e) {
-                unset($visited[$objectId]);
-                return '[OBJECT: ' . $data::class . ']';
-            }
-        }
-
-        if (! is_array($data)) {
-            // Return scalar values as-is (VariableListWidget handles these correctly)
-            return $data;
-        }
-
-        $formatted = [];
         foreach ($data as $key => $value) {
-            if (is_object($value)) {
-                $objectId = spl_object_id($value);
-                if (isset($visited[$objectId])) {
-                    $formatted[$key] = ['value' => '[CIRCULAR REFERENCE]'];
-                    continue;
-                }
-                $visited[$objectId] = true;
+            $fullKey = $prefix ? $prefix . '.' . $key : $key;
 
-                try {
-                    $result = $this->getDataFormatter()->formatVar($value);
-
-                    // For VariableListWidget, return flat strings, not nested objects
-                    if (is_string($result) && trim($result) !== '') {
-                        $formatted[$key] = $this->cleanDebugOutput($result);
-                    } else {
-                        $formatted[$key] = '[OBJECT: ' . $value::class . ']';
-                    }
-                } catch (Throwable $e) {
-                    $formatted[$key] = '[OBJECT: ' . $value::class . ']';
-                }
-                unset($visited[$objectId]);
-            } elseif (is_array($value)) {
-                // For nested arrays, check if they should be displayed as a single value or as a list
-                $nestedFormatted = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
-                // If the array is associative and has many items, convert to string
-                if (count($value) > 5 && $this->isAssociativeArray($value)) {
-                    $jsonResult = json_encode($nestedFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                    // Ensure JSON encoding succeeded
-                    if ($jsonResult !== false) {
-                        $formatted[$key] = $jsonResult;
-                    } else {
-                        $formatted[$key] = '[COMPLEX ARRAY: ' . count($value) . ' items]';
-                    }
+            if (is_array($value)) {
+                if (empty($value)) {
+                    $result[$fullKey] = '(empty)';
+                } elseif (count($value) <= 5) {
+                    // Small arrays - flatten them
+                    $flattened = $this->flattenForWidget($value, $fullKey);
+                    $result = array_merge($result, $flattened);
                 } else {
-                    $formatted[$key] = $nestedFormatted;
+                    // Large arrays - show summary
+                    $result[$fullKey] = '(' . count($value) . ' items)';
                 }
             } else {
-                $formatted[$key] = $value;
+                // Convert ALL non-array values to strings
+                $formatted = $this->formatSingleValue($value);
+                $result[$fullKey] = (string) $formatted;
             }
         }
 
-        return $formatted;
-    }
-
-    /**
-     * Check if an array is associative (has string keys)
-     */
-    private function isAssociativeArray(array $array): bool
-    {
-        return array_keys($array) !== range(0, count($array) - 1);
+        return $result;
     }
 
     private function calculateSessionSize(array $data): string
