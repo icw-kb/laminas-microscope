@@ -17,9 +17,11 @@ use function date_default_timezone_get;
 use function dirname;
 use function error_reporting;
 use function ini_get;
+use function get_class;
 use function is_array;
 use function is_object;
 use function is_string;
+use function spl_object_id;
 use function strpos;
 use function strtolower;
 
@@ -164,20 +166,36 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         return $this->recursiveSanitize($config, $sensitiveKeys);
     }
 
-    private function recursiveSanitize(array $array, array $sensitiveKeys): array
+    private function recursiveSanitize($data, array $sensitiveKeys, int $depth = 0, int $maxDepth = 10): array
     {
-        foreach ($array as $key => $value) {
+        // Prevent infinite recursion
+        if ($depth > $maxDepth) {
+            return ['[MAX DEPTH REACHED]'];
+        }
+
+        // Ensure we have an array to work with
+        if (! is_array($data)) {
+            if (is_object($data)) {
+                return ['[OBJECT: ' . get_class($data) . ']'];
+            }
+            return (array) $data;
+        }
+
+        $result = [];
+        foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $array[$key] = $this->recursiveSanitize($value, $sensitiveKeys);
+                $result[$key] = $this->recursiveSanitize($value, $sensitiveKeys, $depth + 1, $maxDepth);
             } elseif (is_object($value)) {
-                // Convert objects to arrays first, then sanitize
-                $array[$key] = $this->recursiveSanitize((array) $value, $sensitiveKeys);
+                // Don't convert objects to arrays, just represent them safely
+                $result[$key] = '[OBJECT: ' . get_class($value) . ']';
             } elseif (is_string($key) && $this->isSensitiveKey($key, $sensitiveKeys)) {
-                $array[$key] = '*** HIDDEN ***';
+                $result[$key] = '*** HIDDEN ***';
+            } else {
+                $result[$key] = $value;
             }
         }
 
-        return $array;
+        return $result;
     }
 
     private function isSensitiveKey(string $key, array $sensitiveKeys): bool
@@ -192,16 +210,38 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
     }
 
     /**
-     * Format data recursively, converting objects to strings
+     * Format data recursively, converting objects to strings with depth limit
      *
      * @param mixed $data
+     * @param int $depth Current recursion depth
+     * @param int $maxDepth Maximum recursion depth
+     * @param array $visited Already visited objects to prevent circular references
      * @return mixed
      */
-    private function formatArray($data)
+    private function formatArray($data, int $depth = 0, int $maxDepth = 10, array &$visited = [])
     {
+        // Prevent infinite recursion
+        if ($depth > $maxDepth) {
+            return '[MAX DEPTH REACHED]';
+        }
+
         if (is_object($data)) {
-            // Format objects using the DataFormatter
-            return $this->getDataFormatter()->formatVar($data);
+            // Check for circular references
+            $objectId = spl_object_id($data);
+            if (isset($visited[$objectId])) {
+                return '[CIRCULAR REFERENCE]';
+            }
+            $visited[$objectId] = true;
+
+            // Format objects using the DataFormatter but catch memory errors
+            try {
+                $result = $this->getDataFormatter()->formatVar($data);
+                unset($visited[$objectId]);
+                return $result;
+            } catch (\Throwable $e) {
+                unset($visited[$objectId]);
+                return '[OBJECT: ' . get_class($data) . ']';
+            }
         }
 
         if (! is_array($data)) {
@@ -212,11 +252,23 @@ class LaminasConfigCollector extends DataCollector implements Renderable, Collec
         $formatted = [];
         foreach ($data as $key => $value) {
             if (is_object($value)) {
-                // Use the DataFormatter to properly format objects
-                $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+                // Check for circular references
+                $objectId = spl_object_id($value);
+                if (isset($visited[$objectId])) {
+                    $formatted[$key] = '[CIRCULAR REFERENCE]';
+                    continue;
+                }
+                $visited[$objectId] = true;
+
+                try {
+                    $formatted[$key] = $this->getDataFormatter()->formatVar($value);
+                } catch (\Throwable $e) {
+                    $formatted[$key] = '[OBJECT: ' . get_class($value) . ']';
+                }
+                unset($visited[$objectId]);
             } elseif (is_array($value)) {
-                // Recursively format nested arrays
-                $formatted[$key] = $this->formatArray($value);
+                // Recursively format nested arrays with depth tracking
+                $formatted[$key] = $this->formatArray($value, $depth + 1, $maxDepth, $visited);
             } else {
                 // Keep scalar values as-is
                 $formatted[$key] = $value;
