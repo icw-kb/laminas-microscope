@@ -12,19 +12,20 @@ trait JavaScriptSafeTrait
      */
     private function makeJavaScriptSafe($data): mixed
     {
+        // Handle objects with value property (from formatArray methods) FIRST
+        if (is_array($data) && isset($data['value']) && count($data) === 1) {
+            $cleanValue = $this->cleanDebugOutput($this->ensureString($data['value']));
+            return [
+                'value' => $cleanValue
+            ];
+        }
+        
         if (is_array($data)) {
             $result = [];
             foreach ($data as $key => $value) {
                 $result[$key] = $this->makeJavaScriptSafe($value);
             }
             return $result;
-        }
-        
-        // Handle objects with value property (from formatArray methods)
-        if (is_array($data) && isset($data['value'])) {
-            return [
-                'value' => $this->ensureString($data['value'])
-            ];
         }
         
         // For scalar values, ensure they're properly typed
@@ -75,5 +76,28 @@ trait JavaScriptSafeTrait
         
         // Fallback for any other type
         return '[' . gettype($value) . ']';
+    }
+    
+    /**
+     * Clean up debug formatter output to be JavaScript-safe
+     */
+    private function cleanDebugOutput(string $value): string
+    {
+        // Remove debug formatter syntax like {#5 +"prop": value}
+        $value = preg_replace('/\{#\d+\s*/', '{', $value);
+        $value = preg_replace('/\+"([^"]+)"\s*:\s*/', '"$1": ', $value);
+        $value = preg_replace('/DateTime @\d+ \{[^}]+\}/', 'DateTime', $value);
+        
+        // If it looks like a complex debug output, simplify it
+        if (strpos($value, '#{') !== false || strpos($value, ' @') !== false) {
+            // Try to extract just the JSON part
+            if (preg_match('/\{[^{}]*"[^"]+":[^}]+\}/', $value, $matches)) {
+                return $matches[0];
+            }
+            // Fallback: just indicate it's an object
+            return '[Object]';
+        }
+        
+        return $value;
     }
 }
